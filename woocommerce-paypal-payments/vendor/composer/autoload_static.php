@@ -41,6 +41,7 @@ class ComposerStaticInit2fa610ed883c0868838d3008b7127cbf
             'WooCommerce\\PayPalCommerce\\Button\\' => 34,
             'WooCommerce\\PayPalCommerce\\Blocks\\' => 34,
             'WooCommerce\\PayPalCommerce\\Axo\\' => 31,
+            'WooCommerce\\PayPalCommerce\\AxoBlock\\' => 36,
             'WooCommerce\\PayPalCommerce\\Applepay\\' => 36,
             'WooCommerce\\PayPalCommerce\\ApiClient\\' => 37,
             'WooCommerce\\PayPalCommerce\\AdminNotices\\' => 40,
@@ -174,6 +175,10 @@ class ComposerStaticInit2fa610ed883c0868838d3008b7127cbf
         'WooCommerce\\PayPalCommerce\\Axo\\' => 
         array (
             0 => __DIR__ . '/../..' . '/modules/ppcp-axo/src',
+        ),
+        'WooCommerce\\PayPalCommerce\\AxoBlock\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/modules/ppcp-axo-block/src',
         ),
         'WooCommerce\\PayPalCommerce\\Applepay\\' => 
         array (

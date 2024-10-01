@@ -32,6 +32,7 @@ return array(
     'WooCommerce\\PayPalCommerce\\Button\\' => array($baseDir . '/modules/ppcp-button/src'),
     'WooCommerce\\PayPalCommerce\\Blocks\\' => array($baseDir . '/modules/ppcp-blocks/src'),
     'WooCommerce\\PayPalCommerce\\Axo\\' => array($baseDir . '/modules/ppcp-axo/src'),
+    'WooCommerce\\PayPalCommerce\\AxoBlock\\' => array($baseDir . '/modules/ppcp-axo-block/src'),
     'WooCommerce\\PayPalCommerce\\Applepay\\' => array($baseDir . '/modules/ppcp-applepay/src'),
     'WooCommerce\\PayPalCommerce\\ApiClient\\' => array($baseDir . '/modules/ppcp-api-client/src'),
     'WooCommerce\\PayPalCommerce\\AdminNotices\\' => array($baseDir . '/modules/ppcp-admin-notices/src'),
