@@ -105,6 +105,11 @@ class ApplePayGateway extends WC_Payment_Gateway {
 	) {
 		$this->id = self::ID;
 
+		$this->supports = array(
+			'refunds',
+			'products',
+		);
+
 		$this->method_title       = __( 'Apple Pay (via PayPal) ', 'woocommerce-paypal-payments' );
 		$this->method_description = __( 'Display Apple Pay as a standalone payment option instead of bundling it with PayPal.', 'woocommerce-paypal-payments' );
 

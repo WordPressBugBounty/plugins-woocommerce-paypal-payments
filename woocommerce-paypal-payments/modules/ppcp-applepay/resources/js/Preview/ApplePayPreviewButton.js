@@ -5,6 +5,11 @@ import PreviewButton from '../../../../ppcp-button/resources/js/modules/Preview/
  * A single Apple Pay preview button instance.
  */
 export default class ApplePayPreviewButton extends PreviewButton {
+	/**
+	 * @type {?PaymentButton}
+	 */
+	#button = null;
+
 	constructor( args ) {
 		super( args );
 
@@ -19,14 +24,18 @@ export default class ApplePayPreviewButton extends PreviewButton {
 	}
 
 	createButton( buttonConfig ) {
-		const button = new ApplepayButton(
-			'preview',
-			null,
-			buttonConfig,
-			this.ppcpConfig
-		);
+		if ( ! this.#button ) {
+			this.#button = new ApplepayButton(
+				'preview',
+				null,
+				buttonConfig,
+				this.ppcpConfig
+			);
+		}
 
-		button.init( this.apiConfig );
+		this.#button.configure( this.apiConfig, null );
+		this.#button.applyButtonStyles( buttonConfig, this.ppcpConfig );
+		this.#button.reinit();
 	}
 
 	/**

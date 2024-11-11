@@ -58,7 +58,7 @@ class Cache {
 	 *
 	 * @param string $key The key.
 	 */
-	public function delete( string $key ) {
+	public function delete( string $key ): void {
 		delete_transient( $this->prefix . $key );
 	}
 

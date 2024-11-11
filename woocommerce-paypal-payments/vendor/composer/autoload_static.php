@@ -24,6 +24,7 @@ class ComposerStaticInit2fa610ed883c0868838d3008b7127cbf
             'WooCommerce\\PayPalCommerce\\Vaulting\\' => 36,
             'WooCommerce\\PayPalCommerce\\Uninstall\\' => 37,
             'WooCommerce\\PayPalCommerce\\StatusReport\\' => 40,
+            'WooCommerce\\PayPalCommerce\\Settings\\' => 36,
             'WooCommerce\\PayPalCommerce\\Session\\' => 35,
             'WooCommerce\\PayPalCommerce\\SavedPaymentChecker\\' => 47,
             'WooCommerce\\PayPalCommerce\\SavePaymentMethods\\' => 46,
@@ -107,6 +108,10 @@ class ComposerStaticInit2fa610ed883c0868838d3008b7127cbf
         'WooCommerce\\PayPalCommerce\\StatusReport\\' => 
         array (
             0 => __DIR__ . '/../..' . '/modules/ppcp-status-report/src',
+        ),
+        'WooCommerce\\PayPalCommerce\\Settings\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/modules/ppcp-settings/src',
         ),
         'WooCommerce\\PayPalCommerce\\Session\\' => 
         array (

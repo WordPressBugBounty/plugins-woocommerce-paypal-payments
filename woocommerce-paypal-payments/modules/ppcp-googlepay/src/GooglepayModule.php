@@ -218,6 +218,20 @@ class GooglepayModule implements ServiceModule, ExtendingModule, ExecutableModul
 			}
 		);
 
+		add_filter(
+			'woocommerce_paypal_payments_selected_button_locations',
+			function( array $locations, string $setting_name ): array {
+				$gateway = WC()->payment_gateways()->payment_gateways()[ GooglePayGateway::ID ] ?? '';
+				if ( $gateway && $gateway->enabled === 'yes' && $setting_name === 'smart_button_locations' ) {
+					$locations[] = 'checkout';
+				}
+
+				return $locations;
+			},
+			10,
+			2
+		);
+
 		return true;
 	}
 }

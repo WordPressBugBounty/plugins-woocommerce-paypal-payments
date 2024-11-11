@@ -1,4 +1,4 @@
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useMemo } from '@wordpress/element';
 import {
 	registerExpressPaymentMethod,
 	registerPaymentMethod,
@@ -41,6 +41,7 @@ const PayPalComponent = ( {
 	shippingData,
 	isEditing,
 	fundingSource,
+	buttonAttributes,
 } ) => {
 	const { onPaymentSetup, onCheckoutFail, onCheckoutValidation } =
 		eventRegistration;
@@ -614,6 +615,15 @@ const PayPalComponent = ( {
 		fundingSource
 	);
 
+	if ( typeof buttonAttributes !== 'undefined' ) {
+		style.height = buttonAttributes?.height
+			? Number( buttonAttributes.height )
+			: style.height;
+		style.borderRadius = buttonAttributes?.borderRadius
+			? Number( buttonAttributes.borderRadius )
+			: style.borderRadius;
+	}
+
 	if ( ! paypalScriptLoaded ) {
 		return null;
 	}
@@ -688,19 +698,46 @@ const PayPalComponent = ( {
 	);
 };
 
-const BlockEditorPayPalComponent = () => {
-	const urlParams = {
-		clientId: 'test',
-		...config.scriptData.url_params,
-		dataNamespace: 'ppcp-blocks-editor-paypal-buttons',
-		components: 'buttons',
-	};
+const BlockEditorPayPalComponent = ( { fundingSource, buttonAttributes } ) => {
+	const urlParams = useMemo(
+		() => ( {
+			clientId: 'test',
+			...config.scriptData.url_params,
+			dataNamespace: 'ppcp-blocks-editor-paypal-buttons',
+			components: 'buttons',
+		} ),
+		[]
+	);
+
+	const style = useMemo( () => {
+		const configStyle = normalizeStyleForFundingSource(
+			config.scriptData.button.style,
+			fundingSource
+		);
+
+		if ( buttonAttributes ) {
+			return {
+				...configStyle,
+				height: buttonAttributes.height
+					? Number( buttonAttributes.height )
+					: configStyle.height,
+				borderRadius: buttonAttributes.borderRadius
+					? Number( buttonAttributes.borderRadius )
+					: configStyle.borderRadius,
+			};
+		}
+
+		return configStyle;
+	}, [ fundingSource, buttonAttributes ] );
+
 	return (
 		<PayPalScriptProvider options={ urlParams }>
 			<PayPalButtons
-				onClick={ ( data, actions ) => {
-					return false;
-				} }
+				className={ `ppc-button-container-${ fundingSource }` }
+				fundingSource={ fundingSource }
+				style={ style }
+				forceReRender={ [ buttonAttributes || {} ] }
+				onClick={ () => false }
 			/>
 		</PayPalScriptProvider>
 	);
@@ -739,11 +776,8 @@ if ( cartHasSubscriptionProducts( config.scriptData ) ) {
 	features.push( 'subscriptions' );
 }
 
-if ( block_enabled && config.enabled ) {
-	if (
-		( config.addPlaceOrderMethod || config.usePlaceOrder ) &&
-		! config.scriptData.continuation
-	) {
+if ( block_enabled ) {
+	if ( config.placeOrderEnabled && ! config.scriptData.continuation ) {
 		let descriptionElement = (
 			<div
 				dangerouslySetInnerHTML={ { __html: config.description } }
@@ -776,7 +810,7 @@ if ( block_enabled && config.enabled ) {
 			placeOrderButtonLabel: config.placeOrderButtonText,
 			ariaLabel: config.title,
 			canMakePayment: () => {
-				return config.enabled;
+				return true;
 			},
 			supports: {
 				features,
@@ -789,7 +823,7 @@ if ( block_enabled && config.enabled ) {
 			name: config.id,
 			label: <div dangerouslySetInnerHTML={ { __html: config.title } } />,
 			content: <PayPalComponent isEditing={ false } />,
-			edit: <BlockEditorPayPalComponent />,
+			edit: <BlockEditorPayPalComponent fundingSource={ 'paypal' } />,
 			ariaLabel: config.title,
 			canMakePayment: () => {
 				return true;
@@ -798,7 +832,7 @@ if ( block_enabled && config.enabled ) {
 				features: [ ...features, 'ppcp_continuation' ],
 			},
 		} );
-	} else if ( ! config.usePlaceOrder ) {
+	} else if ( config.smartButtonsEnabled ) {
 		for ( const fundingSource of [
 			'paypal',
 			...config.enabledFundingSources,
@@ -821,7 +855,11 @@ if ( block_enabled && config.enabled ) {
 						fundingSource={ fundingSource }
 					/>
 				),
-				edit: <BlockEditorPayPalComponent />,
+				edit: (
+					<BlockEditorPayPalComponent
+						fundingSource={ fundingSource }
+					/>
+				),
 				ariaLabel: config.title,
 				canMakePayment: async () => {
 					if ( ! paypalScriptPromise ) {
@@ -845,6 +883,7 @@ if ( block_enabled && config.enabled ) {
 				},
 				supports: {
 					features,
+					style: [ 'height', 'borderRadius' ],
 				},
 			} );
 		}

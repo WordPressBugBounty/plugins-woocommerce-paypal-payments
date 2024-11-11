@@ -10,6 +10,8 @@ import {
 	dispatchButtonEvent,
 	observeButtonEvent,
 } from '../Helper/PaymentButtonHelpers';
+import { isVisible } from '../Helper/Hiding';
+import { isDisabled, setEnabled } from '../Helper/ButtonDisabler';
 
 /**
  * Collection of all available styling options for this button.
@@ -173,9 +175,9 @@ export default class PaymentButton {
 	/**
 	 * Whether the current browser/website support the payment method.
 	 *
-	 * @type {boolean}
+	 * @type {?boolean}
 	 */
-	#isEligible = false;
+	#isEligible = null;
 
 	/**
 	 * Whether this button is visible. Modified by `show()` and `hide()`
@@ -185,12 +187,26 @@ export default class PaymentButton {
 	#isVisible = true;
 
 	/**
+	 * Whether this button is enabled (can be clicked).
+	 *
+	 * @type {boolean}
+	 */
+	#isEnabled = true;
+
+	/**
 	 * The currently visible payment button.
 	 *
 	 * @see {PaymentButton.insertButton}
 	 * @type {HTMLElement|null}
 	 */
 	#button = null;
+
+	/**
+	 * List of checks to perform to verify the PaymentButton has is configured correctly.
+	 *
+	 * @type {{check, errorMessage, shouldPass}[]}
+	 */
+	#validationChecks = [];
 
 	/**
 	 * Factory method to create a new PaymentButton while limiting a single instance per context.
@@ -304,6 +320,11 @@ export default class PaymentButton {
 			this.#ppcpConfig
 		);
 		this.applyButtonStyles( this.#buttonConfig );
+
+		this.registerValidationRules(
+			this.#assertIsInvalid.bind( this ),
+			this.#assertIsValid.bind( this )
+		);
 
 		apmButtonsInit( this.#ppcpConfig );
 		this.initEventListeners();
@@ -560,6 +581,29 @@ export default class PaymentButton {
 	}
 
 	/**
+	 * The enabled/disabled state of the button (whether it can be clicked).
+	 *
+	 * @return {boolean} True indicates, that the button is enabled.
+	 */
+	get isEnabled() {
+		return this.#isEnabled;
+	}
+
+	/**
+	 * Change the enabled/disabled state of the button.
+	 *
+	 * @param {boolean} newState Whether the button is enabled.
+	 */
+	set isEnabled( newState ) {
+		if ( this.#isEnabled === newState ) {
+			return;
+		}
+
+		this.#isEnabled = newState;
+		this.triggerRedraw();
+	}
+
+	/**
 	 * Returns the HTML element that wraps the current button
 	 *
 	 * @readonly
@@ -567,6 +611,23 @@ export default class PaymentButton {
 	 */
 	get wrapperElement() {
 		return document.getElementById( this.wrapperId );
+	}
+
+	/**
+	 * Returns the standard PayPal smart button selector for the current context.
+	 *
+	 * @return {string | null} The selector, or null if not available.
+	 */
+	get ppcpButtonWrapperSelector() {
+		if ( PaymentContext.Blocks.includes( this.context ) ) {
+			return null;
+		}
+
+		if ( this.context === PaymentContext.MiniCart ) {
+			return this.ppcpConfig?.button?.mini_cart_wrapper;
+		}
+
+		return this.ppcpConfig?.button?.wrapper;
 	}
 
 	/**
@@ -635,15 +696,74 @@ export default class PaymentButton {
 	}
 
 	/**
+	 * Register a validation check that marks the configuration as invalid when passed.
+	 *
+	 * @param {Function} check        - A function that returns a truthy value if the check passes.
+	 * @param {string}   errorMessage - The error message to display if the check fails.
+	 */
+	#assertIsInvalid( check, errorMessage ) {
+		this.#validationChecks.push( {
+			check,
+			errorMessage,
+			shouldPass: false,
+		} );
+	}
+
+	/**
+	 * Register a validation check that instantly marks the configuration as valid when passed.
+	 *
+	 * @param {Function} check - A function that returns a truthy value if the check passes.
+	 */
+	#assertIsValid( check ) {
+		this.#validationChecks.push( { check, shouldPass: true } );
+	}
+
+	/**
+	 * Defines a series of validation steps to ensure the payment button is configured correctly.
+	 *
+	 * Each validation step is executed in the order they are defined within this method.
+	 *
+	 * If a validation step using `invalidIf` returns true, the configuration is immediately considered
+	 * invalid, and an error message is logged. Conversely, if a validation step using `validIf`
+	 * returns true, the configuration is immediately considered valid.
+	 *
+	 * If no validation step returns true, the configuration is assumed to be valid by default.
+	 *
+	 * @param {(condition: () => boolean, errorMessage: string) => void} invalidIf - Registers a validation step that fails if the condition returns true.
+	 * @param {(condition: () => boolean) => void}                       validIf   - Registers a validation step that passes if the condition returns true.
+	 */
+	// eslint-disable-next-line no-unused-vars
+	registerValidationRules( invalidIf, validIf ) {}
+
+	/**
 	 * Determines if the current button instance has valid and complete configuration details.
 	 * Used during initialization to decide if the button can be initialized or should be skipped.
 	 *
-	 * Can be implemented by the derived class.
+	 * All required validation steps must be registered in the constructor of the derived class
+	 * using `this.addValidationFailure()` or `this.addValidationSuccess()`.
 	 *
 	 * @param {boolean} [silent=false] - Set to true to suppress console errors.
 	 * @return {boolean} True indicates the config is valid and initialization can continue.
 	 */
 	validateConfiguration( silent = false ) {
+		for ( const step of this.#validationChecks ) {
+			const result = step.check();
+
+			if ( step.shouldPass && result ) {
+				// If a success check passes, mark as valid immediately.
+				return true;
+			}
+
+			if ( ! step.shouldPass && result ) {
+				// If a failure check passes, mark as invalid.
+				if ( ! silent && step.errorMessage ) {
+					this.error( step.errorMessage );
+				}
+
+				return false;
+			}
+		}
+
 		return true;
 	}
 
@@ -697,7 +817,23 @@ export default class PaymentButton {
 	}
 
 	/**
-	 * Attaches event listeners to show or hide the payment button when needed.
+	 * Applies the visibility and enabled state from the PayPal button.
+	 * Intended for the product page, may not work correctly on the checkout page.
+	 */
+	syncProductButtonsState() {
+		const ppcpButton = document.querySelector(
+			this.ppcpButtonWrapperSelector
+		);
+		if ( ! ppcpButton ) {
+			return;
+		}
+
+		this.isVisible = isVisible( ppcpButton );
+		this.isEnabled = ! isDisabled( ppcpButton );
+	}
+
+	/**
+	 * Attaches event listeners to show/hide or enable/disable the payment button when needed.
 	 */
 	initEventListeners() {
 		// Refresh the button - this might show, hide or re-create the payment button.
@@ -726,6 +862,24 @@ export default class PaymentButton {
 				callback: () => ( this.isVisible = true ),
 			} );
 		}
+
+		// On the product page, copy the visibility and enabled state from the PayPal button.
+		if ( this.context === PaymentContext.Product ) {
+			jQuery( document ).on(
+				'ppcp-shown ppcp-hidden ppcp-enabled ppcp-disabled',
+				( ev, data ) => {
+					if (
+						! jQuery( data.selector ).is(
+							this.ppcpButtonWrapperSelector
+						)
+					) {
+						return;
+					}
+
+					this.syncProductButtonsState();
+				}
+			);
+		}
 	}
 
 	/**
@@ -733,6 +887,10 @@ export default class PaymentButton {
 	 */
 	refresh() {
 		if ( ! this.isPresent ) {
+			return;
+		}
+		if ( ! this.isEligible ) {
+			this.wrapperElement.style.display = 'none';
 			return;
 		}
 
@@ -763,10 +921,15 @@ export default class PaymentButton {
 
 		const styleSelector = `style[data-hide-gateway="${ this.methodId }"]`;
 		const wrapperSelector = `#${ this.wrappers.Default }`;
+        const paymentMethodLi = document.querySelector(`.wc_payment_method.payment_method_${ this.methodId }`);
 
 		document
 			.querySelectorAll( styleSelector )
 			.forEach( ( el ) => el.remove() );
+
+        if (paymentMethodLi.style.display === 'none' || paymentMethodLi.style.display === '') {
+            paymentMethodLi.style.display = 'block';
+        }
 
 		document
 			.querySelectorAll( wrapperSelector )
@@ -807,6 +970,12 @@ export default class PaymentButton {
 
 		// Apply the wrapper visibility.
 		wrapper.style.display = this.isVisible ? 'block' : 'none';
+
+		// Apply the enabled/disabled state.
+		// On the product page, use the form to display error messages if clicked while disabled.
+		const form =
+			this.context === PaymentContext.Product ? 'form.cart' : null;
+		setEnabled( wrapper, this.isEnabled, form );
 	}
 
 	/**

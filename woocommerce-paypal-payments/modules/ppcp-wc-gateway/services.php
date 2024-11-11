@@ -25,10 +25,13 @@ use WooCommerce\PayPalCommerce\Onboarding\Environment;
 use WooCommerce\PayPalCommerce\Onboarding\Render\OnboardingOptionsRenderer;
 use WooCommerce\PayPalCommerce\Onboarding\State;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderReauthorizeAction;
+use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\CaptureCardPayment;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\CartCheckoutDetector;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\FeesUpdater;
+use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactory;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactoryInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrar;
@@ -46,7 +49,6 @@ use WooCommerce\PayPalCommerce\WcGateway\Checkout\DisableGateways;
 use WooCommerce\PayPalCommerce\WcGateway\Cli\SettingsCommand;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ReturnUrlEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\FraudNet\FraudNet;
-use WooCommerce\PayPalCommerce\WcGateway\FraudNet\FraudNetSessionId;
 use WooCommerce\PayPalCommerce\WcGateway\FraudNet\FraudNetSourceWebsiteId;
 use WooCommerce\PayPalCommerce\WcGateway\FundingSource\FundingSourceRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CardButtonGateway;
@@ -118,7 +120,8 @@ return array(
 			$container->get( 'wcgateway.place-order-button-text' ),
 			$container->get( 'api.endpoint.payment-tokens' ),
 			$container->get( 'vaulting.vault-v3-enabled' ),
-			$container->get( 'vaulting.wc-payment-tokens' )
+			$container->get( 'vaulting.wc-payment-tokens' ),
+			$container->get( 'wcgateway.settings.admin-settings-enabled' )
 		);
 	},
 	'wcgateway.credit-card-gateway'                        => static function ( ContainerInterface $container ): CreditCardGateway {
@@ -374,6 +377,113 @@ return array(
 			$container->get( 'wcgateway.settings.status' )
 		);
 	},
+	'wcgateway.store-country'                              => static function(): string {
+		$location = wc_get_base_location();
+		return $location['country'];
+	},
+	'wcgateway.send-only-message'                          => static function() {
+		return __( "<strong>Important</strong>: Your current WooCommerce store location is in a \"send-only\" country, according to PayPal's policies. Sellers in these countries are unable to receive payments via PayPal. Since receiving payments is essential for using the PayPal Payments extension, you will not be able to connect your PayPal account while operating from a \"send-only\" country. To activate PayPal, please update your WooCommerce store location to a supported region and connect a PayPal account eligible for receiving payments.", 'woocommerce-paypal-payments' );
+	},
+	'wcgateway.send-only-countries'                        => static function() {
+		return array(
+			'AO',
+			'AI',
+			'AM',
+			'AW',
+			'AZ',
+			'BY',
+			'BJ',
+			'BT',
+			'BO',
+			'VG',
+			'BN',
+			'BF',
+			'BI',
+			'CI',
+			'KH',
+			'CM',
+			'CV',
+			'TD',
+			'KM',
+			'CG',
+			'CK',
+			'DJ',
+			'ER',
+			'ET',
+			'FK',
+			'GA',
+			'GM',
+			'GN',
+			'GW',
+			'GY',
+			'KI',
+			'KG',
+			'LA',
+			'MK',
+			'MG',
+			'MV',
+			'ML',
+			'MH',
+			'MR',
+			'YT',
+			'FM',
+			'MN',
+			'ME',
+			'MS',
+			'NA',
+			'NR',
+			'NP',
+			'NE',
+			'NG',
+			'NU',
+			'NF',
+			'PG',
+			'PY',
+			'PN',
+			'RW',
+			'ST',
+			'WS',
+			'SL',
+			'SB',
+			'SO',
+			'SH',
+			'PM',
+			'VC',
+			'SR',
+			'SJ',
+			'TJ',
+			'TZ',
+			'TG',
+			'TO',
+			'TN',
+			'TM',
+			'TV',
+			'UG',
+			'UA',
+			'VA',
+			'WF',
+			'YE',
+			'ZM',
+			'ZW',
+		);
+	},
+	'wcgateway.is-send-only-country'                       => static function( ContainerInterface $container ) {
+		$store_country = $container->get( 'wcgateway.store-country' );
+		$send_only_countries = $container->get( 'wcgateway.send-only-countries' );
+		return in_array( $store_country, $send_only_countries, true );
+	},
+	'wcgateway.notice.send-only-country'                   => static function ( ContainerInterface $container ) {
+		$onboarding_state = $container->get( 'onboarding.state' );
+		assert( $onboarding_state instanceof State );
+		return new SendOnlyCountryNotice(
+			$container->get( 'wcgateway.send-only-message' ),
+			$container->get( 'wcgateway.is-send-only-country' ),
+			$container->get( 'wcgateway.is-ppcp-settings-page' ),
+			$container->get( 'wcgateway.is-wc-gateways-list-page' ),
+			$onboarding_state->current_state()
+		);
+	},
+
 	'wcgateway.notice.authorize-order-action'              =>
 		static function ( ContainerInterface $container ): AuthorizeOrderActionNotice {
 			return new AuthorizeOrderActionNotice();
@@ -514,12 +624,20 @@ return array(
 		);
 	},
 	'wcgateway.processor.refunds'                          => static function ( ContainerInterface $container ): RefundProcessor {
-		$order_endpoint      = $container->get( 'api.endpoint.order' );
-		$payments_endpoint   = $container->get( 'api.endpoint.payments' );
-		$refund_fees_updater = $container->get( 'wcgateway.helper.refund-fees-updater' );
-		$prefix           = $container->get( 'api.prefix' );
-		$logger              = $container->get( 'woocommerce.logger.woocommerce' );
-		return new RefundProcessor( $order_endpoint, $payments_endpoint, $refund_fees_updater, $prefix, $logger );
+		return new RefundProcessor(
+			$container->get( 'api.endpoint.order' ),
+			$container->get( 'api.endpoint.payments' ),
+			$container->get( 'wcgateway.helper.refund-fees-updater' ),
+			$container->get( 'wcgateway.allowed_refund_payment_methods' ),
+			$container->get( 'api.prefix' ),
+			$container->get( 'woocommerce.logger.woocommerce' )
+		);
+	},
+	'wcgateway.allowed_refund_payment_methods'             => static function ( ContainerInterface $container ): array {
+		return apply_filters(
+			'woocommerce_paypal_payments_allowed_refund_payment_methods',
+			array( PayPalGateway::ID, CreditCardGateway::ID, CardButtonGateway::ID, PayUponInvoiceGateway::ID )
+		);
 	},
 	'wcgateway.processor.authorized-payments'              => static function ( ContainerInterface $container ): AuthorizedPaymentsProcessor {
 		$order_endpoint    = $container->get( 'api.endpoint.order' );
@@ -1420,7 +1538,10 @@ return array(
 		return new OXXO(
 			$container->get( 'wcgateway.checkout-helper' ),
 			$container->get( 'wcgateway.url' ),
-			$container->get( 'ppcp.asset-version' )
+			$container->get( 'ppcp.asset-version' ),
+			$container->get( 'api.endpoint.order' ),
+			$container->get( 'woocommerce.logger.woocommerce' ),
+			$container->get( 'api.factory.capture' )
 		);
 	},
 	'wcgateway.oxxo-gateway'                               => static function( ContainerInterface $container ): OXXOGateway {
@@ -1722,6 +1843,24 @@ return array(
 		unset( $button_locations['mini-cart'] );
 		return array_keys( $button_locations );
 	},
+	'wcgateway.button.recommended-styling-notice'          => static function ( ContainerInterface $container ) : string {
+		if ( CartCheckoutDetector::has_block_checkout() ) {
+			$block_checkout_page_string_html = '<a href="' . esc_url( wc_get_page_permalink( 'checkout' ) ) . '">' . __( 'Checkout block', 'woocommerce-paypal-payments' ) . '</a>';
+		} else {
+			$block_checkout_page_string_html = __( 'Checkout block', 'woocommerce-paypal-payments' );
+		}
+
+		$notice_content = sprintf(
+		/* translators: %1$s: URL to the Checkout edit page. */
+			__(
+				'<span class="highlight">Important:</span> The <code>Cart</code> & <code>Express Checkout</code> <strong>Smart Button Stylings</strong> may be controlled by the %1$s configuration.',
+				'woocommerce-paypal-payments'
+			),
+			$block_checkout_page_string_html
+		);
+
+		return '<div class="ppcp-notice ppcp-notice-warning"><p>' . $notice_content . '</p></div>';
+	},
 	'wcgateway.settings.pay-later.messaging-locations'     => static function( ContainerInterface $container ): array {
 		$button_locations = $container->get( 'wcgateway.button.locations' );
 		unset( $button_locations['mini-cart'] );
@@ -1913,5 +2052,27 @@ return array(
 		}
 
 		return $simple_redirect_tasks;
+	},
+
+	'wcgateway.void-button.assets'                         => function( ContainerInterface $container ) : VoidButtonAssets {
+		return new VoidButtonAssets(
+			$container->get( 'wcgateway.url' ),
+			$container->get( 'ppcp.asset-version' ),
+			$container->get( 'api.endpoint.order' ),
+			$container->get( 'wcgateway.processor.refunds' ),
+			$container->get( 'wcgateway.allowed_refund_payment_methods' )
+		);
+	},
+	'wcgateway.void-button.endpoint'                       => function( ContainerInterface $container ) : VoidOrderEndpoint {
+		return new VoidOrderEndpoint(
+			$container->get( 'button.request-data' ),
+			$container->get( 'api.endpoint.order' ),
+			$container->get( 'wcgateway.processor.refunds' ),
+			$container->get( 'woocommerce.logger.woocommerce' )
+		);
+	},
+
+	'wcgateway.settings.admin-settings-enabled'            => static function( ContainerInterface $container ): bool {
+		return $container->has( 'settings.url' );
 	},
 );

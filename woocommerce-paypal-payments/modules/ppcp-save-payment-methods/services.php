@@ -39,7 +39,6 @@ return array(
 			'DKK',
 			'EUR',
 			'GBP',
-			'HKD',
 			'HUF',
 			'ILS',
 			'JPY',
@@ -49,7 +48,6 @@ return array(
 			'PHP',
 			'PLN',
 			'SEK',
-			'SGD',
 			'THB',
 			'TWD',
 			'USD',
@@ -90,14 +88,7 @@ return array(
 				'ES' => $default_currencies,
 				'SE' => $default_currencies,
 				'GB' => $default_currencies,
-				'US' => array(
-					'AUD',
-					'CAD',
-					'EUR',
-					'GBP',
-					'JPY',
-					'USD',
-				),
+				'US' => $default_currencies,
 			)
 		);
 	},

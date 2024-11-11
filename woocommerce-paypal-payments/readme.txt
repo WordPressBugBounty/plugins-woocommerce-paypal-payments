@@ -4,7 +4,7 @@ Tags: woocommerce, paypal, payments, ecommerce, credit card
 Requires at least: 6.3
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.9.3
+Stable tag: 2.9.4
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -178,6 +178,28 @@ If you encounter issues with the PayPal buttons not appearing after an update, p
 6. Main settings screen.
 
 == Changelog ==
+
+= 2.9.4 - 2024-11-11 =
+* Fix - Apple Pay button preview missing in Standard payment and Advanced Processing tabs #2755
+* Fix - Set "Sold individually" only for subscription connected to PayPal #2710
+* Fix - Ensure Google Pay button does not appear for subscriptions #2718
+* Fix - PayPal Subscriptions API renewal order not created in WooCommerce #2612
+* Fix - Apple Pay button disappears on Classic Checkout #2722
+* Fix - Google Pay and Apple Pay as separate gateways does not show button when checkout remove from button locations #2756
+* Fix - Add GW refund support for Apple Pay #2746
+* Fix - PayPal Subscriptions cancel and suspend from Subscriptions list page does not work #2632
+* Fix - Displaying of HTML tags in product title on choosing a product for tracking (2801) #2701
+* Fix - Payment with OXXO cause continuation state for next payment #2702
+* Fix - Fix problems with autoptimize plugin #2705
+* Fix - Missing custom field PayPal Transaction Fee for OXXO #2700
+* Enhancement - Add void button #2678
+* Enhancement - Use basic redirect gateway when checkout smart buttons disabled #2714
+* Enhancement - Receive button properties from the Checkout Block #2448
+* Enhancement - Run PPEC\DeactivateNote query only in backend #2719
+* Enhancement - Prevent plugin use for "Send only" countries #2721
+* Enhancement - Do not add pay later button in editor #2570
+* Enhancement - Axo: Remove the submit button when Fastlane is disabled #2720
+* Enhancement - Sync the PayPal product page button state to Apple/Google Pay buttons, show alerts #2742
 
 = 2.9.3 - 2024-10-15 =
 * Fix - Multi-currency support #2667

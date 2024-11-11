@@ -123,7 +123,11 @@ class SettingsStatus {
 	protected function is_enabled_for_location( string $setting_name, string $location ): bool {
 		$location = $this->normalize_location( $location );
 
-		$selected_locations = $this->settings->has( $setting_name ) ? $this->settings->get( $setting_name ) : array();
+		$selected_locations = apply_filters(
+			'woocommerce_paypal_payments_selected_button_locations',
+			$this->settings->has( $setting_name ) ? $this->settings->get( $setting_name ) : array(),
+			$setting_name
+		);
 
 		if ( empty( $selected_locations ) ) {
 			return false;

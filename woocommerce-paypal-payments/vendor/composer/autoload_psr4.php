@@ -15,6 +15,7 @@ return array(
     'WooCommerce\\PayPalCommerce\\Vaulting\\' => array($baseDir . '/modules/ppcp-vaulting/src'),
     'WooCommerce\\PayPalCommerce\\Uninstall\\' => array($baseDir . '/modules/ppcp-uninstall/src'),
     'WooCommerce\\PayPalCommerce\\StatusReport\\' => array($baseDir . '/modules/ppcp-status-report/src'),
+    'WooCommerce\\PayPalCommerce\\Settings\\' => array($baseDir . '/modules/ppcp-settings/src'),
     'WooCommerce\\PayPalCommerce\\Session\\' => array($baseDir . '/modules/ppcp-session/src'),
     'WooCommerce\\PayPalCommerce\\SavedPaymentChecker\\' => array($baseDir . '/modules/ppcp-saved-payment-checker/src'),
     'WooCommerce\\PayPalCommerce\\SavePaymentMethods\\' => array($baseDir . '/modules/ppcp-save-payment-methods/src'),
