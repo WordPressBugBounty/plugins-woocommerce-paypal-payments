@@ -85,6 +85,8 @@ class AxoManager {
 			},
 		};
 
+		this.cardOptions = this.getCardOptions();
+
 		this.enabledShippingLocations =
 			this.axoConfig.enabled_shipping_locations;
 
@@ -119,7 +121,7 @@ class AxoManager {
 			this.axoConfig?.insights?.session_id
 		) {
 			PayPalInsights.config( this.axoConfig?.insights?.client_id, {
-				debug: true,
+				debug: axoConfig?.wp_debug === '1',
 			} );
 			PayPalInsights.setSessionId( this.axoConfig?.insights?.session_id );
 			PayPalInsights.trackJsLoad();
@@ -162,19 +164,25 @@ class AxoManager {
 	}
 
 	registerEventHandlers() {
+		// Payment method change tracking with duplicate prevention
+		let lastSelectedPaymentMethod = document.querySelector(
+			'input[name=payment_method]:checked'
+		)?.value;
 		this.$( document ).on(
 			'change',
 			'input[name=payment_method]',
 			( ev ) => {
-				const map = {
-					'ppcp-axo-gateway': 'card',
-					'ppcp-gateway': 'paypal',
-				};
-
-				PayPalInsights.trackSelectPaymentMethod( {
-					payment_method_selected: map[ ev.target.value ] || 'other',
-					page_type: 'checkout',
-				} );
+				if ( lastSelectedPaymentMethod !== ev.target.value ) {
+					PayPalInsights.trackSelectPaymentMethod( {
+						payment_method_selected:
+							this.axoConfig?.insights
+								?.payment_method_selected_map[
+								ev.target.value
+							] || 'other',
+						page_type: 'checkout',
+					} );
+					lastSelectedPaymentMethod = ev.target.value;
+				}
 			}
 		);
 
@@ -664,6 +672,9 @@ class AxoManager {
 		await this.fastlane.connect( {
 			locale: this.locale,
 			styles: this.styles,
+			cardOptions: {
+				allowedBrands: this.cardOptions,
+			},
 			shippingAddressOptions: {
 				allowedLocations: this.enabledShippingLocations,
 			},
@@ -1161,16 +1172,6 @@ class AxoManager {
 
 		this.el.axoNonceInput.get().value = nonce;
 
-		PayPalInsights.trackEndCheckout( {
-			amount: this.axoConfig?.insights?.amount,
-			page_type: 'checkout',
-			payment_method_selected: 'card',
-			user_data: {
-				country: 'US',
-				is_store_member: false,
-			},
-		} );
-
 		if ( data ) {
 			// Ryan flow.
 			const form = document.querySelector( 'form.woocommerce-checkout' );
@@ -1249,6 +1250,31 @@ class AxoManager {
 
 	useEmailWidget() {
 		return this.axoConfig?.widgets?.email === 'use_widget';
+	}
+
+	getCardOptions() {
+		const DEFAULT_ALLOWED_CARDS = [
+			'VISA',
+			'MASTERCARD',
+			'AMEX',
+			'DISCOVER',
+		];
+		const merchantCountry = this.axoConfig.merchant_country || 'US';
+
+		const allowedCards = new Set(
+			this.axoConfig.allowed_cards?.[ merchantCountry ] ||
+				DEFAULT_ALLOWED_CARDS
+		);
+
+		const disabledCards = new Set(
+			( this.axoConfig.disable_cards || [] ).map( ( card ) =>
+				card.toUpperCase()
+			)
+		);
+
+		return [ ...allowedCards ].filter(
+			( card ) => ! disabledCards.has( card )
+		);
 	}
 
 	deleteKeysWithEmptyString = ( obj ) => {

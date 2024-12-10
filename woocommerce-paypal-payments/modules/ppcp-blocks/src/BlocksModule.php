@@ -18,6 +18,7 @@ use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameI
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
+use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 
 /**
  * Class BlocksModule
@@ -73,10 +74,7 @@ class BlocksModule implements ServiceModule, ExtendingModule, ExecutableModule {
 				$settings = $c->get( 'wcgateway.settings' );
 				assert( $settings instanceof Settings );
 
-				// Include ACDC in the Block Checkout only in case Axo doesn't exist or is not available or the user is logged in.
-				if ( ( $settings->has( 'axo_enabled' ) && ! $settings->get( 'axo_enabled' ) ) || is_user_logged_in() ) {
-					$payment_method_registry->register( $c->get( 'blocks.advanced-card-method' ) );
-				}
+				$payment_method_registry->register( $c->get( 'blocks.advanced-card-method' ) );
 			}
 		);
 
@@ -145,10 +143,15 @@ class BlocksModule implements ServiceModule, ExtendingModule, ExecutableModule {
 
 		add_filter(
 			'woocommerce_paypal_payments_sdk_components_hook',
-			function( array $components ) {
-				$components[] = 'buttons';
+			function( array $components, string $context ) {
+				if ( str_ends_with( $context, '-block' ) ) {
+					$components[] = 'buttons';
+				}
+
 				return $components;
-			}
+			},
+			10,
+			2
 		);
 		return true;
 	}

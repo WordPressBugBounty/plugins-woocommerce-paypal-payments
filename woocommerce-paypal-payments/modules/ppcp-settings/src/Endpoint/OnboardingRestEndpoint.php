@@ -41,35 +41,23 @@ class OnboardingRestEndpoint extends RestEndpoint {
 	 * @var array
 	 */
 	private array $field_map = array(
-		'completed'             => array(
+		'completed'                            => array(
 			'js_name'  => 'completed',
 			'sanitize' => 'to_boolean',
 		),
-		'step'                  => array(
+		'step'                                 => array(
 			'js_name'  => 'step',
 			'sanitize' => 'to_number',
 		),
-		'use_sandbox'           => array(
-			'js_name'  => 'useSandbox',
-			'sanitize' => 'to_boolean',
-		),
-		'use_manual_connection' => array(
-			'js_name'  => 'useManualConnection',
-			'sanitize' => 'to_boolean',
-		),
-		'client_id'             => array(
-			'js_name'  => 'clientId',
-			'sanitize' => 'sanitize_text_field',
-		),
-		'client_secret'         => array(
-			'js_name'  => 'clientSecret',
-			'sanitize' => 'sanitize_text_field',
-		),
-		'is_casual_seller'      => array(
+		'is_casual_seller'                     => array(
 			'js_name'  => 'isCasualSeller',
 			'sanitize' => 'to_boolean',
 		),
-		'products'              => array(
+		'are_optional_payment_methods_enabled' => array(
+			'js_name'  => 'areOptionalPaymentMethodsEnabled',
+			'sanitize' => 'to_boolean',
+		),
+		'products'                             => array(
 			'js_name' => 'products',
 		),
 	);
@@ -147,9 +135,9 @@ class OnboardingRestEndpoint extends RestEndpoint {
 			$this->flag_map
 		);
 
-		return rest_ensure_response(
+		return $this->return_success(
+			$js_data,
 			array(
-				'data'  => $js_data,
 				'flags' => $js_flags,
 			)
 		);

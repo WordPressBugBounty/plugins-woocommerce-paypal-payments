@@ -1,21 +1,14 @@
+import { __ } from '@wordpress/i18n';
+
 import OnboardingHeader from '../../ReusableComponents/OnboardingHeader';
 import SelectBoxWrapper from '../../ReusableComponents/SelectBoxWrapper';
 import SelectBox from '../../ReusableComponents/SelectBox';
-import { __ } from '@wordpress/i18n';
-import PaymentMethodIcons from '../../ReusableComponents/PaymentMethodIcons';
-import { useOnboardingStepBusiness } from '../../../data';
-import Navigation from '../../ReusableComponents/Navigation';
-import { BUSINESS_TYPES } from '../../../data/constants';
+import { OnboardingHooks, BUSINESS_TYPES } from '../../../data';
 
 const BUSINESS_RADIO_GROUP_NAME = 'business';
 
-const StepBusiness = ( {
-	setStep,
-	currentStep,
-	stepperOrder,
-	setCompleted,
-} ) => {
-	const { isCasualSeller, setIsCasualSeller } = useOnboardingStepBusiness();
+const StepBusiness = ( {} ) => {
+	const { isCasualSeller, setIsCasualSeller } = OnboardingHooks.useBusiness();
 
 	const handleSellerTypeChange = ( value ) => {
 		setIsCasualSeller( BUSINESS_TYPES.CASUAL_SELLER === value );
@@ -35,7 +28,7 @@ const StepBusiness = ( {
 		<div className="ppcp-r-page-business">
 			<OnboardingHeader
 				title={ __(
-					'Tell Us About Your Business',
+					'Choose your account type',
 					'woocommerce-paypal-payments'
 				) }
 			/>
@@ -43,71 +36,37 @@ const StepBusiness = ( {
 				<SelectBoxWrapper>
 					<SelectBox
 						title={ __(
-							'Casual Seller',
-							'woocommerce-paypal-payments'
-						) }
-						description={ __(
-							'I sell occasionally and mainly use PayPal for personal transactions.',
-							'woocommerce-paypal-payments'
-						) }
-						icon="icon-business-casual-seller.svg"
-						name={ BUSINESS_RADIO_GROUP_NAME }
-						value={ BUSINESS_TYPES.CASUAL_SELLER }
-						changeCallback={ handleSellerTypeChange }
-						currentValue={ getCurrentValue() }
-						checked={ isCasualSeller === true }
-						type="radio"
-					>
-						<PaymentMethodIcons
-							icons={ [
-								'paypal',
-								'venmo',
-								'visa',
-								'mastercard',
-								'amex',
-								'discover',
-							] }
-						/>
-					</SelectBox>
-					<SelectBox
-						title={ __(
 							'Business',
 							'woocommerce-paypal-payments'
 						) }
 						description={ __(
-							'I run a registered business and sell full-time.',
+							'Recommended for individuals and organizations that primarily use PayPal to sell goods or services or receive donations, even if your business is not incorporated.',
 							'woocommerce-paypal-payments'
 						) }
-						icon="icon-business-business.svg"
 						name={ BUSINESS_RADIO_GROUP_NAME }
 						value={ BUSINESS_TYPES.BUSINESS }
 						changeCallback={ handleSellerTypeChange }
 						currentValue={ getCurrentValue() }
 						checked={ isCasualSeller === false }
 						type="radio"
-					>
-						<PaymentMethodIcons
-							icons={ [
-								'paypal',
-								'venmo',
-								'visa',
-								'mastercard',
-								'amex',
-								'discover',
-								'apple-pay',
-								'google-pay',
-								'ideal',
-							] }
-						/>
-					</SelectBox>
+					></SelectBox>
+					<SelectBox
+						title={ __(
+							'Personal Account',
+							'woocommerce-paypal-payments'
+						) }
+						description={ __(
+							'Ideal for those who primarily make purchases or send personal transactions to family and friends.',
+							'woocommerce-paypal-payments'
+						) }
+						name={ BUSINESS_RADIO_GROUP_NAME }
+						value={ BUSINESS_TYPES.CASUAL_SELLER }
+						changeCallback={ handleSellerTypeChange }
+						currentValue={ getCurrentValue() }
+						checked={ isCasualSeller === true }
+						type="radio"
+					></SelectBox>
 				</SelectBoxWrapper>
-				<Navigation
-					setStep={ setStep }
-					currentStep={ currentStep }
-					stepperOrder={ stepperOrder }
-					setCompleted={ setCompleted }
-					canProceeedCallback={ () => isCasualSeller !== null }
-				/>
 			</div>
 		</div>
 	);

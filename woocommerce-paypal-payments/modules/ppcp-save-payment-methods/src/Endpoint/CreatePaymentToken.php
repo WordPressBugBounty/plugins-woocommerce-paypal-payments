@@ -94,7 +94,9 @@ class CreatePaymentToken implements EndpointInterface {
 				)
 			);
 
-			$result = $this->payment_method_tokens_endpoint->create_payment_token( $payment_source );
+			$customer_id = get_user_meta( get_current_user_id(), '_ppcp_target_customer_id', true );
+
+			$result = $this->payment_method_tokens_endpoint->create_payment_token( $payment_source, $customer_id );
 
 			if ( is_user_logged_in() && isset( $result->customer->id ) ) {
 				$current_user_id = get_current_user_id();

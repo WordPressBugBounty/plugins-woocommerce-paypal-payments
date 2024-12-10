@@ -115,4 +115,43 @@ return array(
 			$container->get( 'api.bearer' )
 		);
 	},
+
+	/**
+	 * Configuration for the new/old settings map.
+	 *
+	 * @returns SettingsMap[]
+	 */
+	'compat.setting.new-to-old-map'                  => function( ContainerInterface $container ) : array {
+		$are_new_settings_enabled = $container->get( 'wcgateway.settings.admin-settings-enabled' );
+		if ( ! $are_new_settings_enabled ) {
+			return array();
+		}
+
+		return array(
+			new SettingsMap(
+				$container->get( 'settings.data.common' ),
+				array(
+					'client_id'     => 'client_id',
+					'client_secret' => 'client_secret',
+				)
+			),
+			new SettingsMap(
+				$container->get( 'settings.data.general' ),
+				array(
+					'is_sandbox'             => 'sandbox_on',
+					'live_client_id'         => 'client_id_production',
+					'live_client_secret'     => 'client_secret_production',
+					'live_merchant_id'       => 'merchant_id_production',
+					'live_merchant_email'    => 'merchant_email_production',
+					'sandbox_client_id'      => 'client_id_sandbox',
+					'sandbox_client_secret'  => 'client_secret_sandbox',
+					'sandbox_merchant_id'    => 'merchant_id_sandbox',
+					'sandbox_merchant_email' => 'merchant_email_sandbox',
+				)
+			),
+		);
+	},
+	'compat.settings.settings_map_helper'            => static function( ContainerInterface $container ) : SettingsMapHelper {
+		return new SettingsMapHelper( $container->get( 'compat.setting.new-to-old-map' ) );
+	},
 );

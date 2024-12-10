@@ -75,7 +75,7 @@ export const loadPaypalScript = ( config, onLoaded, onError = null ) => {
 	// Axo SDK options
 	const sdkClientToken = config?.axo?.sdk_client_token;
 	const uuid = uuidv4().replace( /-/g, '' );
-	if ( sdkClientToken ) {
+	if ( sdkClientToken && config?.user?.is_logged !== true ) {
 		scriptOptions[ 'data-sdk-client-token' ] = sdkClientToken;
 		scriptOptions[ 'data-client-metadata-id' ] = uuid;
 	}
@@ -96,7 +96,7 @@ export const loadPaypalScript = ( config, onLoaded, onError = null ) => {
 
 	// Adds data-user-id-token to script options.
 	const userIdToken = config?.save_payment_methods?.id_token;
-	if ( userIdToken && ! sdkClientToken ) {
+	if ( userIdToken && config?.user?.is_logged === true ) {
 		scriptOptions[ 'data-user-id-token' ] = userIdToken;
 	}
 

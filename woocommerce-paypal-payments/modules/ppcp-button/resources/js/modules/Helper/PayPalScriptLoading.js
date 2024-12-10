@@ -9,7 +9,7 @@ const scriptPromises = new Map();
 const handleDataClientIdAttribute = async ( scriptOptions, config ) => {
 	if (
 		config.data_client_id?.set_attribute &&
-		config.vault_v3_enabled !== '1'
+		config.vault_v3_enabled !== true
 	) {
 		return new Promise( ( resolve, reject ) => {
 			dataClientIdAttributeHandler(

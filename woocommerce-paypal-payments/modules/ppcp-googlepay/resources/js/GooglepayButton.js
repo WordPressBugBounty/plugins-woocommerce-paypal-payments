@@ -106,7 +106,39 @@ class GooglepayButton extends PaymentButton {
 	 */
 	#transactionInfo = null;
 
+	/**
+	 * The currently visible payment button.
+	 *
+	 * @type {HTMLElement|null}
+	 */
+	#button = null;
+
+	/**
+	 * The Google Pay configuration object.
+	 *
+	 * @type {Object|null}
+	 */
 	googlePayConfig = null;
+
+	/**
+	 * The start time of the configuration process.
+	 *
+	 * @type {number}
+	 */
+	#configureStartTime = 0;
+
+	/**
+	 * The maximum time to wait for buttonAttributes before proceeding with initialization.
+	 * @type {number}
+	 */
+	#maxWaitTime = 1000;
+
+	/**
+	 * The stored button attributes.
+	 *
+	 * @type {null}
+	 */
+	#storedButtonAttributes = null;
 
 	/**
 	 * @inheritDoc
@@ -142,7 +174,8 @@ class GooglepayButton extends PaymentButton {
 		externalHandler,
 		buttonConfig,
 		ppcpConfig,
-		contextHandler
+		contextHandler,
+		buttonAttributes
 	) {
 		// Disable debug output in the browser console:
 		// buttonConfig.is_debug = false;
@@ -152,7 +185,8 @@ class GooglepayButton extends PaymentButton {
 			externalHandler,
 			buttonConfig,
 			ppcpConfig,
-			contextHandler
+			contextHandler,
+			buttonAttributes
 		);
 
 		this.init = this.init.bind( this );
@@ -240,45 +274,101 @@ class GooglepayButton extends PaymentButton {
 			() => ! this.contextHandler?.validateContext(),
 			`Invalid context handler.`
 		);
+
+		invalidIf(
+			() =>
+				this.buttonAttributes?.height &&
+				isNaN( parseInt( this.buttonAttributes.height ) ),
+			'Invalid height in buttonAttributes'
+		);
+
+		invalidIf(
+			() =>
+				this.buttonAttributes?.borderRadius &&
+				isNaN( parseInt( this.buttonAttributes.borderRadius ) ),
+			'Invalid borderRadius in buttonAttributes'
+		);
+
+		return true;
 	}
 
 	/**
 	 * Configures the button instance. Must be called before the initial `init()`.
 	 *
-	 * @param {Object} apiConfig       - API configuration.
-	 * @param {Object} transactionInfo - Transaction details; required before "init" call.
+	 * @param {Object} apiConfig        - API configuration.
+	 * @param {Object} transactionInfo  - Transaction details; required before "init" call.
+	 * @param {Object} buttonAttributes - Button attributes.
 	 */
-	configure( apiConfig, transactionInfo ) {
+	configure( apiConfig, transactionInfo, buttonAttributes = {} ) {
+		// Start timing on first configure call
+		if ( ! this.#configureStartTime ) {
+			this.#configureStartTime = Date.now();
+		}
+
+		// If valid buttonAttributes, store them
+		if ( buttonAttributes?.height && buttonAttributes?.borderRadius ) {
+			this.#storedButtonAttributes = { ...buttonAttributes };
+		}
+
+		// Use stored attributes if current ones are missing
+		const attributes = buttonAttributes?.height
+			? buttonAttributes
+			: this.#storedButtonAttributes;
+
+		// Check if we've exceeded wait time
+		const timeWaited = Date.now() - this.#configureStartTime;
+		if ( timeWaited > this.#maxWaitTime ) {
+			this.log(
+				'GooglePay: Timeout waiting for buttonAttributes - proceeding with initialization'
+			);
+			this.googlePayConfig = apiConfig;
+			this.#transactionInfo = transactionInfo;
+			this.buttonAttributes = attributes || buttonAttributes;
+			this.allowedPaymentMethods =
+				this.googlePayConfig.allowedPaymentMethods;
+			this.baseCardPaymentMethod = this.allowedPaymentMethods[ 0 ];
+			this.init();
+			return;
+		}
+
+		// Block any initialization until we have valid buttonAttributes
+		if ( ! attributes?.height || ! attributes?.borderRadius ) {
+			setTimeout(
+				() =>
+					this.configure(
+						apiConfig,
+						transactionInfo,
+						buttonAttributes
+					),
+				100
+			);
+			return;
+		}
+
+		// Reset timer for future configure calls
+		this.#configureStartTime = 0;
+
 		this.googlePayConfig = apiConfig;
 		this.#transactionInfo = transactionInfo;
-
+		this.buttonAttributes = attributes;
 		this.allowedPaymentMethods = this.googlePayConfig.allowedPaymentMethods;
 		this.baseCardPaymentMethod = this.allowedPaymentMethods[ 0 ];
+		this.init();
 	}
 
 	init() {
-		// Use `reinit()` to force a full refresh of an initialized button.
+		// Skip if already initialized
 		if ( this.isInitialized ) {
 			return;
 		}
 
-		// Stop, if configuration is invalid.
+		// Validate configuration
 		if ( ! this.validateConfiguration() ) {
 			return;
 		}
 
 		super.init();
 		this.#paymentsClient = this.createPaymentsClient();
-
-		if ( ! this.isPresent ) {
-			this.log( 'Payment wrapper not found', this.wrapperId );
-			return;
-		}
-
-		if ( ! this.paymentsClient ) {
-			this.log( 'Could not initialize the payments client' );
-			return;
-		}
 
 		this.paymentsClient
 			.isReadyToPay(
@@ -357,30 +447,86 @@ class GooglepayButton extends PaymentButton {
 	}
 
 	/**
-	 * Creates the payment button and calls `this.insertButton()` to make the button visible in the
-	 * correct wrapper.
+	 * Creates the payment button and calls `super.insertButton()` to make the button visible in the correct wrapper.
 	 */
 	addButton() {
 		if ( ! this.paymentsClient ) {
 			return;
 		}
 
+		// If current buttonAttributes are missing, try to use stored ones
+		if (
+			! this.buttonAttributes?.height &&
+			this.#storedButtonAttributes?.height
+		) {
+			this.buttonAttributes = { ...this.#storedButtonAttributes };
+		}
+
+		this.removeButton();
+
 		const baseCardPaymentMethod = this.baseCardPaymentMethod;
 		const { color, type, language } = this.style;
 
-		/**
-		 * @see https://developers.google.com/pay/api/web/reference/client#createButton
-		 */
-		const button = this.paymentsClient.createButton( {
+		const buttonOptions = {
+			buttonColor: color || 'black',
+			buttonSizeMode: 'fill',
+			buttonLocale: language || 'en',
+			buttonType: type || 'pay',
+			buttonRadius: parseInt( this.buttonAttributes?.borderRadius, 10 ),
 			onClick: this.onButtonClick,
 			allowedPaymentMethods: [ baseCardPaymentMethod ],
-			buttonColor: color || 'black',
-			buttonType: type || 'pay',
-			buttonLocale: language || 'en',
-			buttonSizeMode: 'fill',
-		} );
+		};
 
-		this.insertButton( button );
+		const button = this.paymentsClient.createButton( buttonOptions );
+		this.#button = button;
+
+		super.insertButton( button );
+		this.applyWrapperStyles();
+	}
+
+	/**
+	 * Applies CSS classes and inline styling to the payment button wrapper.
+	 * Extends parent implementation to handle Google Pay specific styling.
+	 */
+	applyWrapperStyles() {
+		super.applyWrapperStyles();
+
+		const wrapper = this.wrapperElement;
+		if ( ! wrapper ) {
+			return;
+		}
+
+		// Try stored attributes if current ones are missing
+		const attributes = this.buttonAttributes?.height
+			? this.buttonAttributes
+			: this.#storedButtonAttributes;
+
+		if ( attributes?.height ) {
+			const height = parseInt( attributes.height, 10 );
+			if ( ! isNaN( height ) ) {
+				wrapper.style.height = `${ height }px`;
+				wrapper.style.minHeight = `${ height }px`;
+			}
+		}
+	}
+
+	/**
+	 * Removes the payment button from the DOM.
+	 */
+	removeButton() {
+		if ( ! this.isPresent || ! this.#button ) {
+			return;
+		}
+
+		this.log( 'removeButton' );
+
+		try {
+			this.wrapperElement.removeChild( this.#button );
+		} catch ( Exception ) {
+			// Ignore this.
+		}
+
+		this.#button = null;
 	}
 
 	//------------------------

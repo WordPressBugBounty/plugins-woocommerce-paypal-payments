@@ -1,24 +1,32 @@
-const Separator = ( props ) => {
-	let separatorClass = 'ppcp-r-separator';
+const Separator = ( { className = '', text = '', withLine = true } ) => {
+	const separatorClass = [ 'ppcp-r-separator' ];
+	const innerClass = withLine
+		? 'ppcp-r-separator__line'
+		: 'ppcp-r-separator__space';
 
-	if ( props?.className ) {
-		separatorClass += ' ' + props.className;
+	if ( className ) {
+		separatorClass.push( className );
 	}
 
-	if ( props.text ) {
-		return (
-			<div className={ separatorClass }>
-				<span className="ppcp-r-separator__line ppcp-r-separator__line--before"></span>
+	const getClass = ( type ) => `${ innerClass } ${ innerClass }--${ type }`;
 
-				<span className="ppcp-r-separator__text">{ props.text }</span>
-				<span className="ppcp-r-separator__line ppcp-r-separator__line--after"></span>
-			</div>
-		);
-	}
+	const renderSeparator = () => {
+		if ( text ) {
+			return (
+				<>
+					<span className={ getClass( 'before' ) }></span>
+					<span className="ppcp-r-separator__text">{ text }</span>
+					<span className={ getClass( 'after' ) }></span>
+				</>
+			);
+		}
+
+		return <span className={ getClass( 'full' ) }></span>;
+	};
 
 	return (
-		<div className={ separatorClass }>
-			<span className="ppcp-r-separator__line ppcp-r-separator__line--before"></span>
+		<div className={ separatorClass.join( ' ' ) }>
+			{ renderSeparator() }
 		</div>
 	);
 };

@@ -2,11 +2,20 @@
 	display: flex;
 	align-items: center;
 
+	&__space,
 	&__line {
-		height: 1px;
-		background-color: $color-gray-600;
+		margin: 0;
 		display: block;
 		width: 100%;
+	}
+
+	&__line {
+		background-color: $color-gray-400;
+		height: 1px;
+	}
+
+	&__space {
+		margin-bottom: 48px;
 	}
 
 	&__text {

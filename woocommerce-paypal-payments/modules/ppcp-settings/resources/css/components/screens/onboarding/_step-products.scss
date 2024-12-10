@@ -8,8 +8,7 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		color: $color-gray-700;
-		@include font(14, 20, 400);
+		@include font(13, 20, 400);
 		margin: 0;
 
 		&::before {
@@ -29,7 +28,7 @@
 
 	.ppcp-r-select-box__additional-content {
 		a {
-			@include font(12, 20, 400);
+			@include font(13, 20, 500);
 			color: $color-blueberry;
 		}
 	}

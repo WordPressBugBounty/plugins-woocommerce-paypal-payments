@@ -1,10 +1,9 @@
-import TabNavigation from '../ReusableComponents/TabNavigation';
-import { getSettingsTabs } from './tabs';
-import { useOnboardingStep } from '../../data';
+import { OnboardingHooks } from '../../data';
 import Onboarding from './Onboarding/Onboarding';
+import SettingsScreen from './SettingsScreen';
 
 const Settings = () => {
-	const onboardingProgress = useOnboardingStep();
+	const onboardingProgress = OnboardingHooks.useSteps();
 
 	if ( ! onboardingProgress.isReady ) {
 		// TODO: Use better loading state indicator.
@@ -15,9 +14,7 @@ const Settings = () => {
 		return <Onboarding />;
 	}
 
-	const tabs = getSettingsTabs( onboardingProgress );
-
-	return <TabNavigation tabs={ tabs }></TabNavigation>;
+	return <SettingsScreen />;
 };
 
 export default Settings;

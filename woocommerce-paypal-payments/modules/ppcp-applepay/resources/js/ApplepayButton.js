@@ -93,6 +93,24 @@ class ApplePayButton extends PaymentButton {
 	#product = {};
 
 	/**
+	 * The start time of the configuration process.
+	 * @type {number}
+	 */
+	#configureStartTime = 0;
+
+	/**
+	 * The maximum time to wait for buttonAttributes before proceeding with initialization.
+	 * @type {number}
+	 */
+	#maxWaitTime = 1000;
+
+	/**
+	 * The stored button attributes.
+	 * @type {Object|null}
+	 */
+	#storedButtonAttributes = null;
+
+	/**
 	 * @inheritDoc
 	 */
 	static getWrappers( buttonConfig, ppcpConfig ) {
@@ -125,7 +143,8 @@ class ApplePayButton extends PaymentButton {
 		externalHandler,
 		buttonConfig,
 		ppcpConfig,
-		contextHandler
+		contextHandler,
+		buttonAttributes
 	) {
 		// Disable debug output in the browser console:
 		// buttonConfig.is_debug = false;
@@ -135,7 +154,8 @@ class ApplePayButton extends PaymentButton {
 			externalHandler,
 			buttonConfig,
 			ppcpConfig,
-			contextHandler
+			contextHandler,
+			buttonAttributes
 		);
 
 		this.init = this.init.bind( this );
@@ -221,6 +241,20 @@ class ApplePayButton extends PaymentButton {
 		);
 
 		invalidIf(
+			() =>
+				this.buttonAttributes?.height &&
+				isNaN( parseInt( this.buttonAttributes.height ) ),
+			'Invalid height in buttonAttributes'
+		);
+
+		invalidIf(
+			() =>
+				this.buttonAttributes?.borderRadius &&
+				isNaN( parseInt( this.buttonAttributes.borderRadius ) ),
+			'Invalid borderRadius in buttonAttributes'
+		);
+
+		invalidIf(
 			() => ! this.contextHandler?.validateContext(),
 			`Invalid context handler.`
 		);
@@ -229,12 +263,60 @@ class ApplePayButton extends PaymentButton {
 	/**
 	 * Configures the button instance. Must be called before the initial `init()`.
 	 *
-	 * @param {Object}          apiConfig       - API configuration.
-	 * @param {TransactionInfo} transactionInfo - Transaction details.
+	 * @param {Object}          apiConfig        - API configuration.
+	 * @param {TransactionInfo} transactionInfo  - Transaction details.
+	 * @param {Object}          buttonAttributes - Button attributes.
 	 */
-	configure( apiConfig, transactionInfo ) {
+	configure( apiConfig, transactionInfo, buttonAttributes = {} ) {
+		// Start timing on first configure call
+		if ( ! this.#configureStartTime ) {
+			this.#configureStartTime = Date.now();
+		}
+
+		// If valid buttonAttributes, store them
+		if ( buttonAttributes?.height && buttonAttributes?.borderRadius ) {
+			this.#storedButtonAttributes = { ...buttonAttributes };
+		}
+
+		// Use stored attributes if current ones are missing
+		const attributes = buttonAttributes?.height
+			? buttonAttributes
+			: this.#storedButtonAttributes;
+
+		// Check if we've exceeded wait time
+		const timeWaited = Date.now() - this.#configureStartTime;
+		if ( timeWaited > this.#maxWaitTime ) {
+			this.log(
+				'ApplePay: Timeout waiting for buttonAttributes - proceeding with initialization'
+			);
+			this.#applePayConfig = apiConfig;
+			this.#transactionInfo = transactionInfo;
+			this.buttonAttributes = attributes || buttonAttributes;
+			this.init();
+			return;
+		}
+
+		// Block any initialization until we have valid buttonAttributes
+		if ( ! attributes?.height || ! attributes?.borderRadius ) {
+			setTimeout(
+				() =>
+					this.configure(
+						apiConfig,
+						transactionInfo,
+						buttonAttributes
+					),
+				100
+			);
+			return;
+		}
+
+		// Reset timer for future configure calls
+		this.#configureStartTime = 0;
+
 		this.#applePayConfig = apiConfig;
 		this.#transactionInfo = transactionInfo;
+		this.buttonAttributes = attributes;
+		this.init();
 	}
 
 	init() {
@@ -321,17 +403,43 @@ class ApplePayButton extends PaymentButton {
 	applyWrapperStyles() {
 		super.applyWrapperStyles();
 
-		const { height } = this.style;
+		const wrapper = this.wrapperElement;
+		if ( ! wrapper ) {
+			return;
+		}
 
-		if ( height ) {
-			const wrapper = this.wrapperElement;
+		// Try stored attributes if current ones are missing
+		const attributes =
+			this.buttonAttributes?.height || this.buttonAttributes?.borderRadius
+				? this.buttonAttributes
+				: this.#storedButtonAttributes;
 
+		const defaultHeight = 48;
+		const defaultBorderRadius = 4;
+
+		const height = attributes?.height
+			? parseInt( attributes.height, 10 )
+			: defaultHeight;
+
+		if ( ! isNaN( height ) ) {
 			wrapper.style.setProperty(
 				'--apple-pay-button-height',
 				`${ height }px`
 			);
-
 			wrapper.style.height = `${ height }px`;
+		} else {
+			wrapper.style.setProperty(
+				'--apple-pay-button-height',
+				`${ defaultHeight }px`
+			);
+			wrapper.style.height = `${ defaultHeight }px`;
+		}
+
+		const borderRadius = attributes?.borderRadius
+			? parseInt( attributes.borderRadius, 10 )
+			: defaultBorderRadius;
+		if ( ! isNaN( borderRadius ) ) {
+			wrapper.style.borderRadius = `${ borderRadius }px`;
 		}
 	}
 
@@ -342,11 +450,22 @@ class ApplePayButton extends PaymentButton {
 	addButton() {
 		const { color, type, language } = this.style;
 
+		// If current buttonAttributes are missing, try to use stored ones
+		if (
+			! this.buttonAttributes?.height &&
+			this.#storedButtonAttributes?.height
+		) {
+			this.buttonAttributes = { ...this.#storedButtonAttributes };
+		}
+
 		const button = document.createElement( 'apple-pay-button' );
 		button.id = 'apple-' + this.wrapperId;
+
 		button.setAttribute( 'buttonstyle', color );
 		button.setAttribute( 'type', type );
 		button.setAttribute( 'locale', language );
+
+		button.style.display = 'block';
 
 		button.addEventListener( 'click', ( evt ) => {
 			evt.preventDefault();

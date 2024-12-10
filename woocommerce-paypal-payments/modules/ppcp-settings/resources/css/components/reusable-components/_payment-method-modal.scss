@@ -3,18 +3,6 @@
 	@import './button';
 	@import './fields';
 
-	&__container {
-		max-width: 100%;
-		width: 400px;
-
-		&--small {
-			padding: 0 50px;
-			@media screen and (max-width: 480px){
-				padding:0;
-			}
-		}
-	}
-
 	.components-modal {
 		&__header {
 			height: 52px;
@@ -26,8 +14,23 @@
 		}
 
 		&__content {
+			margin-top: 60px;
+			padding: 0 24px 28px 24px;
+		}
+	}
+
+	&__container {
+		width: 352px;
+		max-width: 100%;
+	}
+
+	.has-size-small {
+		.ppcp-r-modal__container {
+			max-width: 252px;
+		}
+
+		.components-modal__content {
 			margin-top: 48px;
-			padding: 0 50px 48px 50px;
 		}
 	}
 
@@ -37,23 +40,30 @@
 		align-items: center;
 		gap: 8px;
 		border-bottom: 1px solid $color-gray-500;
-		padding-bottom: 12px;
-		margin-bottom: 24px;
+		padding-bottom: 18px;
+		margin-bottom: 18px;
 	}
 
 	&__title {
-		@include font(16, 20, 600);
+		@include font(14, 20, 600);
 		color: $color-black;
 	}
 
 	&__content {
-		width: 400px;
-		max-width: 100%;
+		padding: 0;
 	}
 
-	&__inverted-toggle-control {
-		.components-form-toggle {
-			order: 1;
+	.components-toggle-control {
+		gap: 8px;
+		margin: 0;
+
+		label {
+			@include font(13, 20, 400);
+			color: $color-text-text;
+		}
+
+		.components-form-toggle__track {
+			border-color: $color-border;
 		}
 	}
 
@@ -63,21 +73,14 @@
 		gap: 8px;
 
 		&--save {
-			margin-top: 24px;
+			margin-top: -4px;
 			align-items: flex-end;
 		}
 
 
 		input[type='text'] {
-			padding: 7px 11px;
-			@include font(14, 20, 400);
 			margin: 0;
 			border-color: $color-gray-700;
-		}
-
-		label {
-			@include font(14, 16, 400);
-			color: $color-gray-900;
 		}
 	}
 
@@ -88,17 +91,58 @@
 
 		&--acdc {
 			gap: 18px;
+
+			.ppcp-r-modal__field-row--save {
+				margin-top: 2px;
+			}
+		}
+
+		.components-radio-control {
+			.components-flex {
+				gap: 18px;
+			}
+
+			label {
+				@include font(14, 20, 400);
+				color: $color-black;
+			}
+
+			&__option {
+				gap: 18px;
+			}
+
+			&__input {
+				border-color: $color-gray-700;
+				margin-right: 0;
+				&:checked {
+					border: 1px solid $color-gray-700;
+					background-color: $color-white;
+
+					&::before {
+						transform: translate(3px, 3px);
+						border-width: 6px;
+						border-color: $color-blueberry;
+					}
+				}
+			}
 		}
 	}
 
 	.ppcp-r-modal__field-row--save button.is-primary {
-		border-radius: 2px;
+		@include small-button;
+		width: 100%;
+		justify-content: center;
 		padding: 6px 12px;
-		@include font(13, 20, 400);
+	}
+
+	.ppcp-r__radio-content {
+		label {
+			@include font(13, 20, 400);
+		}
 	}
 
 	&__content-title {
-		@include font(14, 20, 600);
+		@include font(13, 20, 600);
 		color: $color-black;
 		display: block;
 		margin: 0 0 4px 0;
@@ -106,18 +150,7 @@
 
 	&__description {
 		@include font(14, 20, 400);
-		margin: 0 0 24px 0;
 		color: $color-black;
-	}
-
-	&__field-rdb {
-		display: flex;
-		gap: 18px;
-		align-items: center;
-		position: relative;
-		label {
-			@include font(14, 20, 400);
-			color: $color-black;
-		}
+		margin: 0 0 12px 0;
 	}
 }

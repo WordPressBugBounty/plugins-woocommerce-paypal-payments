@@ -174,23 +174,17 @@ class SettingsPageAssets {
 	 * @return void
 	 */
 	public function register_assets(): void {
-		add_action(
-			'admin_enqueue_scripts',
-			function() {
-				if ( ! is_admin() || wp_doing_ajax() ) {
-					return;
-				}
+		if ( ! is_admin() || wp_doing_ajax() ) {
+			return;
+		}
 
-				if ( $this->is_settings_page ) {
-					$this->register_admin_assets();
-				}
+		if ( $this->is_settings_page ) {
+			$this->register_admin_assets();
+		}
 
-				if ( $this->is_paypal_payment_method_page ) {
-					$this->register_paypal_admin_assets();
-				}
-			}
-		);
-
+		if ( $this->is_paypal_payment_method_page ) {
+			$this->register_paypal_admin_assets();
+		}
 	}
 
 	/**

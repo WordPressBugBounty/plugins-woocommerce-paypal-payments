@@ -63,33 +63,26 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 			return true;
 		}
 
-		$settings = $c->get( 'wcgateway.settings' );
-		assert( $settings instanceof Settings );
-
-		$billing_agreements_endpoint = $c->get( 'api.endpoint.billing-agreements' );
-		assert( $billing_agreements_endpoint instanceof BillingAgreementsEndpoint );
-
 		add_action(
 			'woocommerce_paypal_payments_gateway_migrate_on_update',
-			function() use ( $settings, $billing_agreements_endpoint ) {
+			function() use ( $c ) {
+				$billing_agreements_endpoint = $c->get( 'api.endpoint.billing-agreements' );
+				assert( $billing_agreements_endpoint instanceof BillingAgreementsEndpoint );
+
 				$reference_transaction_enabled = $billing_agreements_endpoint->reference_transaction_enabled();
 				if ( $reference_transaction_enabled !== true ) {
-					$settings->set( 'vault_enabled', false );
-					$settings->persist();
+					$c->get( 'wcgateway.settings' )->set( 'vault_enabled', false );
+					$c->get( 'wcgateway.settings' )->persist();
 				}
 			}
 		);
 
-		if (
-			( ! $settings->has( 'vault_enabled' ) || ! $settings->get( 'vault_enabled' ) )
-			&& ( ! $settings->has( 'vault_enabled_dcc' ) || ! $settings->get( 'vault_enabled_dcc' ) )
-		) {
-			return true;
-		}
-
 		add_filter(
 			'woocommerce_paypal_payments_localized_script_data',
 			function( array $localized_script_data ) use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return $localized_script_data;
+				}
 				$subscriptions_helper = $c->get( 'wc-subscriptions.helper' );
 				assert( $subscriptions_helper instanceof SubscriptionHelper );
 				if ( ! is_user_logged_in() && ! $subscriptions_helper->cart_contains_subscription() ) {
@@ -109,12 +102,11 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		// Adds attributes needed to save payment method.
 		add_filter(
 			'ppcp_create_order_request_body_data',
-			function( array $data, string $payment_method, array $request_data ) use ( $settings ): array {
+			function( array $data, string $payment_method, array $request_data ) use ( $c ): array {
+				if ( ! self::vault_enabled( $c ) ) {
+					return $data;
+				}
 				if ( $payment_method === CreditCardGateway::ID ) {
-					if ( ! $settings->has( 'vault_enabled_dcc' ) || ! $settings->get( 'vault_enabled_dcc' ) ) {
-						return $data;
-					}
-
 					$save_payment_method = $request_data['save_payment_method'] ?? false;
 					if ( $save_payment_method ) {
 						$data['payment_source'] = array(
@@ -141,10 +133,6 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 				}
 
 				if ( $payment_method === PayPalGateway::ID ) {
-					if ( ! $settings->has( 'vault_enabled' ) || ! $settings->get( 'vault_enabled' ) ) {
-						return $data;
-					}
-
 					$funding_source = $request_data['funding_source'] ?? null;
 
 					if ( $funding_source && $funding_source === 'venmo' ) {
@@ -197,6 +185,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_action(
 			'woocommerce_paypal_payments_after_order_processor',
 			function( WC_Order $wc_order, Order $order ) use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return;
+				}
 				$payment_source = $order->payment_source();
 				assert( $payment_source instanceof PaymentSource );
 
@@ -259,13 +250,30 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 			2
 		);
 
-		add_filter( 'woocommerce_paypal_payments_disable_add_payment_method', '__return_false' );
-		add_filter( 'woocommerce_paypal_payments_should_render_card_custom_fields', '__return_false' );
+		add_filter(
+			'woocommerce_paypal_payments_disable_add_payment_method',
+			function ( bool $value ) use ( $c ): bool {
+				if ( ! self::vault_enabled( $c ) ) {
+					return $value;
+				}
+				return false;
+			}
+		);
+
+		add_filter(
+			'woocommerce_paypal_payments_should_render_card_custom_fields',
+			function ( bool $value ) use ( $c ): bool {
+				if ( ! self::vault_enabled( $c ) ) {
+					return $value;
+				}
+				return false;
+			}
+		);
 
 		add_action(
 			'wp_enqueue_scripts',
 			function() use ( $c ) {
-				if ( ! is_user_logged_in() || ! ( $this->is_add_payment_method_page() || $this->is_subscription_change_payment_method_page() ) ) {
+				if ( ! is_user_logged_in() || ! ( $this->is_add_payment_method_page() || $this->is_subscription_change_payment_method_page() ) || ! self::vault_enabled( $c ) ) {
 					return;
 				}
 
@@ -355,8 +363,8 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 
 		add_action(
 			'woocommerce_add_payment_method_form_bottom',
-			function () {
-				if ( ! is_user_logged_in() || ! is_add_payment_method_page() ) {
+			function () use ( $c ) {
+				if ( ! is_user_logged_in() || ! is_add_payment_method_page() || ! self::vault_enabled( $c ) ) {
 					return;
 				}
 
@@ -367,6 +375,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_action(
 			'wc_ajax_' . CreateSetupToken::ENDPOINT,
 			static function () use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return;
+				}
 				$endpoint = $c->get( 'save-payment-methods.endpoint.create-setup-token' );
 				assert( $endpoint instanceof CreateSetupToken );
 
@@ -377,6 +388,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_action(
 			'wc_ajax_' . CreatePaymentToken::ENDPOINT,
 			static function () use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return;
+				}
 				$endpoint = $c->get( 'save-payment-methods.endpoint.create-payment-token' );
 				assert( $endpoint instanceof CreatePaymentToken );
 
@@ -387,6 +401,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_action(
 			'wc_ajax_' . CreatePaymentTokenForGuest::ENDPOINT,
 			static function () use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return;
+				}
 				$endpoint = $c->get( 'save-payment-methods.endpoint.create-payment-token-for-guest' );
 				assert( $endpoint instanceof CreatePaymentTokenForGuest );
 
@@ -397,6 +414,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_action(
 			'woocommerce_paypal_payments_before_delete_payment_token',
 			function( string $token_id ) use ( $c ) {
+				if ( ! self::vault_enabled( $c ) ) {
+					return;
+				}
 				try {
 					$endpoint = $c->get( 'api.endpoint.payment-tokens' );
 					assert( $endpoint instanceof PaymentTokensEndpoint );
@@ -419,13 +439,11 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		add_filter(
 			'woocommerce_paypal_payments_credit_card_gateway_supports',
 			function( array $supports ) use ( $c ): array {
-				$settings = $c->get( 'wcgateway.settings' );
-				assert( $settings instanceof ContainerInterface );
-
-				if ( $settings->has( 'vault_enabled_dcc' ) && $settings->get( 'vault_enabled_dcc' ) ) {
-					$supports[] = 'tokenization';
-					$supports[] = 'add_payment_method';
+				if ( ! self::vault_enabled( $c ) ) {
+					return $supports;
 				}
+				$supports[] = 'tokenization';
+				$supports[] = 'add_payment_method';
 
 				return $supports;
 			}
@@ -433,7 +451,10 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 
 		add_filter(
 			'woocommerce_paypal_payments_save_payment_methods_eligible',
-			function() {
+			function( bool $value ) use ( $c ): bool {
+				if ( ! self::vault_enabled( $c ) ) {
+					return $value;
+				}
 				return true;
 			}
 		);
@@ -480,5 +501,25 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
 		}
 
 		return $localized_script_data;
+	}
+
+	/**
+	 * Checks whether the vault functionality is enabled based on configuration settings.
+	 *
+	 * @param ContainerInterface $container The dependency injection container from which settings can be retrieved.
+	 *
+	 * @return bool Returns true if either 'vault_enabled' or 'vault_enabled_dcc' settings are enabled; otherwise, false.
+	 */
+	private static function vault_enabled( ContainerInterface $container ): bool {
+		$settings = $container->get( 'wcgateway.settings' );
+		assert( $settings instanceof Settings );
+
+		if (
+			( ! $settings->has( 'vault_enabled' ) || ! $settings->get( 'vault_enabled' ) )
+			&& ( ! $settings->has( 'vault_enabled_dcc' ) || ! $settings->get( 'vault_enabled_dcc' ) )
+		) {
+			return false;
+		}
+		return true;
 	}
 }

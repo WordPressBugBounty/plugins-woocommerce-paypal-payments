@@ -2,7 +2,9 @@ import { Button } from '@wordpress/components';
 import PaymentMethodIcon from './PaymentMethodIcon';
 import { PayPalCheckbox } from './Fields';
 import { useState } from '@wordpress/element';
+import { ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import data from '../../utils/data';
 
 const PaymentMethodItem = ( props ) => {
 	const [ paymentMethodState, setPaymentMethodState ] = useState();
@@ -21,36 +23,37 @@ const PaymentMethodItem = ( props ) => {
 	return (
 		<>
 			<div className="ppcp-r-payment-method-item">
-				<div className="ppcp-r-payment-method-item__checkbox-wrap">
-					<PayPalCheckbox
-						currentValue={ [ paymentMethodState ] }
-						name="payment_method_status"
-						value={ props.payment_method_id }
-						handleCheckboxState={ handleCheckboxState }
-					/>
-					<div className="ppcp-r-payment-method-item__icon-wrap">
+				<div className="ppcp-r-payment-method-item__wrap">
+					<div className="ppcp-r-payment-method-item__title-wrap">
 						<PaymentMethodIcon
 							icons={ [ props.icon ] }
 							type={ props.icon }
 						/>
-					</div>
-					<div className="ppcp-r-payment-method-item__content">
 						<span className="ppcp-r-payment-method-item__title">
 							{ props.title }
 						</span>
+					</div>
+					<div className="ppcp-r-payment-method-item__content">
 						<p>{ props.description }</p>
 					</div>
+					<div className="ppcp-r-payment-method-item__footer">
+						<ToggleControl
+							__nextHasNoMarginBottom={ true }
+							checked={
+								props.payment_method_id === paymentMethodState
+							}
+							onChange={ ( newValue ) =>
+								handleCheckboxState( newValue )
+							}
+						/>
+						<div
+							className="ppcp-r-payment-method-item__settings-button"
+							onClick={ () => setModalIsVisible( true ) }
+						>
+							{ Modal && data().getImage( 'icon-settings.svg' ) }
+						</div>
+					</div>
 				</div>
-				{ Modal && (
-					<Button
-						variant="secondary"
-						onClick={ () => {
-							setModalIsVisible( true );
-						} }
-					>
-						{ __( 'Modify', 'woocommerce-paypal-payments' ) }
-					</Button>
-				) }
 			</div>
 			{ Modal && modalIsVisible && (
 				<Modal setModalIsVisible={ setModalIsVisible } />

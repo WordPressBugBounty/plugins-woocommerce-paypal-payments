@@ -4,11 +4,13 @@ const GooglepayManagerBlockEditor = ( {
 	namespace,
 	buttonConfig,
 	ppcpConfig,
+	buttonAttributes,
 } ) => (
 	<GooglepayButton
 		namespace={ namespace }
 		buttonConfig={ buttonConfig }
 		ppcpConfig={ ppcpConfig }
+		buttonAttributes={ buttonAttributes }
 	/>
 );
 

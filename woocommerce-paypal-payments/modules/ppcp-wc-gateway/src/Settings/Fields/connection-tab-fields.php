@@ -482,18 +482,22 @@ return function ( ContainerInterface $container, array $fields ): array {
 			),
 		),
 		'soft_descriptor'                               => array(
-			'title'        => __( 'Soft Descriptor', 'woocommerce-paypal-payments' ),
-			'type'         => 'text',
-			'desc_tip'     => true,
-			'description'  => __( 'The soft descriptor is the dynamic text used to construct the statement descriptor that appears on a payer\'s card statement. Text field, max value of 22 characters.', 'woocommerce-paypal-payments' ),
-			'maxlength'    => 22,
-			'default'      => '',
-			'screens'      => array(
+			'title'             => __( 'Soft Descriptor', 'woocommerce-paypal-payments' ),
+			'type'              => 'text',
+			'desc_tip'          => true,
+			'description'       => __( 'The soft descriptor is the dynamic text used to construct the statement descriptor that appears on a payer\'s card statement. Text field, max value of 22 characters (letters, numbers, spaces, asterisks, dots and hyphens).', 'woocommerce-paypal-payments' ),
+			'maxlength'         => 22,
+			'default'           => '',
+			'custom_attributes' => array(
+				'pattern' => '[a-zA-Z0-9\s\*.\-]*',
+				'title'   => __( 'Please use only letters, numbers, spaces, asterisks, dots and hyphens.', 'woocommerce-paypal-payments' ),
+			),
+			'screens'           => array(
 				State::STATE_START,
 				State::STATE_ONBOARDED,
 			),
-			'requirements' => array(),
-			'gateway'      => Settings::CONNECTION_TAB_ID,
+			'requirements'      => array(),
+			'gateway'           => Settings::CONNECTION_TAB_ID,
 		),
 		'prefix'                                        => array(
 			'title'             => __( 'Invoice prefix', 'woocommerce-paypal-payments' ),

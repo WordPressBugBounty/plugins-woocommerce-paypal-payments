@@ -12,47 +12,53 @@ import { debounce } from '../../../../../ppcp-blocks/resources/js/Helper/debounc
  * @param {Function}            props.onChange    Change handler
  * @param {number}              [props.delay=300] Debounce delay in milliseconds
  */
-const DataStoreControl = ( {
-	control: ControlComponent,
-	value: externalValue,
-	onChange,
-	delay = 300,
-	...props
-} ) => {
-	const [ internalValue, setInternalValue ] = useState( externalValue );
-	const onChangeRef = useRef( onChange );
-	onChangeRef.current = onChange;
-
-	const debouncedUpdate = useRef(
-		debounce( ( value ) => {
-			onChangeRef.current( value );
-		}, delay )
-	).current;
-
-	useEffect( () => {
-		setInternalValue( externalValue );
-		debouncedUpdate?.cancel();
-	}, [ externalValue ] );
-
-	useEffect( () => {
-		return () => debouncedUpdate?.cancel();
-	}, [ debouncedUpdate ] );
-
-	const handleChange = useCallback(
-		( newValue ) => {
-			setInternalValue( newValue );
-			debouncedUpdate( newValue );
+const DataStoreControl = React.forwardRef(
+	(
+		{
+			control: ControlComponent,
+			value: externalValue,
+			onChange,
+			delay = 300,
+			...props
 		},
-		[ debouncedUpdate ]
-	);
+		ref
+	) => {
+		const [ internalValue, setInternalValue ] = useState( externalValue );
+		const onChangeRef = useRef( onChange );
+		onChangeRef.current = onChange;
 
-	return (
-		<ControlComponent
-			{ ...props }
-			value={ internalValue }
-			onChange={ handleChange }
-		/>
-	);
-};
+		const debouncedUpdate = useRef(
+			debounce( ( value ) => {
+				onChangeRef.current( value );
+			}, delay )
+		).current;
+
+		useEffect( () => {
+			setInternalValue( externalValue );
+			debouncedUpdate?.cancel();
+		}, [ externalValue ] );
+
+		useEffect( () => {
+			return () => debouncedUpdate?.cancel();
+		}, [ debouncedUpdate ] );
+
+		const handleChange = useCallback(
+			( newValue ) => {
+				setInternalValue( newValue );
+				debouncedUpdate( newValue );
+			},
+			[ debouncedUpdate ]
+		);
+
+		return (
+			<ControlComponent
+				ref={ ref }
+				{ ...props }
+				value={ internalValue }
+				onChange={ handleChange }
+			/>
+		);
+	}
+);
 
 export default DataStoreControl;

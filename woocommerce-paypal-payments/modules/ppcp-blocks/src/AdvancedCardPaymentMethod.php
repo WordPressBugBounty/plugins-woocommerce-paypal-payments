@@ -110,6 +110,7 @@ class AdvancedCardPaymentMethod extends AbstractPaymentMethodType {
 	 */
 	public function get_payment_method_data() {
 		$script_data = $this->smart_button_instance()->script_data();
+		$script_data = array_merge( $script_data, array( 'is_user_logged_in' => is_user_logged_in() ) );
 
 		return array(
 			'id'                  => $this->name,

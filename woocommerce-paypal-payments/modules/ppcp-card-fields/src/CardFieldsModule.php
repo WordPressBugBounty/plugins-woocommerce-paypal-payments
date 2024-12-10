@@ -46,12 +46,6 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
 			return true;
 		}
 
-		$dcc_configuration = $c->get( 'wcgateway.configuration.dcc' );
-		assert( $dcc_configuration instanceof DCCGatewayConfiguration );
-		if ( ! $dcc_configuration->is_enabled() ) {
-			return true;
-		}
-
 		/**
 		 * Param types removed to avoid third-party issues.
 		 *
@@ -59,7 +53,10 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
 		 */
 		add_filter(
 			'woocommerce_paypal_payments_sdk_components_hook',
-			function( $components ) {
+			function( $components ) use ( $c ) {
+				if ( ! $c->get( 'wcgateway.configuration.dcc' )->is_enabled() ) {
+					return $components;
+				}
 				if ( in_array( 'hosted-fields', $components, true ) ) {
 					$key = array_search( 'hosted-fields', $components, true );
 					if ( $key !== false ) {
@@ -80,7 +77,10 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
 			 * @psalm-suppress MissingClosureReturnType
 			 * @psalm-suppress MissingClosureParamType
 			 */
-			function( $default_fields, $id ) {
+			function( $default_fields, $id ) use ( $c ) {
+				if ( ! $c->get( 'wcgateway.configuration.dcc' )->is_enabled() ) {
+					return $default_fields;
+				}
 				if ( CreditCardGateway::ID === $id && apply_filters( 'woocommerce_paypal_payments_enable_cardholder_name_field', false ) ) {
 					$default_fields['card-name-field'] = '<p class="form-row form-row-wide">
 						<label for="ppcp-credit-card-gateway-card-name">' . esc_attr__( 'Cardholder Name', 'woocommerce-paypal-payments' ) . '</label>
@@ -113,6 +113,9 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
 		add_filter(
 			'ppcp_create_order_request_body_data',
 			function( array $data, string $payment_method ) use ( $c ): array {
+				if ( ! $c->get( 'wcgateway.configuration.dcc' )->is_enabled() ) {
+					return $data;
+				}
 				// phpcs:ignore WordPress.Security.NonceVerification.Missing
 				if ( $payment_method !== CreditCardGateway::ID ) {
 					return $data;

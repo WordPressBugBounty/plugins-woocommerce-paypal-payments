@@ -73,19 +73,11 @@ class RefundProcessor {
 	private $refund_fees_updater;
 
 	/**
-	 * The methods that can be refunded.
-	 *
-	 * @var array
-	 */
-	private $allowed_refund_payment_methods;
-
-	/**
 	 * RefundProcessor constructor.
 	 *
 	 * @param OrderEndpoint     $order_endpoint The order endpoint.
 	 * @param PaymentsEndpoint  $payments_endpoint The payments endpoint.
 	 * @param RefundFeesUpdater $refund_fees_updater The refund fees updater.
-	 * @param array             $allowed_refund_payment_methods The methods that can be refunded.
 	 * @param string            $prefix The prefix.
 	 * @param LoggerInterface   $logger The logger.
 	 */
@@ -93,17 +85,15 @@ class RefundProcessor {
 		OrderEndpoint $order_endpoint,
 		PaymentsEndpoint $payments_endpoint,
 		RefundFeesUpdater $refund_fees_updater,
-		array $allowed_refund_payment_methods,
 		string $prefix,
 		LoggerInterface $logger
 	) {
 
-		$this->order_endpoint                 = $order_endpoint;
-		$this->payments_endpoint              = $payments_endpoint;
-		$this->refund_fees_updater            = $refund_fees_updater;
-		$this->allowed_refund_payment_methods = $allowed_refund_payment_methods;
-		$this->prefix                         = $prefix;
-		$this->logger                         = $logger;
+		$this->order_endpoint      = $order_endpoint;
+		$this->payments_endpoint   = $payments_endpoint;
+		$this->refund_fees_updater = $refund_fees_updater;
+		$this->prefix              = $prefix;
+		$this->logger              = $logger;
 	}
 
 	/**
@@ -119,7 +109,8 @@ class RefundProcessor {
 	 */
 	public function process( WC_Order $wc_order, float $amount = null, string $reason = '' ) : bool {
 		try {
-			if ( ! in_array( $wc_order->get_payment_method(), $this->allowed_refund_payment_methods, true ) ) {
+			$payment_gateways = WC()->payment_gateways()->payment_gateways();
+			if ( ! isset( $payment_gateways[ $wc_order->get_payment_method() ] ) || ! $payment_gateways[ $wc_order->get_payment_method() ]->supports( 'refunds' ) ) {
 				return true;
 			}
 

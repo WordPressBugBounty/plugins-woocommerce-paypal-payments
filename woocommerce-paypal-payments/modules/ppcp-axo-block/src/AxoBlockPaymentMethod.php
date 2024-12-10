@@ -73,6 +73,13 @@ class AxoBlockPaymentMethod extends AbstractPaymentMethodType {
 	private $environment;
 
 	/**
+	 * Mapping of payment methods to the PayPal Insights 'payment_method_selected' types.
+	 *
+	 * @var array
+	 */
+	private array $payment_method_selected_map;
+
+	/**
 	 * The WcGateway module URL.
 	 *
 	 * @var string
@@ -80,49 +87,50 @@ class AxoBlockPaymentMethod extends AbstractPaymentMethodType {
 	private $wcgateway_module_url;
 
 	/**
-	 * The list of WooCommerce enabled shipping locations.
+	 * The supported country card type matrix.
 	 *
 	 * @var array
 	 */
-	private array $enabled_shipping_locations;
+	private $supported_country_card_type_matrix;
 
 	/**
 	 * AdvancedCardPaymentMethod constructor.
 	 *
-	 * @param string                        $module_url           The URL of this module.
-	 * @param string                        $version              The assets version.
-	 * @param WC_Payment_Gateway            $gateway              Credit card gateway.
-	 * @param SmartButtonInterface|callable $smart_button         The smart button script loading
-	 *                                                            handler.
-	 * @param Settings                      $settings             The settings.
-	 * @param DCCGatewayConfiguration       $dcc_configuration    The DCC gateway settings.
-	 * @param Environment                   $environment          The environment object.
+	 * @param string                        $module_url The URL of this module.
+	 * @param string                        $version The assets version.
+	 * @param WC_Payment_Gateway            $gateway Credit card gateway.
+	 * @param SmartButtonInterface|callable $smart_button The smart button script loading handler.
+	 * @param Settings                      $settings The settings.
+	 * @param DCCGatewayConfiguration       $dcc_configuration The DCC gateway settings.
+	 * @param Environment                   $environment The environment object.
 	 * @param string                        $wcgateway_module_url The WcGateway module URL.
-	 * @param array                         $enabled_shipping_locations The list of WooCommerce enabled shipping locations.
+	 * @param array                         $payment_method_selected_map Mapping of payment methods to the PayPal Insights 'payment_method_selected' types.
+	 * @param array                         $supported_country_card_type_matrix The supported country card type matrix for Axo.
 	 */
 	public function __construct(
-		string $module_url,
-		string $version,
-		WC_Payment_Gateway $gateway,
-		$smart_button,
-		Settings $settings,
-		DCCGatewayConfiguration $dcc_configuration,
-		Environment $environment,
-		string $wcgateway_module_url,
-		array $enabled_shipping_locations
+	string $module_url,
+	string $version,
+	WC_Payment_Gateway $gateway,
+	$smart_button,
+	Settings $settings,
+	DCCGatewayConfiguration $dcc_configuration,
+	Environment $environment,
+	string $wcgateway_module_url,
+	array $payment_method_selected_map,
+	array $supported_country_card_type_matrix
 	) {
-		$this->name                       = AxoGateway::ID;
-		$this->module_url                 = $module_url;
-		$this->version                    = $version;
-		$this->gateway                    = $gateway;
-		$this->smart_button               = $smart_button;
-		$this->settings                   = $settings;
-		$this->dcc_configuration          = $dcc_configuration;
-		$this->environment                = $environment;
-		$this->wcgateway_module_url       = $wcgateway_module_url;
-		$this->enabled_shipping_locations = $enabled_shipping_locations;
+		$this->name                               = AxoGateway::ID;
+		$this->module_url                         = $module_url;
+		$this->version                            = $version;
+		$this->gateway                            = $gateway;
+		$this->smart_button                       = $smart_button;
+		$this->settings                           = $settings;
+		$this->dcc_configuration                  = $dcc_configuration;
+		$this->environment                        = $environment;
+		$this->wcgateway_module_url               = $wcgateway_module_url;
+		$this->payment_method_selected_map        = $payment_method_selected_map;
+		$this->supported_country_card_type_matrix = $supported_country_card_type_matrix;
 	}
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -203,20 +211,23 @@ class AxoBlockPaymentMethod extends AbstractPaymentMethodType {
 				'email' => 'render',
 			),
 			'insights'                   => array(
-				'enabled'    => defined( 'WP_DEBUG' ) && WP_DEBUG,
-				'client_id'  => ( $this->settings->has( 'client_id' ) ? $this->settings->get( 'client_id' ) : null ),
-				'session_id' =>
+				'enabled'                     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				'client_id'                   => ( $this->settings->has( 'client_id' ) ? $this->settings->get( 'client_id' ) : null ),
+				'session_id'                  =>
 					( WC()->session && method_exists( WC()->session, 'get_customer_unique_id' ) )
 						? substr( md5( WC()->session->get_customer_unique_id() ), 0, 16 )
 						: '',
-				'amount'     => array(
+				'amount'                      => array(
 					'currency_code' => get_woocommerce_currency(),
 					'value'         => ( WC()->cart && method_exists( WC()->cart, 'get_total' ) )
 						? WC()->cart->get_total( 'numeric' )
-						: null, // Set to null if WC()->cart is null or get_total doesn't exist.
+						: null,
 				),
+				'payment_method_selected_map' => $this->payment_method_selected_map,
 			),
-			'enabled_shipping_locations' => $this->enabled_shipping_locations,
+			'allowed_cards'              => $this->supported_country_card_type_matrix,
+			'disable_cards'              => $this->settings->has( 'disable_cards' ) ? (array) $this->settings->get( 'disable_cards' ) : array(),
+			'enabled_shipping_locations' => apply_filters( 'woocommerce_paypal_payments_axo_shipping_wc_enabled_locations', array() ),
 			'style_options'              => array(
 				'root'  => array(
 					'backgroundColor' => $this->settings->has( 'axo_style_root_bg_color' ) ? $this->settings->get( 'axo_style_root_bg_color' ) : '',
@@ -253,6 +264,8 @@ class AxoBlockPaymentMethod extends AbstractPaymentMethodType {
 			),
 			'logging_enabled'            => $this->settings->has( 'logging_enabled' ) ? $this->settings->get( 'logging_enabled' ) : '',
 			'wp_debug'                   => defined( 'WP_DEBUG' ) && WP_DEBUG,
+			'card_icons'                 => $this->settings->has( 'card_icons' ) ? (array) $this->settings->get( 'card_icons' ) : array(),
+			'merchant_country'           => WC()->countries->get_base_country(),
 		);
 	}
 }

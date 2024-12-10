@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'woocommerce/woocommerce-paypal-payments',
-        'pretty_version' => 'dev-release/2.9.4',
-        'version' => 'dev-release/2.9.4',
-        'reference' => '5e18bf0d7c801acdc6b2fd2ecdc87d1fe9d2ec23',
+        'pretty_version' => 'dev-release/2.9.5',
+        'version' => 'dev-release/2.9.5',
+        'reference' => '707077cb2be671e63dab7931e5423a93237dbaef',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -110,9 +110,9 @@
             'dev_requirement' => false,
         ),
         'woocommerce/woocommerce-paypal-payments' => array(
-            'pretty_version' => 'dev-release/2.9.4',
-            'version' => 'dev-release/2.9.4',
-            'reference' => '5e18bf0d7c801acdc6b2fd2ecdc87d1fe9d2ec23',
+            'pretty_version' => 'dev-release/2.9.5',
+            'version' => 'dev-release/2.9.5',
+            'reference' => '707077cb2be671e63dab7931e5423a93237dbaef',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

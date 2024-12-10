@@ -9,7 +9,6 @@ const SettingsCard = ( props ) => {
 	return (
 		<div className={ className }>
 			<div className="ppcp-r-settings-card__header">
-				{ data().getImage( props.icon ) }
 				<div className="ppcp-r-settings-card__content-inner">
 					<span className="ppcp-r-settings-card__title">
 						{ props.title }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WooCommerce\PayPalCommerce\Uninstall;
 
 use WooCommerce\PayPalCommerce\ApiClient\Repository\PayPalRequestIdRepository;
+use WooCommerce\PayPalCommerce\Settings\Endpoint\SwitchSettingsUiEndpoint;
 use WooCommerce\PayPalCommerce\Uninstall\Assets\ClearDatabaseAssets;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CardButtonGateway;
@@ -34,6 +35,7 @@ return array(
 			WebhookSimulation::OPTION_ID,
 			WebhookRegistrar::KEY,
 			'ppcp_payment_tokens_migration_initialized',
+			SwitchSettingsUiEndpoint::OPTION_NAME_SHOULD_USE_OLD_UI,
 		);
 	},
 

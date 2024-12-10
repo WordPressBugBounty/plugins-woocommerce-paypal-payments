@@ -7,6 +7,7 @@ import {
 	handleShippingOptionsChange,
 	handleShippingAddressChange,
 } from '../Helper/ShippingHandler.js';
+import { PaymentContext } from '../Helper/CheckoutMethodState';
 
 class Renderer {
 	constructor(
@@ -28,6 +29,22 @@ class Renderer {
 		this.reloadEventName = 'ppcp-reload-buttons';
 	}
 
+	/**
+	 * Determine is PayPal smart buttons are used by inspecting the existing plugin configuration:
+	 * If the url-param "components" contains a "buttons" element, smart buttons are enabled.
+	 *
+	 * @return {boolean} True, if smart buttons are present on the page.
+	 */
+	get useSmartButtons() {
+		if ( PaymentContext.Preview === this.defaultSettings?.context ) {
+			return true;
+		}
+
+		const components = this.defaultSettings?.url_params?.components || '';
+
+		return components.split( ',' ).includes( 'buttons' );
+	}
+
 	render(
 		contextConfig,
 		settingsOverride = {},
@@ -44,12 +61,14 @@ class Renderer {
 			Object.keys( enabledSeparateGateways ).length !== 0;
 
 		if ( ! hasEnabledSeparateGateways ) {
-			this.renderButtons(
-				settings.button.wrapper,
-				settings.button.style,
-				contextConfig,
-				hasEnabledSeparateGateways
-			);
+			if ( this.useSmartButtons ) {
+				this.renderButtons(
+					settings.button.wrapper,
+					settings.button.style,
+					contextConfig,
+					hasEnabledSeparateGateways
+				);
+			}
 		} else {
 			// render each button separately
 			for ( const fundingSource of paypal
@@ -141,7 +160,7 @@ class Renderer {
 			// Check the condition and add the handler if needed
 			if ( this.shouldEnableShippingCallback() ) {
 				options.onShippingOptionsChange = ( data, actions ) => {
-                    let shippingOptionsChange =
+					const shippingOptionsChange =
 					! this.isVenmoButtonClickedWhenVaultingIsEnabled(
 						venmoButtonClicked
 					)
@@ -152,10 +171,10 @@ class Renderer {
 						  )
 						: null;
 
-                    return shippingOptionsChange
+					return shippingOptionsChange;
 				};
 				options.onShippingAddressChange = ( data, actions ) => {
-                    let shippingAddressChange =
+					const shippingAddressChange =
 					! this.isVenmoButtonClickedWhenVaultingIsEnabled(
 						venmoButtonClicked
 					)
@@ -166,7 +185,7 @@ class Renderer {
 						  )
 						: null;
 
-                    return shippingAddressChange
+					return shippingAddressChange;
 				};
 			}
 
@@ -228,8 +247,13 @@ class Renderer {
 	};
 
     shouldEnableShippingCallback = () => {
-        let needShipping = this.defaultSettings.needShipping || this.defaultSettings.context === 'product'
-        return this.defaultSettings.should_handle_shipping_in_paypal && needShipping
+		const needShipping =
+			this.defaultSettings.needShipping ||
+			this.defaultSettings.context === 'product';
+		return (
+			this.defaultSettings.should_handle_shipping_in_paypal &&
+			needShipping
+		);
     };
 
 	isAlreadyRendered( wrapper, fundingSource ) {

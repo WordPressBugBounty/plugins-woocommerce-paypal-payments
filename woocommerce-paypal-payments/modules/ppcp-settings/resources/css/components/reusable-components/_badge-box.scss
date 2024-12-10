@@ -18,7 +18,7 @@
 			}
 		}
 
-		&-image-badge {
+		.ppcp-r-badge-box__title-text:not(:empty) + .ppcp-r-badge-box__title-image-badge {
 			margin-left: 7px;
 
 			img {

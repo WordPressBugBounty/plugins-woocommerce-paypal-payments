@@ -103,7 +103,9 @@ class CreateSetupToken implements EndpointInterface {
 				);
 			}
 
-			$result = $this->payment_method_tokens_endpoint->setup_tokens( $payment_source );
+			$customer_id = get_user_meta( get_current_user_id(), '_ppcp_target_customer_id', true );
+
+			$result = $this->payment_method_tokens_endpoint->setup_tokens( $payment_source, $customer_id );
 
 			wp_send_json_success( $result );
 			return true;

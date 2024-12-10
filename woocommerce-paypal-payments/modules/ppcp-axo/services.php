@@ -18,6 +18,7 @@ use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\CurrencyGetter;
 
 return array(
 
@@ -64,11 +65,12 @@ return array(
 			$container->get( 'session.handler' ),
 			$container->get( 'wcgateway.settings' ),
 			$container->get( 'onboarding.environment' ),
+			$container->get( 'axo.insights' ),
 			$container->get( 'wcgateway.settings.status' ),
 			$container->get( 'api.shop.currency.getter' ),
 			$container->get( 'woocommerce.logger.woocommerce' ),
 			$container->get( 'wcgateway.url' ),
-			$container->get( 'axo.shipping-wc-enabled-locations' )
+			$container->get( 'axo.supported-country-card-type-matrix' )
 		);
 	},
 
@@ -87,6 +89,55 @@ return array(
 			$container->get( 'wcgateway.transaction-url-provider' ),
 			$container->get( 'onboarding.environment' ),
 			$container->get( 'woocommerce.logger.woocommerce' )
+		);
+	},
+
+	// Data needed for the PayPal Insights.
+	'axo.insights'                           => static function ( ContainerInterface $container ): array {
+		$settings = $container->get( 'wcgateway.settings' );
+		assert( $settings instanceof Settings );
+
+		$currency = $container->get( 'api.shop.currency.getter' );
+		assert( $currency instanceof CurrencyGetter );
+
+		$session_id = '';
+		if ( isset( WC()->session ) && method_exists( WC()->session, 'get_customer_unique_id' ) ) {
+			$session_id = substr(
+				md5( WC()->session->get_customer_unique_id() ),
+				0,
+				16
+			);
+		}
+
+		return array(
+			'enabled'                     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+			'client_id'                   => ( $settings->has( 'client_id' ) ? $settings->get( 'client_id' ) : null ),
+			'session_id'                  => $session_id,
+			'amount'                      => array(
+				'currency_code' => $currency->get(),
+			),
+			'payment_method_selected_map' => $container->get( 'axo.payment_method_selected_map' ),
+			'wp_debug'                    => defined( 'WP_DEBUG' ) && WP_DEBUG,
+		);
+	},
+
+	// The mapping of payment methods to the PayPal Insights 'payment_method_selected' types.
+	'axo.payment_method_selected_map'        => static function ( ContainerInterface $container ): array {
+		return array(
+			'ppcp-axo-gateway'         => 'card',
+			'ppcp-credit-card-gateway' => 'card',
+			'ppcp-gateway'             => 'paypal',
+			'ppcp-googlepay'           => 'google_pay',
+			'ppcp-applepay'            => 'apple_pay',
+			'ppcp-multibanco'          => 'other',
+			'ppcp-trustly'             => 'other',
+			'ppcp-p24'                 => 'other',
+			'ppcp-mybank'              => 'other',
+			'ppcp-ideal'               => 'other',
+			'ppcp-eps'                 => 'other',
+			'ppcp-blik'                => 'other',
+			'ppcp-bancontact'          => 'other',
+			'ppcp-card-button-gateway' => 'card',
 		);
 	},
 
@@ -111,7 +162,31 @@ return array(
 			)
 		);
 	},
-
+	/**
+	 * The matrix which countries and card type combinations can be used for AXO.
+	 */
+	'axo.supported-country-card-type-matrix' => static function ( ContainerInterface $container ) : array {
+		/**
+		 * Returns which countries and card type combinations can be used for AXO.
+		 */
+		return apply_filters(
+			'woocommerce_paypal_payments_axo_supported_country_card_type_matrix',
+			array(
+				'US' => array(
+					'VISA',
+					'MASTERCARD',
+					'AMEX',
+					'DISCOVER',
+				),
+				'CA' => array(
+					'VISA',
+					'MASTERCARD',
+					'AMEX',
+					'DISCOVER',
+				),
+			)
+		);
+	},
 	'axo.settings-conflict-notice'           => static function ( ContainerInterface $container ) : string {
 		$settings_notice_generator = $container->get( 'axo.helpers.settings-notice-generator' );
 		assert( $settings_notice_generator instanceof SettingsNoticeGenerator );
@@ -253,33 +328,23 @@ return array(
 		);
 	},
 
-	'axo.shipping-wc-enabled-locations'      => static function ( ContainerInterface $container ): array {
+	'axo.shipping-wc-enabled-locations'      => static function ( ContainerInterface $container ) {
 		$default_zone = new \WC_Shipping_Zone( 0 );
 
-		$is_method_enabled = fn( \WC_Shipping_Method $method): bool => $method->enabled === 'yes';
-
-		$is_default_zone_enabled = ! empty(
-			array_filter(
-				$default_zone->get_shipping_methods(),
-				$is_method_enabled
-			)
-		);
-
-		if ( $is_default_zone_enabled ) {
+		if ( ! empty( $default_zone->get_shipping_methods( true ) ) ) {
 			return array();
 		}
 
 		$shipping_zones = \WC_Shipping_Zones::get_zones();
-
 		$get_zone_locations = fn( \WC_Shipping_Zone $zone): array =>
-		! empty( array_filter( $zone->get_shipping_methods(), $is_method_enabled ) )
+		! empty( $zone->get_shipping_methods( true ) )
 			? array_map(
 				fn( object $location): string => $location->code,
 				$zone->get_zone_locations()
 			)
 			: array();
 
-		$enabled_locations = array_unique(
+		return array_unique(
 			array_merge(
 				...array_map(
 					$get_zone_locations,
@@ -291,7 +356,5 @@ return array(
 				)
 			)
 		);
-
-		return $enabled_locations;
 	},
 );

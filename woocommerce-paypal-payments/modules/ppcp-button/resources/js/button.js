@@ -324,6 +324,10 @@ const bootstrap = () => {
 	messagesBootstrap.init();
 
 	apmButtonsInit( PayPalCommerceGateway );
+
+	if ( ! renderer.useSmartButtons ) {
+		buttonsSpinner.unblock();
+	}
 };
 
 document.addEventListener( 'DOMContentLoaded', () => {

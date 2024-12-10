@@ -1,22 +1,25 @@
+/**
+ * Selectors: Extract specific pieces of state from the store.
+ *
+ * These functions provide a consistent interface for accessing store data.
+ * They allow components to retrieve data without knowing the store structure.
+ *
+ * @file
+ */
+
 const EMPTY_OBJ = Object.freeze( {} );
 
-const getOnboardingState = ( state ) => {
-	if ( ! state ) {
-		return EMPTY_OBJ;
-	}
+const getState = ( state ) => state || EMPTY_OBJ;
 
-	return state.onboarding || EMPTY_OBJ;
+export const persistentData = ( state ) => {
+	return getState( state ).data || EMPTY_OBJ;
 };
 
-export const getPersistentData = ( state ) => {
-	return getOnboardingState( state ).data || EMPTY_OBJ;
-};
-
-export const getTransientData = ( state ) => {
-	const { data, flags, ...transientState } = getOnboardingState( state );
+export const transientData = ( state ) => {
+	const { data, flags, ...transientState } = getState( state );
 	return transientState || EMPTY_OBJ;
 };
 
-export const getFlags = ( state ) => {
-	return getOnboardingState( state ).flags || EMPTY_OBJ;
+export const flags = ( state ) => {
+	return getState( state ).flags || EMPTY_OBJ;
 };

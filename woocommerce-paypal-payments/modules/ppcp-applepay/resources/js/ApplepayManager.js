@@ -3,65 +3,83 @@ import ApplePayButton from './ApplepayButton';
 import ContextHandlerFactory from './Context/ContextHandlerFactory';
 
 class ApplePayManager {
-	#namespace = '';
-	#buttonConfig = null;
-	#ppcpConfig = null;
-	#applePayConfig = null;
-	#contextHandler = null;
-	#transactionInfo = null;
-	#buttons = [];
+	constructor( namespace, buttonConfig, ppcpConfig, buttonAttributes = {} ) {
+		this.namespace = namespace;
+		this.buttonConfig = buttonConfig;
+		this.ppcpConfig = ppcpConfig;
+		this.buttonAttributes = buttonAttributes;
+		this.applePayConfig = null;
+		this.transactionInfo = null;
+		this.contextHandler = null;
 
-	constructor( namespace, buttonConfig, ppcpConfig ) {
-		this.#namespace = namespace;
-		this.#buttonConfig = buttonConfig;
-		this.#ppcpConfig = ppcpConfig;
+		this.buttons = [];
 
-		this.onContextBootstrap = this.onContextBootstrap.bind( this );
-		buttonModuleWatcher.watchContextBootstrap( this.onContextBootstrap );
-	}
+		buttonModuleWatcher.watchContextBootstrap( async ( bootstrap ) => {
+			this.contextHandler = ContextHandlerFactory.create(
+				bootstrap.context,
+				buttonConfig,
+				ppcpConfig,
+				bootstrap.handler
+			);
 
-	async onContextBootstrap( bootstrap ) {
-		this.#contextHandler = ContextHandlerFactory.create(
-			bootstrap.context,
-			this.#buttonConfig,
-			this.#ppcpConfig,
-			bootstrap.handler
-		);
+			const button = ApplePayButton.createButton(
+				bootstrap.context,
+				bootstrap.handler,
+				buttonConfig,
+				ppcpConfig,
+				this.contextHandler,
+				this.buttonAttributes
+			);
 
-		const button = ApplePayButton.createButton(
-			bootstrap.context,
-			bootstrap.handler,
-			this.#buttonConfig,
-			this.#ppcpConfig,
-			this.#contextHandler
-		);
+			this.buttons.push( button );
+			const initButton = () => {
+				button.configure(
+					this.applePayConfig,
+					this.transactionInfo,
+					this.buttonAttributes
+				);
+				button.init();
+			};
 
-		this.#buttons.push( button );
+			// Initialize button only if applePayConfig and transactionInfo are already fetched.
+			if ( this.applePayConfig && this.transactionInfo ) {
+				initButton();
+			} else {
+				// Ensure ApplePayConfig is loaded before proceeding.
+				await this.init();
 
-		// Ensure ApplePayConfig is loaded before proceeding.
-		await this.init();
-
-		button.configure( this.#applePayConfig, this.#transactionInfo );
-		button.init();
+				if ( this.applePayConfig && this.transactionInfo ) {
+					initButton();
+				}
+			}
+		} );
 	}
 
 	async init() {
 		try {
-			if ( ! this.#applePayConfig ) {
-				this.#applePayConfig = await window[ this.#namespace ]
+			if ( ! this.applePayConfig ) {
+				// Gets ApplePay configuration of the PayPal merchant.
+				this.applePayConfig = await window[ this.namespace ]
 					.Applepay()
 					.config();
-
-				if ( ! this.#applePayConfig ) {
-					console.error( 'No ApplePayConfig received during init' );
-				}
 			}
 
-			if ( ! this.#transactionInfo ) {
-				this.#transactionInfo = await this.fetchTransactionInfo();
+			if ( ! this.transactionInfo ) {
+				this.transactionInfo = await this.fetchTransactionInfo();
+			}
 
-				if ( ! this.#applePayConfig ) {
-					console.error( 'No transactionInfo found during init' );
+			if ( ! this.applePayConfig ) {
+				console.error( 'No ApplePayConfig received during init' );
+			} else if ( ! this.transactionInfo ) {
+				console.error( 'No transactionInfo found during init' );
+			} else {
+				for ( const button of this.buttons ) {
+					button.configure(
+						this.applePayConfig,
+						this.transactionInfo,
+						this.buttonAttributes
+					);
+					button.init();
 				}
 			}
 		} catch ( error ) {
@@ -71,10 +89,10 @@ class ApplePayManager {
 
 	async fetchTransactionInfo() {
 		try {
-			if ( ! this.#contextHandler ) {
+			if ( ! this.contextHandler ) {
 				throw new Error( 'ContextHandler is not initialized' );
 			}
-			return await this.#contextHandler.transactionInfo();
+			return await this.contextHandler.transactionInfo();
 		} catch ( error ) {
 			console.error( 'Error fetching transaction info:', error );
 			throw error;
@@ -82,7 +100,7 @@ class ApplePayManager {
 	}
 
 	reinit() {
-		for ( const button of this.#buttons ) {
+		for ( const button of this.buttons ) {
 			button.reinit();
 		}
 	}

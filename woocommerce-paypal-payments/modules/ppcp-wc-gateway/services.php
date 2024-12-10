@@ -24,6 +24,7 @@ use WooCommerce\PayPalCommerce\Googlepay\GooglePayGateway;
 use WooCommerce\PayPalCommerce\Onboarding\Environment;
 use WooCommerce\PayPalCommerce\Onboarding\Render\OnboardingOptionsRenderer;
 use WooCommerce\PayPalCommerce\Onboarding\State;
+use WooCommerce\PayPalCommerce\Settings\SettingsModule;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderReauthorizeAction;
 use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\CaptureCardPayment;
@@ -121,6 +122,7 @@ return array(
 			$container->get( 'api.endpoint.payment-tokens' ),
 			$container->get( 'vaulting.vault-v3-enabled' ),
 			$container->get( 'vaulting.wc-payment-tokens' ),
+			$container->get( 'wcgateway.url' ),
 			$container->get( 'wcgateway.settings.admin-settings-enabled' )
 		);
 	},
@@ -335,7 +337,8 @@ return array(
 				$container->get( 'wcgateway.button.default-locations' ),
 				$container->get( 'wcgateway.settings.dcc-gateway-title.default' ),
 				$container->get( 'wcgateway.settings.pay-later.default-button-locations' ),
-				$container->get( 'wcgateway.settings.pay-later.default-messaging-locations' )
+				$container->get( 'wcgateway.settings.pay-later.default-messaging-locations' ),
+				$container->get( 'compat.settings.settings_map_helper' )
 			);
 		}
 	),
@@ -628,15 +631,8 @@ return array(
 			$container->get( 'api.endpoint.order' ),
 			$container->get( 'api.endpoint.payments' ),
 			$container->get( 'wcgateway.helper.refund-fees-updater' ),
-			$container->get( 'wcgateway.allowed_refund_payment_methods' ),
 			$container->get( 'api.prefix' ),
 			$container->get( 'woocommerce.logger.woocommerce' )
-		);
-	},
-	'wcgateway.allowed_refund_payment_methods'             => static function ( ContainerInterface $container ): array {
-		return apply_filters(
-			'woocommerce_paypal_payments_allowed_refund_payment_methods',
-			array( PayPalGateway::ID, CreditCardGateway::ID, CardButtonGateway::ID, PayUponInvoiceGateway::ID )
 		);
 	},
 	'wcgateway.processor.authorized-payments'              => static function ( ContainerInterface $container ): AuthorizedPaymentsProcessor {
@@ -1494,7 +1490,8 @@ return array(
 			$container->get( 'wcgateway.pay-upon-invoice-helper' ),
 			$container->get( 'wcgateway.checkout-helper' ),
 			$container->get( 'onboarding.state' ),
-			$container->get( 'wcgateway.processor.refunds' )
+			$container->get( 'wcgateway.processor.refunds' ),
+			$container->get( 'wcgateway.url' )
 		);
 	},
 	'wcgateway.fraudnet-source-website-id'                 => static function ( ContainerInterface $container ): FraudNetSourceWebsiteId {
@@ -2059,8 +2056,7 @@ return array(
 			$container->get( 'wcgateway.url' ),
 			$container->get( 'ppcp.asset-version' ),
 			$container->get( 'api.endpoint.order' ),
-			$container->get( 'wcgateway.processor.refunds' ),
-			$container->get( 'wcgateway.allowed_refund_payment_methods' )
+			$container->get( 'wcgateway.processor.refunds' )
 		);
 	},
 	'wcgateway.void-button.endpoint'                       => function( ContainerInterface $container ) : VoidOrderEndpoint {
@@ -2073,6 +2069,6 @@ return array(
 	},
 
 	'wcgateway.settings.admin-settings-enabled'            => static function( ContainerInterface $container ): bool {
-		return $container->has( 'settings.url' );
+		return $container->has( 'settings.url' ) && ! SettingsModule::should_use_the_old_ui();
 	},
 );

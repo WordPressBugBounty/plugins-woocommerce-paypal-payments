@@ -29,28 +29,35 @@ class AxoManager {
 	 *
 	 * @var string
 	 */
-	private $module_url;
+	private string $module_url;
 
 	/**
 	 * The assets version.
 	 *
 	 * @var string
 	 */
-	private $version;
+	private string $version;
 
 	/**
 	 * The settings.
 	 *
 	 * @var Settings
 	 */
-	private $settings;
+	private Settings $settings;
 
 	/**
 	 * The environment object.
 	 *
 	 * @var Environment
 	 */
-	private $environment;
+	private Environment $environment;
+
+	/**
+	 * Data needed for the PayPal Insights.
+	 *
+	 * @var array
+	 */
+	private array $insights_data;
 
 	/**
 	 * The Settings status helper.
@@ -71,28 +78,27 @@ class AxoManager {
 	 *
 	 * @var LoggerInterface
 	 */
-	private $logger;
+	private LoggerInterface $logger;
 
 	/**
 	 * Session handler.
 	 *
 	 * @var SessionHandler
 	 */
-	private $session_handler;
+	private SessionHandler $session_handler;
 
 	/**
 	 * The WcGateway module URL.
 	 *
 	 * @var string
 	 */
-	private $wcgateway_module_url;
-
+	private string $wcgateway_module_url;
 	/**
-	 * The list of WooCommerce enabled shipping locations.
+	 * The supported country card type matrix.
 	 *
 	 * @var array
 	 */
-	private array $enabled_shipping_locations;
+	private array $supported_country_card_type_matrix;
 
 	/**
 	 * AxoManager constructor.
@@ -102,11 +108,12 @@ class AxoManager {
 	 * @param SessionHandler  $session_handler The Session handler.
 	 * @param Settings        $settings The Settings.
 	 * @param Environment     $environment The environment object.
+	 * @param array           $insights_data Data needed for the PayPal Insights.
 	 * @param SettingsStatus  $settings_status The Settings status helper.
 	 * @param CurrencyGetter  $currency The getter of the 3-letter currency code of the shop.
 	 * @param LoggerInterface $logger The logger.
 	 * @param string          $wcgateway_module_url The WcGateway module URL.
-	 * @param array           $enabled_shipping_locations The list of WooCommerce enabled shipping locations.
+	 * @param array           $supported_country_card_type_matrix The supported country card type matrix for Axo.
 	 */
 	public function __construct(
 		string $module_url,
@@ -114,23 +121,25 @@ class AxoManager {
 		SessionHandler $session_handler,
 		Settings $settings,
 		Environment $environment,
+		array $insights_data,
 		SettingsStatus $settings_status,
 		CurrencyGetter $currency,
 		LoggerInterface $logger,
 		string $wcgateway_module_url,
-		array $enabled_shipping_locations
+		array $supported_country_card_type_matrix
 	) {
 
-		$this->module_url                 = $module_url;
-		$this->version                    = $version;
-		$this->session_handler            = $session_handler;
-		$this->settings                   = $settings;
-		$this->environment                = $environment;
-		$this->settings_status            = $settings_status;
-		$this->currency                   = $currency;
-		$this->logger                     = $logger;
-		$this->wcgateway_module_url       = $wcgateway_module_url;
-		$this->enabled_shipping_locations = $enabled_shipping_locations;
+		$this->module_url                         = $module_url;
+		$this->version                            = $version;
+		$this->session_handler                    = $session_handler;
+		$this->settings                           = $settings;
+		$this->environment                        = $environment;
+		$this->insights_data                      = $insights_data;
+		$this->settings_status                    = $settings_status;
+		$this->currency                           = $currency;
+		$this->logger                             = $logger;
+		$this->wcgateway_module_url               = $wcgateway_module_url;
+		$this->supported_country_card_type_matrix = $supported_country_card_type_matrix;
 	}
 
 	/**
@@ -171,7 +180,7 @@ class AxoManager {
 	 *
 	 * @return array
 	 */
-	private function script_data() {
+	private function script_data(): array {
 		return array(
 			'environment'                => array(
 				'is_sandbox' => $this->environment->current_environment() === 'sandbox',
@@ -179,21 +188,13 @@ class AxoManager {
 			'widgets'                    => array(
 				'email' => 'render',
 			),
-			'insights'                   => array(
-				'enabled'    => defined( 'WP_DEBUG' ) && WP_DEBUG,
-				'client_id'  => ( $this->settings->has( 'client_id' ) ? $this->settings->get( 'client_id' ) : null ),
-				'session_id' =>
-					substr(
-						method_exists( WC()->session, 'get_customer_unique_id' ) ? md5( WC()->session->get_customer_unique_id() ) : '',
-						0,
-						16
-					),
-				'amount'     => array(
-					'currency_code' => $this->currency->get(),
-					'value'         => WC()->cart->get_total( 'numeric' ),
-				),
-			),
-			'enabled_shipping_locations' => $this->enabled_shipping_locations,
+			// The amount is not available when setting the insights data, so we need to merge it here.
+			'insights'                   => ( function( array $data ): array {
+				$data['amount']['value'] = WC()->cart->get_total( 'numeric' );
+				return $data; } )( $this->insights_data ),
+			'allowed_cards'              => $this->supported_country_card_type_matrix,
+			'disable_cards'              => $this->settings->has( 'disable_cards' ) ? (array) $this->settings->get( 'disable_cards' ) : array(),
+			'enabled_shipping_locations' => apply_filters( 'woocommerce_paypal_payments_axo_shipping_wc_enabled_locations', array() ),
 			'style_options'              => array(
 				'root'  => array(
 					'backgroundColor' => $this->settings->has( 'axo_style_root_bg_color' ) ? $this->settings->get( 'axo_style_root_bg_color' ) : '',
@@ -231,6 +232,7 @@ class AxoManager {
 			'logging_enabled'            => $this->settings->has( 'logging_enabled' ) ? $this->settings->get( 'logging_enabled' ) : '',
 			'wp_debug'                   => defined( 'WP_DEBUG' ) && WP_DEBUG,
 			'billing_email_button_text'  => __( 'Continue', 'woocommerce-paypal-payments' ),
+			'merchant_country'           => WC()->countries->get_base_country(),
 		);
 	}
 

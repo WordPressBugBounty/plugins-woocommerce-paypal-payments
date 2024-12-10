@@ -4,7 +4,12 @@ import usePayPalScript from '../hooks/usePayPalScript';
 import useApplepayScript from '../hooks/useApplepayScript';
 import useApplepayConfig from '../hooks/useApplepayConfig';
 
-const ApplepayButton = ( { namespace, buttonConfig, ppcpConfig } ) => {
+const ApplepayButton = ( {
+	namespace,
+	buttonConfig,
+	ppcpConfig,
+	buttonAttributes,
+} ) => {
 	const [ buttonHtml, setButtonHtml ] = useState( '' );
 	const [ buttonElement, setButtonElement ] = useState( null );
 	const [ componentFrame, setComponentFrame ] = useState( null );
@@ -31,19 +36,42 @@ const ApplepayButton = ( { namespace, buttonConfig, ppcpConfig } ) => {
 		namespace,
 		buttonConfig,
 		ppcpConfig,
-		applepayConfig
+		applepayConfig,
+		buttonAttributes
 	);
 
 	useEffect( () => {
-		if ( applepayButton ) {
-			setButtonHtml( applepayButton.outerHTML );
+		if ( ! applepayButton || ! buttonElement ) {
+			return;
 		}
-	}, [ applepayButton ] );
+
+		setButtonHtml( applepayButton.outerHTML );
+
+		// Add timeout to ensure button is displayed after render
+		setTimeout( () => {
+			const button = buttonElement.querySelector( 'apple-pay-button' );
+			if ( button ) {
+				button.style.display = 'block';
+			}
+		}, 100 ); // Add a small delay to ensure DOM is ready
+	}, [ applepayButton, buttonElement ] );
 
 	return (
 		<div
 			ref={ setButtonElement }
 			dangerouslySetInnerHTML={ { __html: buttonHtml } }
+			style={ {
+				height: buttonAttributes?.height
+					? `${ buttonAttributes.height }px`
+					: '48px',
+				'--apple-pay-button-height': buttonAttributes?.height
+					? `${ buttonAttributes.height }px`
+					: '48px',
+				borderRadius: buttonAttributes?.borderRadius
+					? `${ buttonAttributes.borderRadius }px`
+					: undefined,
+				overflow: 'hidden',
+			} }
 		/>
 	);
 };

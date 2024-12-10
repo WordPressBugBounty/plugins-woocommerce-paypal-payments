@@ -15,7 +15,6 @@ use WooCommerce\PayPalCommerce\ApiClient\Authentication\UserIdToken;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\Orders;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\PaymentMethodTokensEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\PaymentTokensEndpoint;
-use WooCommerce\PayPalCommerce\ApiClient\Entity\CardAuthenticationResult;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\CardAuthenticationResultFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\CurrencyGetter;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\FailureRegistry;
@@ -79,6 +78,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Repository\OrderRepository;
 use WooCommerce\PayPalCommerce\ApiClient\Repository\PartnerReferralsData;
 use WooCommerce\PayPalCommerce\ApiClient\Repository\PayeeRepository;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
+use WooCommerce\PayPalCommerce\ApiClient\Authentication\ConnectBearer;
 
 return array(
 	'api.host'                                       => function( ContainerInterface $container ) : string {
@@ -176,6 +176,22 @@ return array(
 		return new PartnerReferrals(
 			$container->get( 'api.host' ),
 			$container->get( 'api.bearer' ),
+			$container->get( 'woocommerce.logger.woocommerce' )
+		);
+	},
+	'api.endpoint.partner-referrals-sandbox'         => static function ( ContainerInterface $container ) : PartnerReferrals {
+
+		return new PartnerReferrals(
+			CONNECT_WOO_SANDBOX_URL,
+			new ConnectBearer(),
+			$container->get( 'woocommerce.logger.woocommerce' )
+		);
+	},
+	'api.endpoint.partner-referrals-production'      => static function ( ContainerInterface $container ) : PartnerReferrals {
+
+		return new PartnerReferrals(
+			CONNECT_WOO_URL,
+			new ConnectBearer(),
 			$container->get( 'woocommerce.logger.woocommerce' )
 		);
 	},
@@ -572,6 +588,7 @@ return array(
 			'CZK',
 			'DKK',
 			'EUR',
+			'HKD',
 			'HUF',
 			'ILS',
 			'JPY',
@@ -584,6 +601,7 @@ return array(
 			'PLN',
 			'GBP',
 			'RUB',
+			'SGD',
 			'SEK',
 			'CHF',
 			'THB',
@@ -595,27 +613,32 @@ return array(
 	 * The matrix which countries and currency combinations can be used for DCC.
 	 */
 	'api.dcc-supported-country-currency-matrix'      => static function ( ContainerInterface $container ) : array {
-		$default_currencies = array(
-			'AUD',
-			'BRL',
-			'CAD',
-			'CHF',
-			'CZK',
-			'DKK',
-			'EUR',
-			'GBP',
-			'HUF',
-			'ILS',
-			'JPY',
-			'MXN',
-			'NOK',
-			'NZD',
-			'PHP',
-			'PLN',
-			'SEK',
-			'THB',
-			'TWD',
-			'USD',
+		$default_currencies = apply_filters(
+			'woocommerce_paypal_payments_supported_currencies',
+			array(
+				'AUD',
+				'BRL',
+				'CAD',
+				'CHF',
+				'CZK',
+				'DKK',
+				'EUR',
+				'HKD',
+				'GBP',
+				'HUF',
+				'ILS',
+				'JPY',
+				'MXN',
+				'NOK',
+				'NZD',
+				'PHP',
+				'PLN',
+				'SGD',
+				'SEK',
+				'THB',
+				'TWD',
+				'USD',
+			)
 		);
 
 		/**
@@ -659,14 +682,7 @@ return array(
 				'ES' => $default_currencies,
 				'SE' => $default_currencies,
 				'GB' => $default_currencies,
-				'US' => array(
-					'AUD',
-					'CAD',
-					'EUR',
-					'GBP',
-					'JPY',
-					'USD',
-				),
+				'US' => $default_currencies,
 				'NO' => $default_currencies,
 			)
 		);
@@ -844,5 +860,23 @@ return array(
 			$container->get( 'api.client-credentials' ),
 			$container->get( 'api.client-credentials-cache' )
 		);
+	},
+	'api.paypal-host-production'                     => static function( ContainerInterface $container ) : string {
+		return PAYPAL_API_URL;
+	},
+	'api.paypal-host-sandbox'                        => static function( ContainerInterface $container ) : string {
+		return PAYPAL_SANDBOX_API_URL;
+	},
+	'api.paypal-website-url-production'              => static function( ContainerInterface $container ) : string {
+		return PAYPAL_URL;
+	},
+	'api.paypal-website-url-sandbox'                 => static function( ContainerInterface $container ) : string {
+		return PAYPAL_SANDBOX_URL;
+	},
+	'api.partner_merchant_id-production'             => static function( ContainerInterface $container ) : string {
+		return CONNECT_WOO_MERCHANT_ID;
+	},
+	'api.partner_merchant_id-sandbox'                => static function( ContainerInterface $container ) : string {
+		return CONNECT_WOO_SANDBOX_MERCHANT_ID;
 	},
 );

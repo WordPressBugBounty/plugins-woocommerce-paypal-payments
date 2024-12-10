@@ -599,11 +599,11 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
 			}
 		);
 
-		$endpoint = $c->get( 'paypal-subscriptions.deactivate-plan-endpoint' );
-		assert( $endpoint instanceof DeactivatePlanEndpoint );
 		add_action(
 			'wc_ajax_' . DeactivatePlanEndpoint::ENDPOINT,
-			array( $endpoint, 'handle_request' )
+			function() use ( $c ) {
+				$c->get( 'paypal-subscriptions.deactivate-plan-endpoint' )->handle_request();
+			}
 		);
 
 		add_action(

@@ -10,7 +10,7 @@
 		box-shadow: 0 -1px 0 0 $color-gray-400 inset;
 		margin-bottom: 48px;
 		gap: 12px;
-
+		overflow: auto;
 		.components-button {
 			padding: 16px 20px;
 

@@ -211,6 +211,7 @@ class CheckoutBootstap {
 		const isFreeTrial = PayPalCommerceGateway.is_free_trial_cart;
 		const hasVaultedPaypal =
 			PayPalCommerceGateway.vaulted_paypal_email !== '';
+		const useSmartButtons = this.renderer.useSmartButtons ?? true;
 
 		const paypalButtonWrappers = {
 			...Object.entries( PayPalCommerceGateway.separate_buttons ).reduce(
@@ -225,7 +226,8 @@ class CheckoutBootstap {
 			this.standardOrderButtonSelector,
 			( isPaypal && isFreeTrial && hasVaultedPaypal ) ||
 				isNotOurGateway ||
-				isSavedCard,
+				isSavedCard ||
+				( isPaypal && ! useSmartButtons ),
 			'ppcp-hidden'
 		);
 		setVisible( '.ppcp-vaulted-paypal-details', isPaypal );

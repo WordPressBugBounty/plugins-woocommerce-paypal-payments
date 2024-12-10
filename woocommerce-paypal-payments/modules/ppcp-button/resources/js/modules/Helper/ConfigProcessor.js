@@ -6,16 +6,16 @@ const processAxoConfig = ( config ) => {
 	const scriptOptions = {};
 	const sdkClientToken = config?.axo?.sdk_client_token;
 	const uuid = uuidv4().replace( /-/g, '' );
-	if ( sdkClientToken ) {
+	if ( sdkClientToken && config?.user?.is_logged !== true ) {
 		scriptOptions[ 'data-sdk-client-token' ] = sdkClientToken;
 		scriptOptions[ 'data-client-metadata-id' ] = uuid;
 	}
 	return scriptOptions;
 };
 
-const processUserIdToken = ( config, sdkClientToken ) => {
+const processUserIdToken = ( config ) => {
 	const userIdToken = config?.save_payment_methods?.id_token;
-	return userIdToken && ! sdkClientToken
+	return userIdToken && config?.user?.is_logged === true
 		? { 'data-user-id-token': userIdToken }
 		: {};
 };
@@ -26,9 +26,6 @@ export const processConfig = ( config ) => {
 		scriptOptions = merge( scriptOptions, config.script_attributes );
 	}
 	const axoOptions = processAxoConfig( config );
-	const userIdTokenOptions = processUserIdToken(
-		config,
-		axoOptions[ 'data-sdk-client-token' ]
-	);
+	const userIdTokenOptions = processUserIdToken( config );
 	return merge.all( [ scriptOptions, axoOptions, userIdTokenOptions ] );
 };

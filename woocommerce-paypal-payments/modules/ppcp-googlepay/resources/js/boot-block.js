@@ -20,7 +20,7 @@ if ( typeof window.PayPalCommerceGateway === 'undefined' ) {
 	window.PayPalCommerceGateway = ppcpConfig;
 }
 
-const GooglePayComponent = ( { isEditing } ) => {
+const GooglePayComponent = ( { isEditing, buttonAttributes } ) => {
 	const [ paypalLoaded, setPaypalLoaded ] = useState( false );
 	const [ googlePayLoaded, setGooglePayLoaded ] = useState( false );
 	const [ manager, setManager ] = useState( null );
@@ -48,11 +48,18 @@ const GooglePayComponent = ( { isEditing } ) => {
 			const newManager = new GooglepayManager(
 				namespace,
 				buttonConfig,
-				ppcpConfig
+				ppcpConfig,
+				buttonAttributes
 			);
 			setManager( newManager );
 		}
-	}, [ paypalLoaded, googlePayLoaded, isEditing, manager ] );
+	}, [
+		paypalLoaded,
+		googlePayLoaded,
+		isEditing,
+		manager,
+		buttonAttributes,
+	] );
 
 	if ( isEditing ) {
 		return (
@@ -60,6 +67,7 @@ const GooglePayComponent = ( { isEditing } ) => {
 				namespace={ namespace }
 				buttonConfig={ buttonConfig }
 				ppcpConfig={ ppcpConfig }
+				buttonAttributes={ buttonAttributes }
 			/>
 		);
 	}
@@ -89,5 +97,6 @@ registerExpressPaymentMethod( {
 	canMakePayment: () => buttonData.enabled,
 	supports: {
 		features,
+		style: [ 'height', 'borderRadius' ],
 	},
 } );

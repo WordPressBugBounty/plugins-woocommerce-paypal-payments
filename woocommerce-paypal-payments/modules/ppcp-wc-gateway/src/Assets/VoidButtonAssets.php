@@ -52,33 +52,23 @@ class VoidButtonAssets {
 	private $refund_processor;
 
 	/**
-	 * The methods that can be refunded.
-	 *
-	 * @var array
-	 */
-	private $allowed_refund_payment_methods;
-
-	/**
 	 * VoidButtonAssets constructor.
 	 *
 	 * @param string          $module_url The url of this module.
 	 * @param string          $version The assets version.
 	 * @param OrderEndpoint   $order_endpoint The order endpoint.
 	 * @param RefundProcessor $refund_processor The Refund Processor.
-	 * @param array           $allowed_refund_payment_methods The methods that can be refunded.
 	 */
 	public function __construct(
 		string $module_url,
 		string $version,
 		OrderEndpoint $order_endpoint,
-		RefundProcessor $refund_processor,
-		array $allowed_refund_payment_methods
+		RefundProcessor $refund_processor
 	) {
-		$this->module_url                     = $module_url;
-		$this->version                        = $version;
-		$this->order_endpoint                 = $order_endpoint;
-		$this->refund_processor               = $refund_processor;
-		$this->allowed_refund_payment_methods = $allowed_refund_payment_methods;
+		$this->module_url       = $module_url;
+		$this->version          = $version;
+		$this->order_endpoint   = $order_endpoint;
+		$this->refund_processor = $refund_processor;
 	}
 
 	/**
@@ -103,7 +93,8 @@ class VoidButtonAssets {
 			return false;
 		}
 
-		if ( ! in_array( $theorder->get_payment_method(), $this->allowed_refund_payment_methods, true ) ) {
+		$payment_gateways = WC()->payment_gateways()->payment_gateways();
+		if ( ! isset( $payment_gateways[ $theorder->get_payment_method() ] ) || ! $payment_gateways[ $theorder->get_payment_method() ]->supports( 'refunds' ) ) {
 			return false;
 		}
 

@@ -61,18 +61,23 @@ class PaymentMethodTokensEndpoint {
 	 * Creates a setup token.
 	 *
 	 * @param PaymentSource $payment_source The payment source.
+	 * @param string        $customer_id PayPal customer ID.
 	 *
 	 * @return stdClass
 	 *
 	 * @throws RuntimeException When something when wrong with the request.
 	 * @throws PayPalApiException When something when wrong setting up the token.
 	 */
-	public function setup_tokens( PaymentSource $payment_source ): stdClass {
+	public function setup_tokens( PaymentSource $payment_source, string $customer_id = '' ): stdClass {
 		$data = array(
 			'payment_source' => array(
 				$payment_source->name() => $payment_source->properties(),
 			),
 		);
+
+		if ( $customer_id ) {
+			$data['customer']['id'] = $customer_id;
+		}
 
 		$bearer = $this->bearer->bearer();
 		$url    = trailingslashit( $this->host ) . 'v3/vault/setup-tokens';
@@ -109,18 +114,23 @@ class PaymentMethodTokensEndpoint {
 	 * Creates a payment token for the given payment source.
 	 *
 	 * @param PaymentSource $payment_source The payment source.
+	 * @param string        $customer_id PayPal customer ID.
 	 *
 	 * @return stdClass
 	 *
 	 * @throws RuntimeException When something when wrong with the request.
 	 * @throws PayPalApiException When something when wrong setting up the token.
 	 */
-	public function create_payment_token( PaymentSource $payment_source ): stdClass {
+	public function create_payment_token( PaymentSource $payment_source, string $customer_id = '' ): stdClass {
 		$data = array(
 			'payment_source' => array(
 				$payment_source->name() => $payment_source->properties(),
 			),
 		);
+
+		if ( $customer_id ) {
+			$data['customer']['id'] = $customer_id;
+		}
 
 		$bearer = $this->bearer->bearer();
 		$url    = trailingslashit( $this->host ) . 'v3/vault/payment-tokens';

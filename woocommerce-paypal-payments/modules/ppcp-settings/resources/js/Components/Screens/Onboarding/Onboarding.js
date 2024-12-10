@@ -1,6 +1,7 @@
 import Container from '../../ReusableComponents/Container';
-import { useOnboardingStep } from '../../../data';
+import { OnboardingHooks } from '../../../data';
 import { getSteps } from './availableSteps';
+import Navigation from './Components/Navigation';
 
 const getCurrentStep = ( requestedStep, steps ) => {
 	const isValidStep = ( step ) =>
@@ -14,22 +15,30 @@ const getCurrentStep = ( requestedStep, steps ) => {
 };
 
 const Onboarding = () => {
-	const { step, setStep, setCompleted, flags } = useOnboardingStep();
+	const { step, setStep, setCompleted, flags } = OnboardingHooks.useSteps();
 	const steps = getSteps( flags );
 
 	const CurrentStepComponent = getCurrentStep( step, steps );
 
 	return (
-		<Container page="onboarding">
-			<div className="ppcp-r-card">
-				<CurrentStepComponent
-					setStep={ setStep }
-					currentStep={ step }
-					setCompleted={ setCompleted }
-					stepperOrder={ steps }
-				/>
-			</div>
-		</Container>
+		<>
+			<Navigation
+				setStep={ setStep }
+				currentStep={ step }
+				setCompleted={ setCompleted }
+				stepperOrder={ steps }
+			/>
+			<Container page="onboarding">
+				<div className="ppcp-r-card">
+					<CurrentStepComponent
+						setStep={ setStep }
+						currentStep={ step }
+						setCompleted={ setCompleted }
+						stepperOrder={ steps }
+					/>
+				</div>
+			</Container>
+		</>
 	);
 };
 

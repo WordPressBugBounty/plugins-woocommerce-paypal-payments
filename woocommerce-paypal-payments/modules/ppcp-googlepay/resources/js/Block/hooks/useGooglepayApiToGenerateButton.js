@@ -6,10 +6,16 @@ const useGooglepayApiToGenerateButton = (
 	namespace,
 	buttonConfig,
 	ppcpConfig,
-	googlepayConfig
+	googlepayConfig,
+	buttonAttributes
 ) => {
 	const [ googlepayButton, setGooglepayButton ] = useState( null );
-	const buttonStyles = useButtonStyles( buttonConfig, ppcpConfig );
+
+	const buttonStyles = useButtonStyles(
+		buttonConfig,
+		ppcpConfig,
+		buttonAttributes
+	);
 
 	useEffect( () => {
 		if (
@@ -35,14 +41,13 @@ const useGooglepayApiToGenerateButton = (
 			buttonType: buttonConfig.buttonType || 'pay',
 			buttonLocale: buttonConfig.buttonLocale || 'en',
 			buttonSizeMode: 'fill',
-		};
-
-		const button = paymentsClient.createButton( {
-			...googlePayButtonOptions,
+			buttonRadius: parseInt( buttonStyles?.Default?.borderRadius ),
 			onClick: ( event ) => {
 				event.preventDefault();
 			},
-		} );
+		};
+
+		const button = paymentsClient.createButton( googlePayButtonOptions );
 
 		setGooglepayButton( button );
 
@@ -51,7 +56,15 @@ const useGooglepayApiToGenerateButton = (
 		};
 	}, [ namespace, buttonConfig, ppcpConfig, googlepayConfig, buttonStyles ] );
 
-	return googlepayButton;
+	// Return both the button and the styles needed for the container
+	return {
+		button: googlepayButton,
+		containerStyles: {
+			height: buttonStyles?.Default?.height
+				? `${ buttonStyles.Default.height }px`
+				: '',
+		},
+	};
 };
 
 export default useGooglepayApiToGenerateButton;

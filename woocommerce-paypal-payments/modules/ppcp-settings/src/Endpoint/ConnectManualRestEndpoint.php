@@ -10,17 +10,16 @@ declare( strict_types = 1 );
 namespace WooCommerce\PayPalCommerce\Settings\Endpoint;
 
 use Exception;
-use Psr\Log\LoggerInterface;
-use RuntimeException;
 use stdClass;
+use RuntimeException;
+use Psr\Log\LoggerInterface;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\PayPalBearer;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\Orders;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\InMemoryCache;
-use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
-use WP_REST_Server;
-use WP_REST_Response;
-use WP_REST_Request;
+use WooCommerce\PayPalCommerce\Settings\Data\GeneralSettings;
 
 /**
  * REST controller for connection via manual credentials input.
@@ -56,6 +55,13 @@ class ConnectManualRestEndpoint extends RestEndpoint {
 	protected $rest_base = 'connect_manual';
 
 	/**
+	 * Settings instance.
+	 *
+	 * @var GeneralSettings
+	 */
+	private $settings = null;
+
+	/**
 	 * Field mapping for request.
 	 *
 	 * @var array
@@ -78,19 +84,21 @@ class ConnectManualRestEndpoint extends RestEndpoint {
 	/**
 	 * ConnectManualRestEndpoint constructor.
 	 *
-	 * @param string          $live_host The API host for the live mode.
+	 * @param string          $live_host    The API host for the live mode.
 	 * @param string          $sandbox_host The API host for the sandbox mode.
-	 * @param LoggerInterface $logger The logger.
+	 * @param LoggerInterface $logger       The logger.
+	 * @param GeneralSettings $settings     Settings instance.
 	 */
 	public function __construct(
 		string $live_host,
 		string $sandbox_host,
-		LoggerInterface $logger
+		LoggerInterface $logger,
+		GeneralSettings $settings
 	) {
-
 		$this->live_host    = $live_host;
 		$this->sandbox_host = $sandbox_host;
 		$this->logger       = $logger;
+		$this->settings     = $settings;
 	}
 
 	/**
@@ -126,47 +134,52 @@ class ConnectManualRestEndpoint extends RestEndpoint {
 		$use_sandbox   = (bool) ( $data['use_sandbox'] ?? false );
 
 		if ( empty( $client_id ) || empty( $client_secret ) ) {
-			return rest_ensure_response(
-				array(
-					'success' => false,
-					'message' => 'No client ID or secret provided.',
-				)
-			);
+			return $this->return_error( 'No client ID or secret provided.' );
 		}
 
 		try {
 			$payee = $this->request_payee( $client_id, $client_secret, $use_sandbox );
 		} catch ( Exception $exception ) {
-			return rest_ensure_response(
-				array(
-					'success' => false,
-					'message' => $exception->getMessage(),
-				)
-			);
-
+			return $this->return_error( $exception->getMessage() );
 		}
 
-		$result = array(
-			'merchantId' => $payee->merchant_id,
-			'email'      => $payee->email_address,
-			'success'    => true,
-		);
+		if ( $use_sandbox ) {
+			$this->settings->set_is_sandbox( true );
+			$this->settings->set_sandbox_client_id( $client_id );
+			$this->settings->set_sandbox_client_secret( $client_secret );
+			$this->settings->set_sandbox_merchant_id( $payee->merchant_id );
+			$this->settings->set_sandbox_merchant_email( $payee->email_address );
+		} else {
+			$this->settings->set_is_sandbox( false );
+			$this->settings->set_live_client_id( $client_id );
+			$this->settings->set_live_client_secret( $client_secret );
+			$this->settings->set_live_merchant_id( $payee->merchant_id );
+			$this->settings->set_live_merchant_email( $payee->email_address );
+		}
+		$this->settings->save();
 
-		return rest_ensure_response( $result );
+		return $this->return_success(
+			array(
+				'merchantId' => $payee->merchant_id,
+				'email'      => $payee->email_address,
+			)
+		);
 	}
 
 	/**
 	 * Retrieves the payee object with the merchant data
 	 * by creating a minimal PayPal order.
 	 *
-	 * @param string $client_id The client ID.
-	 * @param string $client_secret The client secret.
-	 * @param bool   $use_sandbox Whether to use the sandbox mode.
-	 * @return stdClass The payee object.
 	 * @throws Exception When failed to retrieve payee.
 	 *
 	 * phpcs:disable Squiz.Commenting
 	 * phpcs:disable Generic.Commenting
+	 *
+	 * @param string $client_secret The client secret.
+	 * @param bool   $use_sandbox   Whether to use the sandbox mode.
+	 * @param string $client_id     The client ID.
+	 *
+	 * @return stdClass The payee object.
 	 */
 	private function request_payee(
 		string $client_id,
@@ -176,24 +189,13 @@ class ConnectManualRestEndpoint extends RestEndpoint {
 
 		$host = $use_sandbox ? $this->sandbox_host : $this->live_host;
 
-		$empty_settings = new class() implements ContainerInterface
-		{
-			public function get( string $id ) {
-				throw new NotFoundException();
-			}
-
-			public function has( string $id ) {
-				return false;
-			}
-		};
-
 		$bearer = new PayPalBearer(
 			new InMemoryCache(),
 			$host,
 			$client_id,
 			$client_secret,
 			$this->logger,
-			$empty_settings
+			null
 		);
 
 		$orders = new Orders(

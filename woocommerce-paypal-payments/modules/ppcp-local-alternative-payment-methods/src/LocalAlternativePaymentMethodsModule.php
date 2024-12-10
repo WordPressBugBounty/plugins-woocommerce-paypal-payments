@@ -11,6 +11,7 @@ namespace WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods;
 
 use WC_Order;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
+use WooCommerce\PayPalCommerce\Onboarding\State;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
@@ -43,12 +44,6 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 	 * {@inheritDoc}
 	 */
 	public function run( ContainerInterface $c ): bool {
-		$settings = $c->get( 'wcgateway.settings' );
-		assert( $settings instanceof Settings );
-
-		if ( ! $settings->has( 'allow_local_apm_gateways' ) || $settings->get( 'allow_local_apm_gateways' ) !== true ) {
-			return true;
-		}
 
 		add_filter(
 			'woocommerce_payment_gateways',
@@ -58,6 +53,14 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 			 * @psalm-suppress MissingClosureParamType
 			 */
 			function ( $methods ) use ( $c ) {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return $methods;
+				}
+				$onboarding_state = $c->get( 'onboarding.state' );
+				if ( $onboarding_state->current_state() === State::STATE_START ) {
+					return $methods;
+				}
+
 				if ( ! is_array( $methods ) ) {
 					return $methods;
 				}
@@ -79,6 +82,9 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 			 * @psalm-suppress MissingClosureParamType
 			 */
 			function ( $methods ) use ( $c ) {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return $methods;
+				}
 				if ( ! is_array( $methods ) ) {
 					return $methods;
 				}
@@ -109,6 +115,9 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 		add_action(
 			'woocommerce_blocks_payment_method_type_registration',
 			function( PaymentMethodRegistry $payment_method_registry ) use ( $c ): void {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return;
+				}
 				$payment_methods = $c->get( 'ppcp-local-apms.payment-methods' );
 				foreach ( $payment_methods as $key => $value ) {
 					$payment_method_registry->register( $c->get( 'ppcp-local-apms.' . $key . '.payment-method' ) );
@@ -119,6 +128,9 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 		add_filter(
 			'woocommerce_paypal_payments_localized_script_data',
 			function ( array $data ) use ( $c ) {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return $data;
+				}
 				$payment_methods = $c->get( 'ppcp-local-apms.payment-methods' );
 
 				$default_disable_funding               = $data['url_params']['disable-funding'] ?? '';
@@ -137,6 +149,9 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 			 * @psalm-suppress MissingClosureParamType
 			 */
 			function( $order_id ) use ( $c ) {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return;
+				}
 				$order = wc_get_order( $order_id );
 				if ( ! $order instanceof WC_Order ) {
 					return;
@@ -169,6 +184,9 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 		add_action(
 			'woocommerce_paypal_payments_payment_capture_completed_webhook_handler',
 			function( WC_Order $wc_order, string $order_id ) use ( $c ) {
+				if ( ! self::should_add_local_apm_gateways( $c ) ) {
+					return;
+				}
 				$payment_methods = $c->get( 'ppcp-local-apms.payment-methods' );
 				if (
 				! $this->is_local_apm( $wc_order->get_payment_method(), $payment_methods )
@@ -183,18 +201,6 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 			},
 			10,
 			2
-		);
-
-		add_filter(
-			'woocommerce_paypal_payments_allowed_refund_payment_methods',
-			function( array $payment_methods ) use ( $c ): array {
-				$local_payment_methods = $c->get( 'ppcp-local-apms.payment-methods' );
-				foreach ( $local_payment_methods as $payment_method ) {
-					$payment_methods[] = $payment_method['id'];
-				}
-
-				return $payment_methods;
-			}
 		);
 
 		return true;
@@ -215,5 +221,20 @@ class LocalAlternativePaymentMethodsModule implements ServiceModule, ExtendingMo
 		}
 
 		return false;
+	}
+
+	/**
+	 * Check if the local APMs should be added to the available payment gateways.
+	 *
+	 * @param ContainerInterface $container Container.
+	 * @return bool
+	 */
+	private function should_add_local_apm_gateways( ContainerInterface $container ): bool {
+		$settings = $container->get( 'wcgateway.settings' );
+		assert( $settings instanceof Settings );
+		return $settings->has( 'enabled' )
+			&& $settings->get( 'enabled' ) === true
+			&& $settings->has( 'allow_local_apm_gateways' )
+			&& $settings->get( 'allow_local_apm_gateways' ) === true;
 	}
 }

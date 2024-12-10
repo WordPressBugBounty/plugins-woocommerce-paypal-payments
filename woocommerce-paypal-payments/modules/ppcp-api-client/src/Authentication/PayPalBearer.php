@@ -5,7 +5,7 @@
  * @package WooCommerce\PayPalCommerce\ApiClient\Authentication
  */
 
-declare(strict_types=1);
+declare( strict_types = 1 );
 
 namespace WooCommerce\PayPalCommerce\ApiClient\Authentication;
 
@@ -28,7 +28,7 @@ class PayPalBearer implements Bearer {
 	/**
 	 * The settings.
 	 *
-	 * @var ContainerInterface
+	 * @var ?ContainerInterface
 	 */
 	protected $settings;
 
@@ -70,12 +70,12 @@ class PayPalBearer implements Bearer {
 	/**
 	 * PayPalBearer constructor.
 	 *
-	 * @param Cache              $cache The cache.
-	 * @param string             $host The host.
-	 * @param string             $key The key.
-	 * @param string             $secret The secret.
-	 * @param LoggerInterface    $logger The logger.
-	 * @param ContainerInterface $settings The settings.
+	 * @param Cache               $cache    The cache.
+	 * @param string              $host     The host.
+	 * @param string              $key      The key.
+	 * @param string              $secret   The secret.
+	 * @param LoggerInterface     $logger   The logger.
+	 * @param ?ContainerInterface $settings The settings.
 	 */
 	public function __construct(
 		Cache $cache,
@@ -83,7 +83,7 @@ class PayPalBearer implements Bearer {
 		string $key,
 		string $secret,
 		LoggerInterface $logger,
-		ContainerInterface $settings
+		?ContainerInterface $settings
 	) {
 
 		$this->cache    = $cache;
@@ -97,12 +97,13 @@ class PayPalBearer implements Bearer {
 	/**
 	 * Returns a bearer token.
 	 *
-	 * @return Token
 	 * @throws RuntimeException When request fails.
+	 * @return Token
 	 */
-	public function bearer(): Token {
+	public function bearer() : Token {
 		try {
 			$bearer = Token::from_json( (string) $this->cache->get( self::CACHE_KEY ) );
+
 			return ( $bearer->is_valid() ) ? $bearer : $this->newBearer();
 		} catch ( RuntimeException $error ) {
 			return $this->newBearer();
@@ -110,14 +111,48 @@ class PayPalBearer implements Bearer {
 	}
 
 	/**
+	 * Retrieves the client key for authentication.
+	 *
+	 * @return string The client ID from settings, or the key defined via constructor.
+	 */
+	private function get_key() : string {
+		if (
+			$this->settings
+			&& $this->settings->has( 'client_id' )
+			&& $this->settings->get( 'client_id' )
+		) {
+			return $this->settings->get( 'client_id' );
+		}
+
+		return $this->key;
+	}
+
+	/**
+	 * Retrieves the client secret for authentication.
+	 *
+	 * @return string The client secret from settings, or the value defined via constructor.
+	 */
+	private function get_secret() : string {
+		if (
+			$this->settings
+			&& $this->settings->has( 'client_secret' )
+			&& $this->settings->get( 'client_secret' )
+		) {
+			return $this->settings->get( 'client_secret' );
+		}
+
+		return $this->secret;
+	}
+
+	/**
 	 * Creates a new bearer token.
 	 *
-	 * @return Token
 	 * @throws RuntimeException When request fails.
+	 * @return Token
 	 */
-	private function newBearer(): Token {
-		$key    = $this->settings->has( 'client_id' ) && $this->settings->get( 'client_id' ) ? $this->settings->get( 'client_id' ) : $this->key;
-		$secret = $this->settings->has( 'client_secret' ) && $this->settings->get( 'client_secret' ) ? $this->settings->get( 'client_secret' ) : $this->secret;
+	private function newBearer() : Token {
+		$key    = $this->get_key();
+		$secret = $this->get_secret();
 		$url    = trailingslashit( $this->host ) . 'v1/oauth2/token?grant_type=client_credentials';
 
 		$args     = array(
@@ -127,10 +162,7 @@ class PayPalBearer implements Bearer {
 				'Authorization' => 'Basic ' . base64_encode( $key . ':' . $secret ),
 			),
 		);
-		$response = $this->request(
-			$url,
-			$args
-		);
+		$response = $this->request( $url, $args );
 
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
 			$error = new RuntimeException(
@@ -148,6 +180,7 @@ class PayPalBearer implements Bearer {
 
 		$token = Token::from_json( $response['body'] );
 		$this->cache->set( self::CACHE_KEY, $token->as_json() );
+
 		return $token;
 	}
 }

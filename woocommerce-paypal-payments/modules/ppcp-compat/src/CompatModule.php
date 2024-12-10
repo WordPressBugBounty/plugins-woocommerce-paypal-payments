@@ -51,14 +51,24 @@ class CompatModule implements ServiceModule, ExtendingModule, ExecutableModule {
 	 */
 	public function run( ContainerInterface $c ): bool {
 
-		$this->initialize_ppec_compat_layer( $c );
-		$this->initialize_tracking_compat_layer( $c );
+		add_action(
+			'woocommerce_init',
+			function() use ( $c ) {
+				$this->initialize_ppec_compat_layer( $c );
+				$this->initialize_tracking_compat_layer( $c );
+			}
+		);
 
-		$asset_loader = $c->get( 'compat.assets' );
-		assert( $asset_loader instanceof CompatAssets );
+		add_action(
+			'init',
+			function() use ( $c ) {
+				$asset_loader = $c->get( 'compat.assets' );
+				assert( $asset_loader instanceof CompatAssets );
 
-		add_action( 'init', array( $asset_loader, 'register' ) );
-		add_action( 'admin_enqueue_scripts', array( $asset_loader, 'enqueue' ) );
+				$asset_loader->register();
+				add_action( 'admin_enqueue_scripts', array( $asset_loader, 'enqueue' ) );
+			}
+		);
 
 		$this->migrate_pay_later_settings( $c );
 		$this->migrate_smart_button_settings( $c );
@@ -72,11 +82,9 @@ class CompatModule implements ServiceModule, ExtendingModule, ExecutableModule {
 			$this->initialize_nyp_compat_layer();
 		}
 
-		$logger = $c->get( 'woocommerce.logger.woocommerce' );
-
 		$is_wc_bookings_active = $c->get( 'compat.wc_bookings.is_supported_plugin_version_active' );
 		if ( $is_wc_bookings_active ) {
-			$this->initialize_wc_bookings_compat_layer( $logger );
+			$this->initialize_wc_bookings_compat_layer( $c );
 		}
 
 		return true;
@@ -427,13 +435,13 @@ class CompatModule implements ServiceModule, ExtendingModule, ExecutableModule {
 	/**
 	 * Sets up the compatibility layer for WooCommerce Bookings plugin.
 	 *
-	 * @param LoggerInterface $logger The logger.
+	 * @param ContainerInterface $container The logger.
 	 * @return void
 	 */
-	protected function initialize_wc_bookings_compat_layer( LoggerInterface $logger ): void {
+	protected function initialize_wc_bookings_compat_layer( ContainerInterface $container ): void {
 		add_action(
 			'woocommerce_paypal_payments_shipping_callback_woocommerce_order_created',
-			static function ( WC_Order $wc_order, WC_Cart $wc_cart ) use ( $logger ): void {
+			static function ( WC_Order $wc_order, WC_Cart $wc_cart ) use ( $container ): void {
 				try {
 					$cart_contents = $wc_cart->get_cart();
 					foreach ( $cart_contents as $cart_item ) {
@@ -474,7 +482,7 @@ class CompatModule implements ServiceModule, ExtendingModule, ExecutableModule {
 						}
 					}
 				} catch ( Exception $exception ) {
-					$logger->warning( 'Failed to create booking for WooCommerce Bookings plugin: ' . $exception->getMessage() );
+					$container->get( 'woocommerce.logger.woocommerce' )->warning( 'Failed to create booking for WooCommerce Bookings plugin: ' . $exception->getMessage() );
 				}
 			},
 			10,

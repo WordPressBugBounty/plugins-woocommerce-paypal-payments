@@ -3,20 +3,17 @@ import PaymentMethodIcon from './PaymentMethodIcon';
 
 const PaymentMethodModal = ( props ) => {
 	let className = 'ppcp-r-modal';
-	let classNameContainer = 'ppcp-r-modal__container';
+	const classNameContainer = 'ppcp-r-modal__container';
 
 	if ( props?.className ) {
 		className += ' ' + props.className;
-	}
-
-	if ( props?.container && props.container === 'small' ) {
-		classNameContainer += ' ppcp-r-modal__container--small';
 	}
 
 	return (
 		<Modal
 			className={ className }
 			onRequestClose={ () => props.setModalIsVisible( false ) }
+			size={ props?.size }
 		>
 			<div className={ classNameContainer }>
 				<div className="ppcp-r-modal__header">

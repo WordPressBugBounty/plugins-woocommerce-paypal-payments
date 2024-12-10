@@ -1,7 +1,16 @@
-import { STORE_NAME } from './constants';
-import { initStore } from './store';
+import { addDebugTools } from './debug';
+import * as Onboarding from './onboarding';
+import * as Common from './common';
 
-initStore();
+Onboarding.initStore();
+Common.initStore();
 
-export const WC_PAYPAL_STORE_NAME = STORE_NAME;
-export * from './onboarding/hooks';
+export const OnboardingHooks = Onboarding.hooks;
+export const CommonHooks = Common.hooks;
+
+export const OnboardingStoreName = Onboarding.STORE_NAME;
+export const CommonStoreName = Common.STORE_NAME;
+
+export * from './constants';
+
+addDebugTools( window.ppcpSettings, [ Onboarding, Common ] );

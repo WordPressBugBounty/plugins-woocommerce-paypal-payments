@@ -262,6 +262,13 @@ class PayPalPaymentMethod extends AbstractPaymentMethodType {
 		return array(
 			'id'                          => $this->gateway->id,
 			'title'                       => $this->gateway->title,
+			'icon'                        => array(
+				array(
+					'id'  => 'paypal',
+					'alt' => 'PayPal',
+					'src' => $this->gateway->icon,
+				),
+			),
 			'description'                 => $this->gateway->description,
 			'smartButtonsEnabled'         => $smart_buttons_enabled,
 			'placeOrderEnabled'           => $place_order_enabled,

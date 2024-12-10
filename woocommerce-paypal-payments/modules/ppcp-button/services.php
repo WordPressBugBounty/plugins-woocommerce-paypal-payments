@@ -38,6 +38,7 @@ use WooCommerce\PayPalCommerce\Button\Helper\ThreeDSecure;
 use WooCommerce\PayPalCommerce\Onboarding\Environment;
 use WooCommerce\PayPalCommerce\Onboarding\State;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
 
 return array(
 	'button.client_id'                            => static function ( ContainerInterface $container ): string {
@@ -108,9 +109,18 @@ return array(
 		assert( $settings_status instanceof SettingsStatus );
 
 		if ( in_array( $context, array( 'checkout', 'pay-now' ), true ) ) {
-			if ( $container->get( 'wcgateway.use-place-order-button' )
-				|| ! $settings_status->is_smart_button_enabled_for_location( $context )
-			) {
+			$redirect_to_pay = $container->get( 'wcgateway.use-place-order-button' );
+			if ( $redirect_to_pay ) {
+				// No smart buttons, redirect the current page to PayPal for payment.
+				return new DisabledSmartButton();
+			}
+
+			$no_smart_buttons  = ! $settings_status->is_smart_button_enabled_for_location( $context );
+			$dcc_configuration = $container->get( 'wcgateway.configuration.dcc' );
+			assert( $dcc_configuration instanceof DCCGatewayConfiguration );
+
+			if ( $no_smart_buttons && ! $dcc_configuration->is_enabled() ) {
+				// Smart buttons disabled, and also not using advanced card payments.
 				return new DisabledSmartButton();
 			}
 		}

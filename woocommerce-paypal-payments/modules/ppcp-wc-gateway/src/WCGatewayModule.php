@@ -181,34 +181,43 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
 			}
 		);
 
-		if ( $c->has( 'wcgateway.url' ) ) {
-			$settings_status = $c->get( 'wcgateway.settings.status' );
-			assert( $settings_status instanceof SettingsStatus );
+		add_action(
+			'admin_enqueue_scripts',
+			function () use ( $c ) {
+				if ( ! is_admin() || wp_doing_ajax() ) {
+					return;
+				}
+				if ( ! $c->has( 'wcgateway.url' ) ) {
+					return;
+				}
+				$settings_status = $c->get( 'wcgateway.settings.status' );
+				assert( $settings_status instanceof SettingsStatus );
 
-			$settings = $c->get( 'wcgateway.settings' );
-			assert( $settings instanceof Settings );
+				$settings = $c->get( 'wcgateway.settings' );
+				assert( $settings instanceof Settings );
 
-			$dcc_configuration = $c->get( 'wcgateway.configuration.dcc' );
-			assert( $dcc_configuration instanceof DCCGatewayConfiguration );
+				$dcc_configuration = $c->get( 'wcgateway.configuration.dcc' );
+				assert( $dcc_configuration instanceof DCCGatewayConfiguration );
 
-			$assets = new SettingsPageAssets(
-				$c->get( 'wcgateway.url' ),
-				$c->get( 'ppcp.asset-version' ),
-				$c->get( 'wc-subscriptions.helper' ),
-				$c->get( 'button.client_id_for_admin' ),
-				$c->get( 'api.shop.currency.getter' ),
-				$c->get( 'api.shop.country' ),
-				$c->get( 'onboarding.environment' ),
-				$settings_status->is_pay_later_button_enabled(),
-				$settings->has( 'disable_funding' ) ? $settings->get( 'disable_funding' ) : array(),
-				$c->get( 'wcgateway.settings.funding-sources' ),
-				$c->get( 'wcgateway.is-ppcp-settings-page' ),
-				$dcc_configuration->is_enabled(),
-				$c->get( 'api.endpoint.billing-agreements' ),
-				$c->get( 'wcgateway.is-ppcp-settings-payment-methods-page' )
-			);
-			$assets->register_assets();
-		}
+				$assets = new SettingsPageAssets(
+					$c->get( 'wcgateway.url' ),
+					$c->get( 'ppcp.asset-version' ),
+					$c->get( 'wc-subscriptions.helper' ),
+					$c->get( 'button.client_id_for_admin' ),
+					$c->get( 'api.shop.currency.getter' ),
+					$c->get( 'api.shop.country' ),
+					$c->get( 'onboarding.environment' ),
+					$settings_status->is_pay_later_button_enabled(),
+					$settings->has( 'disable_funding' ) ? $settings->get( 'disable_funding' ) : array(),
+					$c->get( 'wcgateway.settings.funding-sources' ),
+					$c->get( 'wcgateway.is-ppcp-settings-page' ),
+					$dcc_configuration->is_enabled(),
+					$c->get( 'api.endpoint.billing-agreements' ),
+					$c->get( 'wcgateway.is-ppcp-settings-payment-methods-page' )
+				);
+				$assets->register_assets();
+			}
+		);
 
 		add_filter(
 			Repository::NOTICES_FILTER,

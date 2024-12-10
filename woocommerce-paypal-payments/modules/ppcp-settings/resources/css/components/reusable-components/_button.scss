@@ -5,29 +5,30 @@ button.components-button, a.components-button {
 		}
 
 		&:disabled {
-			background-color: $color-gray-500;
-			color: $color-white;
+			color: $color-gray-700;
 		}
 
-		border-radius: 2px;
-		padding: 14px 17px;
+		border-radius: 50px;
+		padding: 15px 32px;
 		height: auto;
-
-
 	}
 
 	&.is-primary {
-		@include font(13, 16, 500);
-		color:$color-white;
+		@include font(14, 18, 900);
+
+		&:not(:disabled) {
+			background-color: $color-black;
+		}
 	}
 
 	&.is-secondary:not(:disabled) {
-		border-color:$color-blueberry;
-		background-color:$color-white;
-		color:$color-blueberry;
-		&:hover{
-			background-color:$color-white;
-			background:none;
+		border-color: $color-blueberry;
+		background-color: $color-white;
+		color: $color-blueberry;
+
+		&:hover {
+			background-color: $color-white;
+			background: none;
 		}
 	}
 

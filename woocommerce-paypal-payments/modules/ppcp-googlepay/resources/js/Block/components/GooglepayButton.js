@@ -1,12 +1,15 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import useGooglepayApiToGenerateButton from '../hooks/useGooglepayApiToGenerateButton';
 import usePayPalScript from '../hooks/usePayPalScript';
 import useGooglepayScript from '../hooks/useGooglepayScript';
 import useGooglepayConfig from '../hooks/useGooglepayConfig';
 
-const GooglepayButton = ( { namespace, buttonConfig, ppcpConfig } ) => {
-	const [ buttonHtml, setButtonHtml ] = useState( '' );
-	const [ buttonElement, setButtonElement ] = useState( null );
+const GooglepayButton = ( {
+	namespace,
+	buttonConfig,
+	ppcpConfig,
+	buttonAttributes,
+} ) => {
 	const [ componentFrame, setComponentFrame ] = useState( null );
 	const isPayPalLoaded = usePayPalScript( namespace, ppcpConfig );
 
@@ -18,35 +21,45 @@ const GooglepayButton = ( { namespace, buttonConfig, ppcpConfig } ) => {
 
 	const googlepayConfig = useGooglepayConfig( namespace, isGooglepayLoaded );
 
-	useEffect( () => {
-		if ( ! buttonElement ) {
-			return;
-		}
-
-		setComponentFrame( buttonElement.ownerDocument );
-	}, [ buttonElement ] );
-
-	const googlepayButton = useGooglepayApiToGenerateButton(
+	const { button, containerStyles } = useGooglepayApiToGenerateButton(
 		componentFrame,
 		namespace,
 		buttonConfig,
 		ppcpConfig,
-		googlepayConfig
+		googlepayConfig,
+		buttonAttributes
 	);
 
-	useEffect( () => {
-		if ( googlepayButton ) {
-			const hideLoader =
-				'<style>.block-editor-iframe__html .gpay-card-info-animated-progress-bar-container {display:none !important}</style>';
-			setButtonHtml( googlepayButton.outerHTML + hideLoader );
-		}
-	}, [ googlepayButton ] );
-
 	return (
-		<div
-			ref={ setButtonElement }
-			dangerouslySetInnerHTML={ { __html: buttonHtml } }
-		/>
+		<>
+			<div
+				id="express-payment-method-ppcp-googlepay"
+				style={ containerStyles }
+				ref={ ( node ) => {
+					if ( ! node ) {
+						return;
+					}
+
+					// Set component frame
+					setComponentFrame( node.ownerDocument );
+
+					// Handle button mounting
+					while ( node.firstChild ) {
+						node.removeChild( node.firstChild );
+					}
+					if ( button ) {
+						node.appendChild( button );
+					}
+				} }
+			/>
+			{ button && (
+				<style>
+					{ `.block-editor-iframe__html .gpay-card-info-animated-progress-bar-container {
+                        display: none !important
+                    }` }
+				</style>
+			) }
+		</>
 	);
 };
 

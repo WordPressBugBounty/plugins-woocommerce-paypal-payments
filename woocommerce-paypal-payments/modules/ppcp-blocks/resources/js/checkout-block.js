@@ -802,9 +802,24 @@ if ( block_enabled ) {
 			);
 		}
 
+		const PaypalLabel = ( { components, config } ) => {
+			const { PaymentMethodIcons } = components;
+
+			return (
+				<>
+					<span
+						dangerouslySetInnerHTML={ {
+							__html: config.title,
+						} }
+					/>
+					<PaymentMethodIcons icons={ config.icon } align="right" />
+				</>
+			);
+		};
+
 		registerPaymentMethod( {
 			name: config.id,
-			label: <div dangerouslySetInnerHTML={ { __html: config.title } } />,
+			label: <PaypalLabel config={ config } />,
 			content: descriptionElement,
 			edit: descriptionElement,
 			placeOrderButtonLabel: config.placeOrderButtonText,

@@ -3,6 +3,7 @@ import { useSelect } from '@wordpress/data';
 import Fastlane from '../../../../ppcp-axo/resources/js/Connection/Fastlane';
 import { log } from '../../../../ppcp-axo/resources/js/Helper/Debug';
 import { useDeleteEmptyKeys } from './useDeleteEmptyKeys';
+import useCardOptions from './useCardOptions';
 import useAllowedLocations from './useAllowedLocations';
 import { STORE_NAME } from '../stores/axoStore';
 
@@ -26,6 +27,8 @@ const useFastlaneSdk = ( namespace, axoConfig, ppcpConfig ) => {
 		} ),
 		[]
 	);
+
+	const cardOptions = useCardOptions( axoConfig );
 
 	const styleOptions = useMemo( () => {
 		return deleteEmptyKeys( configRef.current.axoConfig.style_options );
@@ -51,10 +54,13 @@ const useFastlaneSdk = ( namespace, axoConfig, ppcpConfig ) => {
 					window.localStorage.setItem( 'axoEnv', 'sandbox' );
 				}
 
-				// Connect to Fastlane with locale and style options
+				// Connect to Fastlane with locale, style options, and allowed card brands
 				await fastlane.connect( {
 					locale: configRef.current.ppcpConfig.locale,
 					styles: styleOptions,
+					cardOptions: {
+						allowedBrands: cardOptions,
+					},
 					shippingAddressOptions: {
 						allowedLocations,
 					},
@@ -77,6 +83,7 @@ const useFastlaneSdk = ( namespace, axoConfig, ppcpConfig ) => {
 		styleOptions,
 		isPayPalLoaded,
 		namespace,
+		cardOptions,
 		allowedLocations,
 	] );
 

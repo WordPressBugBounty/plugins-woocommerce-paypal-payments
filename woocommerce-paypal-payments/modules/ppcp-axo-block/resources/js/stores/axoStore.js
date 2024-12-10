@@ -1,4 +1,4 @@
-import { createReduxStore, register, dispatch } from '@wordpress/data';
+import { createReduxStore, register, dispatch, select } from '@wordpress/data';
 
 export const STORE_NAME = 'woocommerce-paypal-payments/axo-block';
 
@@ -12,6 +12,7 @@ const DEFAULT_STATE = {
 	shippingAddress: null,
 	cardDetails: null,
 	phoneNumber: '',
+	cardChangeHandler: null,
 };
 
 // Action creators for updating the store state
@@ -52,6 +53,10 @@ const actions = {
 		type: 'SET_PHONE_NUMBER',
 		payload: phoneNumber,
 	} ),
+	setCardChangeHandler: ( cardChangeHandler ) => ( {
+		type: 'SET_CARD_CHANGE_HANDLER',
+		payload: cardChangeHandler,
+	} ),
 };
 
 /**
@@ -81,6 +86,8 @@ const reducer = ( state = DEFAULT_STATE, action ) => {
 			return { ...state, cardDetails: action.payload };
 		case 'SET_PHONE_NUMBER':
 			return { ...state, phoneNumber: action.payload };
+		case 'SET_CARD_CHANGE_HANDLER':
+			return { ...state, cardChangeHandler: action.payload };
 		default:
 			return state;
 	}
@@ -97,16 +104,19 @@ const selectors = {
 	getShippingAddress: ( state ) => state.shippingAddress,
 	getCardDetails: ( state ) => state.cardDetails,
 	getPhoneNumber: ( state ) => state.phoneNumber,
+	getCardChangeHandler: ( state ) => state.cardChangeHandler,
 };
 
 // Create and register the Redux store for the AXO block
-const store = createReduxStore( STORE_NAME, {
-	reducer,
-	actions,
-	selectors,
-} );
+if ( ! select( STORE_NAME ) ) {
+	const store = createReduxStore( STORE_NAME, {
+		reducer,
+		actions,
+		selectors,
+	} );
 
-register( store );
+	register( store );
+}
 
 // Action dispatchers
 
@@ -162,4 +172,13 @@ export const setCardDetails = ( cardDetails ) => {
  */
 export const setPhoneNumber = ( phoneNumber ) => {
 	dispatch( STORE_NAME ).setPhoneNumber( phoneNumber );
+};
+
+/**
+ * Action dispatcher to update the card change handler in the store.
+ *
+ * @param {Function} cardChangeHandler - The card change handler function.
+ */
+export const setCardChangeHandler = ( cardChangeHandler ) => {
+	dispatch( STORE_NAME ).setCardChangeHandler( cardChangeHandler );
 };

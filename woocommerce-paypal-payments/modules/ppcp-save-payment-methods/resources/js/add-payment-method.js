@@ -82,9 +82,8 @@ import {
 					renderFields( cardFields );
 				}
 
-				document
-					.querySelector( '#place_order' )
-					?.addEventListener( 'click', ( event ) => {
+                const placeOrderButton = document.querySelector( '#place_order' );
+				placeOrderButton?.addEventListener( 'click', ( event ) => {
 						const cardPaymentToken = document.querySelector(
 							'input[name="wc-ppcp-credit-card-gateway-payment-token"]:checked'
 						)?.value;
@@ -95,11 +94,11 @@ import {
 						) {
 							return;
 						}
-
+                        placeOrderButton.disabled = true;
 						event.preventDefault();
-
 						cardFields.submit().catch( ( error ) => {
 							console.error( error );
+                            placeOrderButton.disabled = false;
 						} );
 					} );
 			} );

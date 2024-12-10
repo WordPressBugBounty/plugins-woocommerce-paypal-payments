@@ -230,6 +230,16 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule {
 				);
 
 				/**
+				 * Late loading locations because of trouble with some shipping plugins
+				 */
+				add_filter(
+					'woocommerce_paypal_payments_axo_shipping_wc_enabled_locations',
+					function ( array $locations ) use ( $c ): array {
+						return array_merge( $locations, $c->get( 'axo.shipping-wc-enabled-locations' ) );
+					}
+				);
+
+				/**
 				 * Param types removed to avoid third-party issues.
 				 *
 				 * @psalm-suppress MissingClosureParamType
@@ -320,6 +330,15 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule {
 				$endpoint->handle_request();
 			}
 		);
+
+		// Enqueue the PayPal Insights script.
+		add_action(
+			'wp_enqueue_scripts',
+			function () use ( $c ) {
+				$this->enqueue_paypal_insights_script_on_order_received( $c );
+			}
+		);
+
 		return true;
 	}
 
@@ -377,11 +396,15 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule {
 		$dcc_configuration = $c->get( 'wcgateway.configuration.dcc' );
 		assert( $dcc_configuration instanceof DCCGatewayConfiguration );
 
+		$subscription_helper = $c->get( 'wc-subscriptions.helper' );
+		assert( $subscription_helper instanceof SubscriptionHelper );
+
 		return ! is_user_logged_in()
 			&& CartCheckoutDetector::has_classic_checkout()
 			&& $dcc_configuration->use_fastlane()
 			&& ! $this->is_excluded_endpoint()
-			&& is_checkout();
+			&& is_checkout()
+			&& ! $subscription_helper->cart_contains_subscription();
 	}
 
 	/**
@@ -431,8 +454,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule {
 	 * @return bool
 	 */
 	private function is_excluded_endpoint(): bool {
-		// Exclude the Order Pay endpoint.
-		return is_wc_endpoint_url( 'order-pay' );
+		// Exclude the Order Pay and Order Received endpoints.
+		return is_wc_endpoint_url( 'order-pay' ) || is_wc_endpoint_url( 'order-received' );
 	}
 
 	/**
@@ -452,5 +475,58 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule {
 			'<meta name="ppcp.axo" content="ppcp.axo.%s" />',
 			$axo_enabled ? 'enabled' : 'disabled'
 		);
+	}
+
+	/**
+	 * Enqueues PayPal Insights on the Order Received endpoint.
+	 *
+	 * @param ContainerInterface $c The service container.
+	 * @return void
+	 */
+	private function enqueue_paypal_insights_script_on_order_received( ContainerInterface $c ): void {
+		global $wp;
+
+		if ( ! isset( $wp->query_vars['order-received'] ) ) {
+			return;
+		}
+
+		$order_id = absint( $wp->query_vars['order-received'] );
+		if ( ! $order_id ) {
+			return;
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order || ! $order instanceof \WC_Order ) {
+			return;
+		}
+
+		$module_url    = $c->get( 'axo.url' );
+		$asset_version = $c->get( 'ppcp.asset-version' );
+		$insights_data = $c->get( 'axo.insights' );
+
+		wp_register_script(
+			'wc-ppcp-paypal-insights-end-checkout',
+			untrailingslashit( $module_url ) . '/assets/js/TrackEndCheckout.js',
+			array( 'wp-plugins', 'wp-data', 'wp-element', 'wc-blocks-registry' ),
+			$asset_version,
+			true
+		);
+
+		wp_localize_script(
+			'wc-ppcp-paypal-insights-end-checkout',
+			'wc_ppcp_axo_insights_data',
+			array_merge(
+				$insights_data,
+				array(
+					'orderId'       => $order_id,
+					'orderTotal'    => (string) $order->get_total(),
+					'orderCurrency' => (string) $order->get_currency(),
+					'paymentMethod' => (string) $order->get_payment_method(),
+					'orderKey'      => (string) $order->get_order_key(),
+				)
+			)
+		);
+
+		wp_enqueue_script( 'wc-ppcp-paypal-insights-end-checkout' );
 	}
 }

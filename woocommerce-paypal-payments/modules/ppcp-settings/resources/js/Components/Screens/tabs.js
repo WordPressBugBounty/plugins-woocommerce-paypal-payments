@@ -1,16 +1,16 @@
 import { __ } from '@wordpress/i18n';
-import TabDashboard from './Dashboard/TabDashboard';
-import TabPaymentMethods from './Dashboard/TabPaymentMethods';
-import TabSettings from './Dashboard/TabSettings';
-import TabStyling from './Dashboard/TabStyling';
+import TabOverview from './Overview/TabOverview';
+import TabPaymentMethods from './Overview/TabPaymentMethods';
+import TabSettings from './Overview/TabSettings';
+import TabStyling from './Overview/TabStyling';
 
 export const getSettingsTabs = () => {
 	const tabs = [];
 
 	tabs.push( {
-		name: 'dashboard',
-		title: __( 'Dashboard', 'woocommerce-paypal-payments' ),
-		component: <TabDashboard />,
+		name: 'overview',
+		title: __( 'Overview', 'woocommerce-paypal-payments' ),
+		component: <TabOverview />,
 	} );
 
 	tabs.push( {

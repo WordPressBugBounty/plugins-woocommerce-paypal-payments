@@ -19,7 +19,7 @@ if ( typeof window.PayPalCommerceGateway === 'undefined' ) {
 	window.PayPalCommerceGateway = ppcpConfig;
 }
 
-const ApplePayComponent = ( { isEditing } ) => {
+const ApplePayComponent = ( { isEditing, buttonAttributes } ) => {
 	const [ paypalLoaded, setPaypalLoaded ] = useState( false );
 	const [ applePayLoaded, setApplePayLoaded ] = useState( false );
 	const wrapperRef = useRef( null );
@@ -57,8 +57,13 @@ const ApplePayComponent = ( { isEditing } ) => {
 
 		buttonConfig.reactWrapper = wrapperRef.current;
 
-		new ManagerClass( namespace, buttonConfig, ppcpConfig );
-	}, [ paypalLoaded, applePayLoaded, isEditing ] );
+		new ManagerClass(
+			namespace,
+			buttonConfig,
+			ppcpConfig,
+			buttonAttributes
+		);
+	}, [ paypalLoaded, applePayLoaded, isEditing, buttonAttributes ] );
 
 	if ( isEditing ) {
 		return (
@@ -66,6 +71,7 @@ const ApplePayComponent = ( { isEditing } ) => {
 				namespace={ namespace }
 				buttonConfig={ buttonConfig }
 				ppcpConfig={ ppcpConfig }
+				buttonAttributes={ buttonAttributes }
 			/>
 		);
 	}
@@ -102,5 +108,6 @@ registerExpressPaymentMethod( {
 	canMakePayment: () => buttonData.enabled,
 	supports: {
 		features,
+		style: [ 'height', 'borderRadius' ],
 	},
 } );
