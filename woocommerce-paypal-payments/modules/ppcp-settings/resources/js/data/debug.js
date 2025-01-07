@@ -1,4 +1,4 @@
-import { OnboardingStoreName } from './index';
+import { OnboardingStoreName, CommonStoreName } from './index';
 
 export const addDebugTools = ( context, modules ) => {
 	if ( ! context || ! context?.debug ) {
@@ -33,9 +33,14 @@ export const addDebugTools = ( context, modules ) => {
 	};
 
 	context.resetStore = () => {
-		const onboarding = wp.data.dispatch( OnboardingStoreName );
-		onboarding.reset();
-		onboarding.persist();
+		const stores = [ OnboardingStoreName, CommonStoreName ];
+
+		stores.forEach( ( storeName ) => {
+			const store = wp.data.dispatch( storeName );
+
+			store.reset();
+			store.persist();
+		} );
 	};
 
 	context.startOnboarding = () => {

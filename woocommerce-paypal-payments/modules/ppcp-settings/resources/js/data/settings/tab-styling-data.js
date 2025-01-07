@@ -25,26 +25,56 @@ export const defaultLocationSettings = {
 		value: 'cart',
 		label: __( 'Cart', 'woocommerce-paypal-payments' ),
 		settings: { ...cartAndExpressCheckoutSettings },
+		// translators: %s: Link to Cart page
+		description: __(
+			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Cart page</a> and select which additional payment buttons to display in this location.',
+			'wooocommerce-paypal-payments'
+		),
+		descriptionLink: '#',
 	},
 	'classic-checkout': {
 		value: 'classic-checkout',
 		label: __( 'Classic Checkout', 'woocommerce-paypal-payments' ),
 		settings: { ...settings },
+		// translators: %s: Link to Classic Checkout page
+		description: __(
+			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Classic Checkout page</a> and choose which additional payment buttons to display in this location.',
+			'wooocommerce-paypal-payments'
+		),
+		descriptionLink: '#',
 	},
 	'express-checkout': {
 		value: 'express-checkout',
 		label: __( 'Express Checkout', 'woocommerce-paypal-payments' ),
 		settings: { ...cartAndExpressCheckoutSettings },
+		// translators: %s: Link to Express Checkout location
+		description: __(
+			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Express Checkout location</a> and choose which additional payment buttons to display in this location.',
+			'wooocommerce-paypal-payments'
+		),
+		descriptionLink: '#',
 	},
 	'mini-cart': {
 		value: 'mini-cart',
 		label: __( 'Mini Cart', 'woocommerce-paypel-payements' ),
 		settings: { ...settings },
+		// translators: %s: Link to Mini Cart
+		description: __(
+			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Mini Cart</a> and choose which additional payment buttons to display in this location.',
+			'wooocommerce-paypal-payments'
+		),
+		descriptionLink: '#',
 	},
 	'product-page': {
 		value: 'product-page',
 		label: __( 'Product Page', 'woocommerce-paypal-payments' ),
 		settings: { ...settings },
+		// translators: %s: Link to Product Page
+		description: __(
+			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Product Page</a> and choose which additional payment buttons to display in this location.',
+			'wooocommerce-paypal-payments'
+		),
+		descriptionLink: '#',
 	},
 };
 
@@ -56,10 +86,6 @@ export const paymentMethodOptions = [
 	{
 		value: 'paylater',
 		label: __( 'Pay Later', 'woocommerce-paypal-payments' ),
-	},
-	{
-		value: 'card',
-		label: __( 'Debit or Credit Card', 'woocommerce-paypal-payments' ),
 	},
 	{
 		value: 'googlepay',

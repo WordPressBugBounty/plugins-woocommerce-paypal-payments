@@ -33,5 +33,20 @@
 			margin: 6px 0px 0px 0px;
 			width: fit-content;
 		}
+
+		@media screen and (max-width: 480px) {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 8px;
+			flex-direction: column;
+
+			.ppcp-r-badge-box__title-text:not(:empty) + .ppcp-r-badge-box__title-image-badge {
+				margin: 0px;
+				img:first-of-type {
+					margin: 0px;
+				}
+			}
+		}
 	}
 }

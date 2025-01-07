@@ -16,6 +16,24 @@ export const persistentData = ( state ) => {
 };
 
 export const transientData = ( state ) => {
-	const { data, ...transientState } = getState( state );
+	const { data, merchant, wooSettings, ...transientState } =
+		getState( state );
 	return transientState || EMPTY_OBJ;
+};
+
+export const getActivityList = ( state ) => {
+	const { activities = new Map() } = state;
+	return Object.fromEntries( activities );
+};
+
+export const merchant = ( state ) => {
+	return getState( state ).merchant || EMPTY_OBJ;
+};
+
+export const wooSettings = ( state ) => {
+	return getState( state ).wooSettings || EMPTY_OBJ;
+};
+
+export const webhooks = ( state ) => {
+	return getState( state ).webhooks || EMPTY_OBJ;
 };

@@ -20,12 +20,6 @@
 		margin: 0 0 24px 0;
 	}
 
-	.ppcp-r-toggle-block__toggled-content > button{
-		@include small-button;
-		color: $color-white;
-		border: none;
-	}
-
 	.client-id-error {
 		color: #cc1818;
 		margin: -16px 0 24px;
@@ -78,6 +72,7 @@
 				border-right: 0;
 				padding-right: 0;
 				padding-bottom: 8px;
+				margin: 0px;
 			}
 		}
 	}

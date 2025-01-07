@@ -19,6 +19,13 @@ import { STORE_NAME } from './constants';
  */
 
 /**
+ * Special. Resets all values in the onboarding store to initial defaults.
+ *
+ * @return {Action} The action.
+ */
+export const reset = () => ( { type: ACTION_TYPES.RESET } );
+
+/**
  * Persistent. Set the full onboarding details, usually during app initialization.
  *
  * @param {{data: {}, flags?: {}}} payload
@@ -52,14 +59,35 @@ export const setIsSaving = ( isSaving ) => ( {
 } );
 
 /**
- * Transient. Changes the "manual connection is busy" flag.
+ * Transient (Activity): Marks the start of an async activity
+ * Think of it as "setIsBusy(true)"
  *
- * @param {boolean} isBusy
+ * @param {string}  id          Internal ID/key of the action, used to stop it again.
+ * @param {?string} description Optional, description for logging/debugging
+ * @return {?Action} The action.
+ */
+export const startActivity = ( id, description = null ) => {
+	if ( ! id || 'string' !== typeof id ) {
+		console.warn( 'Activity ID must be a non-empty string' );
+		return null;
+	}
+
+	return {
+		type: ACTION_TYPES.START_ACTIVITY,
+		payload: { id, description },
+	};
+};
+
+/**
+ * Transient (Activity): Marks the end of an async activity.
+ * Think of it as "setIsBusy(false)"
+ *
+ * @param {string} id Internal ID/key of the action, used to stop it again.
  * @return {Action} The action.
  */
-export const setIsBusy = ( isBusy ) => ( {
-	type: ACTION_TYPES.SET_TRANSIENT,
-	payload: { isBusy },
+export const stopActivity = ( id ) => ( {
+	type: ACTION_TYPES.STOP_ACTIVITY,
+	payload: { id },
 } );
 
 /**
@@ -118,17 +146,22 @@ export const persist = function* () {
 };
 
 /**
- * Side effect. Initiates the sandbox login ISU.
+ * Side effect. Fetches the ISU-login URL for a sandbox account.
  *
  * @return {Action} The action.
  */
-export const connectViaSandbox = function* () {
-	yield setIsBusy( true );
+export const connectToSandbox = function* () {
+	return yield { type: ACTION_TYPES.DO_SANDBOX_LOGIN };
+};
 
-	const result = yield { type: ACTION_TYPES.DO_SANDBOX_LOGIN };
-	yield setIsBusy( false );
-
-	return result;
+/**
+ * Side effect. Fetches the ISU-login URL for a production account.
+ *
+ * @param {string[]} products Which products/features to display in the ISU popup.
+ * @return {Action} The action.
+ */
+export const connectToProduction = function* ( products = [] ) {
+	return yield { type: ACTION_TYPES.DO_PRODUCTION_LOGIN, products };
 };
 
 /**
@@ -140,15 +173,89 @@ export const connectViaIdAndSecret = function* () {
 	const { clientId, clientSecret, useSandbox } =
 		yield select( STORE_NAME ).persistentData();
 
-	yield setIsBusy( true );
-
-	const result = yield {
+	return yield {
 		type: ACTION_TYPES.DO_MANUAL_CONNECTION,
 		clientId,
 		clientSecret,
 		useSandbox,
 	};
-	yield setIsBusy( false );
+};
+
+/**
+ * Side effect. Clears and refreshes the merchant data via a REST request.
+ *
+ * @return {Action} The action.
+ */
+export const refreshMerchantData = function* () {
+	const result = yield { type: ACTION_TYPES.DO_REFRESH_MERCHANT };
+
+	if ( result.success && result.merchant ) {
+		yield hydrate( result );
+	}
 
 	return result;
+};
+
+/**
+ * Side effect.
+ * Purges all feature status data via a REST request.
+ * Refreshes the merchant data via a REST request.
+ *
+ * @return {Action} The action.
+ */
+export const refreshFeatureStatuses = function* () {
+	const result = yield { type: ACTION_TYPES.DO_REFRESH_FEATURES };
+
+	if ( result && result.success ) {
+		// TODO: Review if we can get the updated feature details in the result.data instead of
+		//       doing a second refreshMerchantData() request.
+		yield refreshMerchantData();
+	}
+
+	return result;
+};
+
+/**
+ * Persistent. Changes the "webhooks" value.
+ *
+ * @param {string} webhooks
+ * @return {Action} The action.
+ */
+export const setWebhooks = ( webhooks ) => ( {
+	type: ACTION_TYPES.SET_PERSISTENT,
+	payload: { webhooks },
+} );
+
+/**
+ * Side effect
+ * Refreshes subscribed webhooks via a REST request
+ *
+ * @return {Action} The action.
+ */
+export const resubscribeWebhooks = function* () {
+	const result = yield { type: ACTION_TYPES.DO_RESUBSCRIBE_WEBHOOKS };
+
+	if ( result && result.success ) {
+		yield hydrate( result );
+	}
+
+	return result;
+};
+
+/**
+ * Side effect. Starts webhook simulation.
+ *
+ * @return {Action} The action.
+ */
+export const startWebhookSimulation = function* () {
+	return yield { type: ACTION_TYPES.DO_START_WEBHOOK_SIMULATION };
+};
+
+/**
+ * Side effect. Checks webhook simulation.
+ *
+ * @return {Action} The action.
+ */
+export const checkWebhookSimulationState = function* () {
+	return yield { type: ACTION_TYPES.DO_CHECK_WEBHOOK_SIMULATION_STATE };
 };

@@ -1,8 +1,13 @@
 import { Spinner } from '@wordpress/components';
 
-const SpinnerOverlay = () => {
+const SpinnerOverlay = ( { message = '' } ) => {
 	return (
 		<div className="ppcp-r-spinner-overlay">
+			{ message && (
+				<span className="ppcp-r-spinner-overlay__message">
+					{ message }
+				</span>
+			) }
 			<Spinner />
 		</div>
 	);

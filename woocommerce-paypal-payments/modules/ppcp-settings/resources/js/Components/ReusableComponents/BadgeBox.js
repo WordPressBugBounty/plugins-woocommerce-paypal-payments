@@ -1,6 +1,4 @@
 import data from '../../utils/data';
-import TitleBadge, { TITLE_BADGE_INFO } from './TitleBadge';
-import { __ } from '@wordpress/i18n';
 
 const BadgeBox = ( props ) => {
 	const titleSize =
@@ -29,12 +27,7 @@ const BadgeBox = ( props ) => {
 					</span>
 				) }
 
-				{ props.textBadge && (
-					<TitleBadge
-						type={ TITLE_BADGE_INFO }
-						text={ props.textBadge }
-					/>
-				) }
+				{ props.textBadge }
 			</span>
 			<div className="ppcp-r-badge-box__description">
 				{ props?.description && (

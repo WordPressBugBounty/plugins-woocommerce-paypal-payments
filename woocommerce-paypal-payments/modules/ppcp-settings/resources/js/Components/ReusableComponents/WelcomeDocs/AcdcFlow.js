@@ -1,18 +1,12 @@
-import BadgeBox, { BADGE_BOX_TITLE_BIG } from '../BadgeBox';
 import { __, sprintf } from '@wordpress/i18n';
+
+import BadgeBox, { BADGE_BOX_TITLE_BIG } from '../BadgeBox';
 import Separator from '../Separator';
-import generatePriceText from '../../../utils/badgeBoxUtils';
-import { countryPriceInfo } from '../../../utils/countryPriceInfo';
-
 import OptionalPaymentMethods from '../OptionalPaymentMethods/OptionalPaymentMethods';
+import PricingTitleBadge from '../PricingTitleBadge';
 
-const AcdcFlow = ( {
-	isFastlane,
-	isPayLater,
-	storeCountry,
-	storeCurrency,
-} ) => {
-	if ( isFastlane && isPayLater && storeCountry === 'us' ) {
+const AcdcFlow = ( { isFastlane, isPayLater, storeCountry } ) => {
+	if ( isFastlane && isPayLater && storeCountry === 'US' ) {
 		return (
 			<div className="ppcp-r-welcome-docs__wrapper">
 				<div className="ppcp-r-welcome-docs__col">
@@ -22,11 +16,7 @@ const AcdcFlow = ( {
 							'woocommerce-paypal-payments'
 						) }
 						titleType={ BADGE_BOX_TITLE_BIG }
-						textBadge={ generatePriceText(
-							'checkout',
-							countryPriceInfo[ storeCountry ],
-							storeCurrency
-						) }
+						textBadge={ <PricingTitleBadge item="checkout" /> }
 						description={ __(
 							'Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximise conversion',
 							'woocommerce-paypal-payments'
@@ -63,10 +53,13 @@ const AcdcFlow = ( {
 						imageBadge={ [
 							'icon-payment-method-paypal-small.svg',
 						] }
+                        textBadge={
+                            <PricingTitleBadge item="plater" />
+                        }
 						description={ sprintf(
 							// translators: %s: Link to PayPal business fees guide
 							__(
-								'Offer installment payment options and get paid upfront - at no extra cost to you. <a target="_blank" href="%s">Learn more</a>',
+								'Offer installment payment options and get paid upfront. <a target="_blank" href="%s">Learn more</a>',
 								'woocommerce-paypal-payments'
 							),
 							'https://www.paypal.com/us/business/paypal-business-fees'
@@ -116,14 +109,13 @@ const AcdcFlow = ( {
 						isFastlane={ isFastlane }
 						isPayLater={ isPayLater }
 						storeCountry={ storeCountry }
-						storeCurrency={ storeCurrency }
 					/>
 				</div>
 			</div>
 		);
 	}
 
-	if ( isPayLater && storeCountry === 'uk' ) {
+	if ( isPayLater && storeCountry === 'UK' ) {
 		return (
 			<div className="ppcp-r-welcome-docs__wrapper">
 				<div className="ppcp-r-welcome-docs__col">
@@ -133,11 +125,7 @@ const AcdcFlow = ( {
 							'woocommerce-paypal-payments'
 						) }
 						titleType={ BADGE_BOX_TITLE_BIG }
-						textBadge={ generatePriceText(
-							'checkout',
-							countryPriceInfo[ storeCountry ],
-							storeCurrency
-						) }
+						textBadge={ <PricingTitleBadge item="checkout" /> }
 						description={ __(
 							'Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximise conversion',
 							'woocommerce-paypal-payments'
@@ -201,7 +189,6 @@ const AcdcFlow = ( {
 						isFastlane={ isFastlane }
 						isPayLater={ isPayLater }
 						storeCountry={ storeCountry }
-						storeCurrency={ storeCurrency }
 					/>
 				</div>
 			</div>
@@ -217,11 +204,7 @@ const AcdcFlow = ( {
 						'woocommerce-paypal-payments'
 					) }
 					titleType={ BADGE_BOX_TITLE_BIG }
-					textBadge={ generatePriceText(
-						'checkout',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="checkout" /> }
 					description={ __(
 						'Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximise conversion',
 						'woocommerce-paypal-payments'
@@ -256,7 +239,7 @@ const AcdcFlow = ( {
 					description={ sprintf(
 						// translators: %s: Link to PayPal REST application guide
 						__(
-							'Offer installment payment options and get paid upfront - at no extra cost to you. <a target="_blank" href="%s">Learn more</a>',
+							'Offer installment payment options and get paid upfront. <a target="_blank" href="%s">Learn more</a>',
 							'woocommerce-paypal-payments'
 						),
 						'https://woocommerce.com/document/woocommerce-paypal-payments/#manual-credential-input '
@@ -280,7 +263,6 @@ const AcdcFlow = ( {
 					isFastlane={ isFastlane }
 					isPayLater={ isPayLater }
 					storeCountry={ storeCountry }
-					storeCurrency={ storeCurrency }
 				/>
 			</div>
 		</div>

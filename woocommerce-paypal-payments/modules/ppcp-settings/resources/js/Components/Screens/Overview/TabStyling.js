@@ -90,7 +90,7 @@ const TabStyling = () => {
 	return (
 		<div className="ppcp-r-styling">
 			<div className="ppcp-r-styling__settings">
-				<SectionIntro />
+				<SectionIntro location={ location } />
 				<SectionLocations
 					locationOptions={ locationOptions }
 					location={ location }
@@ -157,20 +157,17 @@ const TabStylingSection = ( props ) => {
 	);
 };
 
-const SectionIntro = () => {
-	const buttonStyleDescription = sprintf(
-		// translators: %s: Link to Classic checkout page
-		__(
-			'Customize the appearance of the PayPal smart buttons on the <a href="%s">[MISSING LINK]Classic Checkout page</a>. Checkout Buttons must be enabled to display the PayPal gateway on the Checkout page.'
-		),
-		'#'
-	);
+const SectionIntro = ( { location } ) => {
+	const { description, descriptionLink } =
+		defaultLocationSettings[ location ];
+	const buttonStyleDescription = sprintf( description, descriptionLink );
+
 	return (
 		<TabStylingSection
 			className="ppcp-r-styling__section--rc ppcp-r-styling__section--empty"
 			title={ __( 'Button Styling', 'wooocommerce-paypal-payments' ) }
 			description={ buttonStyleDescription }
-		></TabStylingSection>
+		/>
 	);
 };
 
@@ -321,6 +318,7 @@ const SectionButtonPreview = ( { locationSettings } ) => {
 				clientId: 'test',
 				merchantId: 'QTQX5NP6N9WZU',
 				components: 'buttons,googlepay',
+				'disable-funding': 'card',
 				'buyer-country': 'US',
 				currency: 'USD',
 			} }

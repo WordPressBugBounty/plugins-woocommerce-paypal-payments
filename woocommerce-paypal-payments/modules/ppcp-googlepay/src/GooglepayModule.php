@@ -232,6 +232,26 @@ class GooglepayModule implements ServiceModule, ExtendingModule, ExecutableModul
 			2
 		);
 
+		add_filter(
+			'woocommerce_paypal_payments_rest_common_merchant_data',
+			function ( array $merchant_data ) use ( $c ): array {
+				if ( ! isset( $merchant_data['features'] ) ) {
+					$merchant_data['features'] = array();
+				}
+
+				$product_status = $c->get( 'googlepay.helpers.apm-product-status' );
+				assert( $product_status instanceof ApmProductStatus );
+
+				$google_pay_enabled = $product_status->is_active();
+
+				$merchant_data['features']['google_pay'] = array(
+					'enabled' => $google_pay_enabled,
+				);
+
+				return $merchant_data;
+			}
+		);
+
 		return true;
 	}
 }

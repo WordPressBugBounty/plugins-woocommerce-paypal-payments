@@ -1,13 +1,11 @@
 import { __ } from '@wordpress/i18n';
-import SettingsBlock, {
-	SETTINGS_BLOCK_STYLING_TYPE_PRIMARY,
-	SETTINGS_BLOCK_STYLING_TYPE_SECONDARY,
-	SETTINGS_BLOCK_TYPE_SELECT,
-	SETTINGS_BLOCK_TYPE_TOGGLE_CONTENT,
-} from '../../../ReusableComponents/SettingsBlock';
 import SettingsCard from '../../../ReusableComponents/SettingsCard';
+import {
+	Content,
+	ContentWrapper,
+} from '../../../ReusableComponents/SettingsBlocks';
 import Sandbox from './Blocks/Sandbox';
-import Troubleshooting from './Blocks/Troubleshooting';
+import Troubleshooting from './Blocks/Troubleshooting/Troubleshooting';
 import PaypalSettings from './Blocks/PaypalSettings';
 import OtherSettings from './Blocks/OtherSettings';
 
@@ -25,25 +23,37 @@ const ExpertSettings = ( { updateFormValue, settings } ) => {
 				callback: updateFormValue,
 				key: 'payNowExperience',
 			} }
+			contentContainer={ false }
 		>
-			<Sandbox
-				updateFormValue={ updateFormValue }
-				settings={ settings }
-			/>
+			<ContentWrapper>
+				<Content>
+					<Sandbox
+						updateFormValue={ updateFormValue }
+						settings={ settings }
+					/>
+				</Content>
 
-			<Troubleshooting
-				updateFormValue={ updateFormValue }
-				settings={ settings }
-			/>
+				<Content>
+					<Troubleshooting
+						updateFormValue={ updateFormValue }
+						settings={ settings }
+					/>
+				</Content>
 
-			<PaypalSettings
-				updateFormValue={ updateFormValue }
-				settings={ settings }
-			/>
-			<OtherSettings
-				updateFormValue={ updateFormValue }
-				settings={ settings }
-			/>
+				<Content>
+					<PaypalSettings
+						updateFormValue={ updateFormValue }
+						settings={ settings }
+					/>
+				</Content>
+
+				<Content>
+					<OtherSettings
+						updateFormValue={ updateFormValue }
+						settings={ settings }
+					/>
+				</Content>
+			</ContentWrapper>
 		</SettingsCard>
 	);
 };

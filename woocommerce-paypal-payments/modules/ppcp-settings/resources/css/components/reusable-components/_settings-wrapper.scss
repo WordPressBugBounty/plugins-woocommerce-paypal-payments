@@ -16,6 +16,17 @@
 		}
 	}
 
+	&-settings {
+		 > * {
+			margin-bottom: $card-vertical-gap;
+		}
+
+		 > *:not(:last-child) {
+			padding-bottom: $card-vertical-gap;
+			border-bottom: 1px solid $color-gray-200;
+		}
+	}
+
 	&-settings-card {
 		@media screen and (min-width: 960px) {
 			display: flex;
@@ -24,6 +35,12 @@
 
 		@media screen and (max-width: 480px) {
 			padding: 24px;
+		}
+
+		&__content-wrapper {
+			display: flex;
+			flex-direction: column;
+			gap: 24px;
 		}
 
 		&__header {
@@ -43,21 +60,25 @@
 		}
 
 		&__content {
+			border: 1px solid $color-gray-200;
+			border-radius: 4px;
+			padding: 24px;
 			@media screen and (min-width: 960px) {
 				flex: 1;
 			}
 		}
 
 		&__title {
-			@include font(16, 24, 600);
-			color: $color-blueberry;
+			@include font(13, 24, 600);
+			color: $color-text-text;
 			margin: 0 0 4px 0;
 			display: block;
 		}
 
+
 		&__description {
-			@include font(14, 20, 400);
-			color: $color-gray-800;
+			@include font(13, 20, 400);
+			color: $color-text-tertiary;
 			margin: 0;
 		}
 	}

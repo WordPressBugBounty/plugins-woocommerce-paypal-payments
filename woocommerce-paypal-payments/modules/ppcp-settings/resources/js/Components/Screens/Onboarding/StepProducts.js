@@ -9,6 +9,7 @@ const PRODUCTS_CHECKBOX_GROUP_NAME = 'products';
 
 const StepProducts = () => {
 	const { products, setProducts } = OnboardingHooks.useProducts();
+	const { canUseSubscriptions } = OnboardingHooks.useFlags();
 
 	return (
 		<div className="ppcp-r-page-products">
@@ -86,31 +87,33 @@ const StepProducts = () => {
 							</li>
 						</ul>
 					</SelectBox>
-					<SelectBox
-						title={ __(
-							'Subscriptions',
-							'woocommerce-paypal-payments'
-						) }
-						description={ __(
-							'Recurring payments for either physical goods or services.',
-							'woocommerce-paypal-payments'
-						) }
-						name={ PRODUCTS_CHECKBOX_GROUP_NAME }
-						value={ PRODUCT_TYPES.SUBSCRIPTIONS }
-						changeCallback={ setProducts }
-						currentValue={ products }
-						type="checkbox"
-					>
-						<a
-							target="__blank"
-							href="https://woocommerce.com/document/woocommerce-paypal-payments/#subscriptions-faq"
-						>
-							{ __(
-								'WooCommerce Subscriptions',
+					{ canUseSubscriptions && (
+						<SelectBox
+							title={ __(
+								'Subscriptions',
 								'woocommerce-paypal-payments'
 							) }
-						</a>
-					</SelectBox>
+							description={ __(
+								'Recurring payments for either physical goods or services.',
+								'woocommerce-paypal-payments'
+							) }
+							name={ PRODUCTS_CHECKBOX_GROUP_NAME }
+							value={ PRODUCT_TYPES.SUBSCRIPTIONS }
+							changeCallback={ setProducts }
+							currentValue={ products }
+							type="checkbox"
+						>
+							<a
+								target="__blank"
+								href="https://woocommerce.com/document/woocommerce-paypal-payments/#subscriptions-faq"
+							>
+								{ __(
+									'WooCommerce Subscriptions',
+									'woocommerce-paypal-payments'
+								) }
+							</a>
+						</SelectBox>
+					) }
 				</SelectBoxWrapper>
 			</div>
 		</div>

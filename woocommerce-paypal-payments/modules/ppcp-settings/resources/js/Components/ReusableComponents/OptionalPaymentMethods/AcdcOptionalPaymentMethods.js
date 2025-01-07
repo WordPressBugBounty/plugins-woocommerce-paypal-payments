@@ -1,16 +1,15 @@
-import BadgeBox, { BADGE_BOX_TITLE_BIG } from '../BadgeBox';
 import { __, sprintf } from '@wordpress/i18n';
+
+import BadgeBox from '../BadgeBox';
 import Separator from '../Separator';
-import generatePriceText from '../../../utils/badgeBoxUtils';
-import { countryPriceInfo } from '../../../utils/countryPriceInfo';
+import PricingTitleBadge from '../PricingTitleBadge';
 
 const AcdcOptionalPaymentMethods = ( {
 	isFastlane,
 	isPayLater,
 	storeCountry,
-	storeCurrency,
 } ) => {
-	if ( isFastlane && isPayLater && storeCountry === 'us' ) {
+	if ( isFastlane && isPayLater && storeCountry === 'US' ) {
 		return (
 			<div className="ppcp-r-optional-payment-methods__wrapper">
 				<BadgeBox
@@ -24,11 +23,7 @@ const AcdcOptionalPaymentMethods = ( {
 						'icon-button-amex.svg',
 						'icon-button-discover.svg',
 					] }
-					textBadge={ generatePriceText(
-						'ccf',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="ccf" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -48,11 +43,7 @@ const AcdcOptionalPaymentMethods = ( {
 						'icon-button-apple-pay.svg',
 						'icon-button-google-pay.svg',
 					] }
-					textBadge={ generatePriceText(
-						'dw',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="dw" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -69,16 +60,11 @@ const AcdcOptionalPaymentMethods = ( {
 						'woocommerce-paypal-payments'
 					) }
 					imageBadge={ [
-						'icon-button-sepa.svg',
 						'icon-button-ideal.svg',
 						'icon-button-blik.svg',
 						'icon-button-bancontact.svg',
 					] }
-					textBadge={ generatePriceText(
-						'apm',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="apm" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -92,11 +78,9 @@ const AcdcOptionalPaymentMethods = ( {
 				<BadgeBox
 					title={ __( '', 'woocommerce-paypal-payments' ) }
 					imageBadge={ [ 'icon-payment-method-fastlane-small.svg' ] }
-					textBadge={ generatePriceText(
-						'fastlane',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={
+						<PricingTitleBadge item="fast country currency=storeCurrency=storeCountrylane" />
+					}
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -124,11 +108,7 @@ const AcdcOptionalPaymentMethods = ( {
 						'icon-button-amex.svg',
 						'icon-button-discover.svg',
 					] }
-					textBadge={ generatePriceText(
-						'ccf',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="ccf" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -148,11 +128,7 @@ const AcdcOptionalPaymentMethods = ( {
 						'icon-button-apple-pay.svg',
 						'icon-button-google-pay.svg',
 					] }
-					textBadge={ generatePriceText(
-						'dw',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="dw" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -174,11 +150,7 @@ const AcdcOptionalPaymentMethods = ( {
 						'icon-button-blik.svg',
 						'icon-button-bancontact.svg',
 					] }
-					textBadge={ generatePriceText(
-						'apm',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={ <PricingTitleBadge item="apm" /> }
 					description={ sprintf(
 						// translators: %s: Link to PayPal business fees guide
 						__(
@@ -205,11 +177,7 @@ const AcdcOptionalPaymentMethods = ( {
 					'icon-button-amex.svg',
 					'icon-button-discover.svg',
 				] }
-				textBadge={ generatePriceText(
-					'ccf',
-					countryPriceInfo[ storeCountry ],
-					storeCurrency
-				) }
+				textBadge={ <PricingTitleBadge item="ccf" /> }
 				description={ sprintf(
 					// translators: %s: Link to PayPal business fees guide
 					__(
@@ -226,11 +194,7 @@ const AcdcOptionalPaymentMethods = ( {
 					'icon-button-apple-pay.svg',
 					'icon-button-google-pay.svg',
 				] }
-				textBadge={ generatePriceText(
-					'dw',
-					countryPriceInfo[ storeCountry ],
-					storeCurrency
-				) }
+				textBadge={ <PricingTitleBadge item="dw" /> }
 				description={ sprintf(
 					// translators: %s: Link to PayPal business fees guide
 					__(
@@ -252,11 +216,7 @@ const AcdcOptionalPaymentMethods = ( {
 					'icon-button-blik.svg',
 					'icon-button-bancontact.svg',
 				] }
-				textBadge={ generatePriceText(
-					'apm',
-					countryPriceInfo[ storeCountry ],
-					storeCurrency
-				) }
+				textBadge={ <PricingTitleBadge item="apm" /> }
 				description={ sprintf(
 					// translators: %s: Link to PayPal business fees guide
 					__(

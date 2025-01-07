@@ -11,6 +11,7 @@ namespace WooCommerce\PayPalCommerce\Settings;
 
 use WooCommerce\PayPalCommerce\Settings\Endpoint\RestEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Endpoint\SwitchSettingsUiEndpoint;
+use WooCommerce\PayPalCommerce\Settings\Handler\ConnectionListener;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
@@ -85,7 +86,7 @@ class SettingsModule implements ServiceModule, ExecutableModule {
 				}
 			);
 
-			$endpoint = $container->get( 'settings.switch-ui.endpoint' );
+			$endpoint = $container->get( 'settings.switch-ui.endpoint' ) ? $container->get( 'settings.switch-ui.endpoint' ) : null;
 			assert( $endpoint instanceof SwitchSettingsUiEndpoint );
 
 			add_action(
@@ -180,12 +181,25 @@ class SettingsModule implements ServiceModule, ExecutableModule {
 					$container->get( 'settings.rest.common' ),
 					$container->get( 'settings.rest.connect_manual' ),
 					$container->get( 'settings.rest.login_link' ),
+					$container->get( 'settings.rest.webhooks' ),
+					$container->get( 'settings.rest.refresh_feature_status' ),
 				);
 
 				foreach ( $endpoints as $endpoint ) {
 					assert( $endpoint instanceof RestEndpoint );
 					$endpoint->register_routes();
 				}
+			}
+		);
+
+		add_action(
+			'admin_init',
+			static function () use ( $container ) : void {
+				$connection_handler = $container->get( 'settings.handler.connection-listener' );
+				assert( $connection_handler instanceof ConnectionListener );
+
+				// @phpcs:ignore WordPress.Security.NonceVerification.Recommended -- no nonce; sanitation done by the handler
+				$connection_handler->process( get_current_user_id(), $_GET );
 			}
 		);
 

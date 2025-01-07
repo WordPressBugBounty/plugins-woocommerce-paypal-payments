@@ -58,6 +58,43 @@ class CommonRestEndpoint extends RestEndpoint {
 			'js_name'  => 'clientSecret',
 			'sanitize' => 'sanitize_text_field',
 		),
+		'webhooks'              => array(
+			'js_name' => 'webhooks',
+		),
+	);
+
+	/**
+	 * Map merchant details to JS names.
+	 *
+	 * @var array
+	 */
+	private array $merchant_info_map = array(
+		'merchant_connected' => array(
+			'js_name' => 'isConnected',
+		),
+		'sandbox_merchant'   => array(
+			'js_name' => 'isSandbox',
+		),
+		'merchant_id'        => array(
+			'js_name' => 'id',
+		),
+		'merchant_email'     => array(
+			'js_name' => 'email',
+		),
+	);
+
+	/**
+	 * Map woo-settings to JS names.
+	 *
+	 * @var array
+	 */
+	private array $woo_settings_map = array(
+		'country'  => array(
+			'js_name' => 'storeCountry',
+		),
+		'currency' => array(
+			'js_name' => 'storeCurrency',
+		),
 	);
 
 	/**
@@ -96,6 +133,18 @@ class CommonRestEndpoint extends RestEndpoint {
 				),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			"/$this->rest_base/merchant",
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_merchant_details' ),
+					'permission_callback' => array( $this, 'check_permission' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -109,7 +158,10 @@ class CommonRestEndpoint extends RestEndpoint {
 			$this->field_map
 		);
 
-		return $this->return_success( $js_data );
+		$extra_data = $this->add_woo_settings( array() );
+		$extra_data = $this->add_merchant_info( $extra_data );
+
+		return $this->return_success( $js_data, $extra_data );
 	}
 
 	/**
@@ -129,5 +181,56 @@ class CommonRestEndpoint extends RestEndpoint {
 		$this->settings->save();
 
 		return $this->get_details();
+	}
+
+	/**
+	 * Returns only the (read-only) merchant details from the DB.
+	 *
+	 * @return WP_REST_Response Merchant details.
+	 */
+	public function get_merchant_details() : WP_REST_Response {
+		$js_data    = array(); // No persistent data.
+		$extra_data = $this->add_merchant_info( array() );
+
+		return $this->return_success( $js_data, $extra_data );
+	}
+
+	/**
+	 * Appends the "merchant" attribute to the extra_data collection, which
+	 * contains details about the merchant's PayPal account, like the merchant ID.
+	 *
+	 * @param array $extra_data Initial extra_data collection.
+	 *
+	 * @return array Updated extra_data collection.
+	 */
+	protected function add_merchant_info( array $extra_data ) : array {
+		$extra_data['merchant'] = $this->sanitize_for_javascript(
+			$this->settings->to_array(),
+			$this->merchant_info_map
+		);
+
+		$extra_data['merchant'] = apply_filters(
+			'woocommerce_paypal_payments_rest_common_merchant_data',
+			$extra_data['merchant'],
+		);
+
+		return $extra_data;
+	}
+
+	/**
+	 * Appends the "wooSettings" attribute to the extra_data collection to
+	 * provide WooCommerce store details, like the store country and currency.
+	 *
+	 * @param array $extra_data Initial extra_data collection.
+	 *
+	 * @return array Updated extra_data collection.
+	 */
+	protected function add_woo_settings( array $extra_data ) : array {
+		$extra_data['wooSettings'] = $this->sanitize_for_javascript(
+			$this->settings->get_woo_settings(),
+			$this->woo_settings_map
+		);
+
+		return $extra_data;
 	}
 }

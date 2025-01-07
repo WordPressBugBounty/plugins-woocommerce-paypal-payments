@@ -44,7 +44,9 @@ return array(
 
 	// If AXO is configured and onboarded.
 	'axo.available'                          => static function ( ContainerInterface $container ): bool {
-		return true;
+		$settings = $container->get( 'wcgateway.settings' );
+		assert( $settings instanceof Settings );
+		return $settings->has( 'axo_enabled' ) && $settings->get( 'axo_enabled' );
 	},
 
 	'axo.url'                                => static function ( ContainerInterface $container ): string {

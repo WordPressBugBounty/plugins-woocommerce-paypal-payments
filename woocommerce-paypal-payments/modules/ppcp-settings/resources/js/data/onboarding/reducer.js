@@ -12,24 +12,25 @@ import ACTION_TYPES from './action-types';
 
 // Store structure.
 
-const defaultTransient = {
+const defaultTransient = Object.freeze( {
 	isReady: false,
 
 	// Read only values, provided by the server.
-	flags: {
+	flags: Object.freeze( {
 		canUseCasualSelling: false,
 		canUseVaulting: false,
 		canUseCardPayments: false,
-	},
-};
+		canUseSubscriptions: false,
+	} ),
+} );
 
-const defaultPersistent = {
+const defaultPersistent = Object.freeze( {
 	completed: false,
 	step: 0,
 	isCasualSeller: null, // null value will uncheck both options in the UI.
-	areOptionalPaymentMethodsEnabled: true,
+	areOptionalPaymentMethodsEnabled: null,
 	products: [],
-};
+} );
 
 // Reducer logic.
 
@@ -45,15 +46,28 @@ const onboardingReducer = createReducer( defaultTransient, defaultPersistent, {
 	[ ACTION_TYPES.SET_PERSISTENT ]: ( state, payload ) =>
 		setPersistent( state, payload ),
 
-	[ ACTION_TYPES.RESET ]: ( state ) =>
-		setPersistent( state, defaultPersistent ),
+	[ ACTION_TYPES.RESET ]: ( state ) => {
+		const cleanState = setTransient(
+			setPersistent( state, defaultPersistent ),
+			defaultTransient
+		);
+
+		// Keep "read-only" details and initialization flags.
+		cleanState.flags = { ...state.flags };
+		cleanState.isReady = true;
+
+		return cleanState;
+	},
 
 	[ ACTION_TYPES.HYDRATE ]: ( state, payload ) => {
 		const newState = setPersistent( state, payload.data );
 
 		// Flags are not updated by `setPersistent()`.
 		if ( payload.flags ) {
-			newState.flags = { ...newState.flags, ...payload.flags };
+			newState.flags = Object.freeze( {
+				...newState.flags,
+				...payload.flags,
+			} );
 		}
 
 		return newState;

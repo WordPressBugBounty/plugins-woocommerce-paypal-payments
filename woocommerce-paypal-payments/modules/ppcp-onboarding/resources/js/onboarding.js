@@ -345,6 +345,10 @@ window.ppcp_onboarding_productionCallback = function ( ...args ) {
 
 	const sandboxSwitchElement = document.querySelector( '#ppcp-sandbox_on' );
 
+    sandboxSwitchElement?.addEventListener( 'click', () => {
+        document.querySelector( '.woocommerce-save-button' )?.removeAttribute( 'disabled' );
+    });
+
 	const validate = () => {
 		const selectors = sandboxSwitchElement.checked
 			? sandboxCredentialElementsSelectors

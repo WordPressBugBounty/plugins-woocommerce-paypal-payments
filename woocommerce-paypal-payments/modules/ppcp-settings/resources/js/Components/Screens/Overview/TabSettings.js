@@ -1,4 +1,5 @@
 import { useState } from '@wordpress/element';
+import ConnectionStatus from './TabSettingsElements/ConnectionStatus';
 import CommonSettings from './TabSettingsElements/CommonSettings';
 import ExpertSettings from './TabSettingsElements/ExpertSettings';
 
@@ -30,6 +31,7 @@ const TabSettings = () => {
 	return (
 		<>
 			<div className="ppcp-r-settings">
+				<ConnectionStatus />
 				<CommonSettings
 					settings={ settings }
 					updateFormValue={ updateFormValue }

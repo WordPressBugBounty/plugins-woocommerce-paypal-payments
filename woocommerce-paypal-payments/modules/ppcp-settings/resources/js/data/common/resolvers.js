@@ -12,7 +12,7 @@ import { dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { apiFetch } from '@wordpress/data-controls';
 
-import { STORE_NAME, REST_HYDRATE_PATH } from './constants';
+import { STORE_NAME, REST_HYDRATE_PATH, REST_WEBHOOKS } from './constants';
 
 export const resolvers = {
 	/**
@@ -21,6 +21,9 @@ export const resolvers = {
 	*persistentData() {
 		try {
 			const result = yield apiFetch( { path: REST_HYDRATE_PATH } );
+			const webhooks = yield apiFetch( { path: REST_WEBHOOKS } );
+
+			result.data = { ...result.data, ...webhooks.data };
 
 			yield dispatch( STORE_NAME ).hydrate( result );
 			yield dispatch( STORE_NAME ).setIsReady( true );

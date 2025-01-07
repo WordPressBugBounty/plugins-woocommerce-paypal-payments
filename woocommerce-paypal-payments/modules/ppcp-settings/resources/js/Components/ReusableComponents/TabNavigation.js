@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
 import { TabPanel } from '@wordpress/components';
-import { getQuery, updateQueryString } from '@woocommerce/navigation';
+
+import { getQuery, updateQueryString } from '../../utils/navigation';
 
 const TabNavigation = ( { tabs } ) => {
 	const { panel } = getQuery();
@@ -30,7 +31,7 @@ const TabNavigation = ( { tabs } ) => {
 	);
 
 	useEffect( () => {
-		updateQueryString( { panel: activePanel }, '/', getQuery() );
+		updateQueryString( { panel: activePanel } );
 	}, [ activePanel ] );
 
 	return (

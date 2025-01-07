@@ -13,6 +13,7 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use WooCommerce\PayPalCommerce\AdminNotices\Entity\Message;
+use WooCommerce\PayPalCommerce\ApiClient\Endpoint\BillingAgreementsEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\Orders;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\Authorization;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
@@ -547,6 +548,33 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
 			}
 		);
 
+		add_filter(
+			'woocommerce_paypal_payments_rest_common_merchant_data',
+			function( array $merchant_data ) use ( $c ): array {
+				if ( ! isset( $merchant_data['features'] ) ) {
+					$merchant_data['features'] = array();
+				}
+
+				$billing_agreements_endpoint = $c->get( 'api.endpoint.billing-agreements' );
+				assert( $billing_agreements_endpoint instanceof BillingAgreementsEndpoint );
+
+				$reference_transactions_enabled                     = $billing_agreements_endpoint->reference_transaction_enabled();
+				$merchant_data['features']['save_paypal_and_venmo'] = array(
+					'enabled' => $reference_transactions_enabled,
+				);
+
+				$dcc_product_status = $c->get( 'wcgateway.helper.dcc-product-status' );
+				assert( $dcc_product_status instanceof DCCProductStatus );
+
+				$dcc_enabled = $dcc_product_status->dcc_is_active();
+				$merchant_data['features']['advanced_credit_and_debit_cards'] = array(
+					'enabled' => $dcc_enabled,
+				);
+
+				return $merchant_data;
+			}
+		);
+
 		return true;
 	}
 
@@ -653,7 +681,10 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
 				$listener = $container->get( 'wcgateway.settings.listener' );
 				assert( $listener instanceof SettingsListener );
 
-				$listener->listen_for_merchant_id();
+				$use_new_ui = $container->get( 'wcgateway.settings.admin-settings-enabled' );
+				if ( ! $use_new_ui ) {
+					$listener->listen_for_merchant_id();
+				}
 
 				try {
 					$listener->listen_for_vaulting_enabled();
@@ -880,10 +911,11 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
 					if ( empty( $simple_redirect_tasks ) ) {
 						return;
 					}
+
 					$task_registrar = $container->get( 'wcgateway.settings.wc-tasks.task-registrar' );
 					assert( $task_registrar instanceof TaskRegistrarInterface );
 
-					$task_registrar->register( $simple_redirect_tasks );
+					$task_registrar->register( 'extended', $simple_redirect_tasks );
 				} catch ( Exception $exception ) {
 					$logger->error( "Failed to create a task in the 'Things to do next' section of WC. " . $exception->getMessage() );
 				}

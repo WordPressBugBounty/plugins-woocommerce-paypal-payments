@@ -92,7 +92,10 @@ class AxoBlockModule implements ServiceModule, ExtendingModule, ExecutableModule
 				 */
 				add_filter(
 					'woocommerce_paypal_payments_sdk_components_hook',
-					function( $components ) {
+					function( $components ) use ( $c ) {
+						if ( ! $c->has( 'axo.available' ) || ! $c->get( 'axo.available' ) ) {
+							return $components;
+						}
 						$components[] = 'fastlane';
 						return $components;
 					}

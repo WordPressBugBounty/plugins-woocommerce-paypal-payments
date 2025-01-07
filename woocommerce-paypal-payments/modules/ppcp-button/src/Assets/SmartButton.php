@@ -1910,7 +1910,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
 
 		$in_stock = $product->is_in_stock();
 
-		if ( $product->is_type( 'variable' ) ) {
+		if ( ! $in_stock && $product->is_type( 'variable' ) ) {
 			/**
 			 * The method is defined in WC_Product_Variable class.
 			 *

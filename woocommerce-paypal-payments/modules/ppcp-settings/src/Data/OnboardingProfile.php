@@ -42,19 +42,22 @@ class OnboardingProfile extends AbstractDataModel {
 	 * @param bool $can_use_casual_selling Whether casual selling is enabled in the store's country.
 	 * @param bool $can_use_vaulting       Whether vaulting is enabled in the store's country.
 	 * @param bool $can_use_card_payments  Whether credit card payments are possible.
+	 * @param bool $can_use_subscriptions  Whether WC Subscriptions plugin is active.
 	 *
 	 * @throws RuntimeException If the OPTION_KEY is not defined in the child class.
 	 */
 	public function __construct(
 		bool $can_use_casual_selling = false,
 		bool $can_use_vaulting = false,
-		bool $can_use_card_payments = false
+		bool $can_use_card_payments = false,
+		bool $can_use_subscriptions = false
 	) {
 		parent::__construct();
 
 		$this->flags['can_use_casual_selling'] = $can_use_casual_selling;
 		$this->flags['can_use_vaulting']       = $can_use_vaulting;
 		$this->flags['can_use_card_payments']  = $can_use_card_payments;
+		$this->flags['can_use_subscriptions']  = $can_use_subscriptions;
 	}
 
 	/**
@@ -67,7 +70,7 @@ class OnboardingProfile extends AbstractDataModel {
 			'completed'                            => false,
 			'step'                                 => 0,
 			'is_casual_seller'                     => null,
-			'are_optional_payment_methods_enabled' => true,
+			'are_optional_payment_methods_enabled' => null,
 			'products'                             => array(),
 		);
 	}

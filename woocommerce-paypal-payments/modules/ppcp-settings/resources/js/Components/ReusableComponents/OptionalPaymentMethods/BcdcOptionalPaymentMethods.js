@@ -1,13 +1,9 @@
-import BadgeBox from '../BadgeBox';
 import { __, sprintf } from '@wordpress/i18n';
-import generatePriceText from '../../../utils/badgeBoxUtils';
-import { countryPriceInfo } from '../../../utils/countryPriceInfo';
 
-const BcdcOptionalPaymentMethods = ( {
-	isPayLater,
-	storeCountry,
-	storeCurrency,
-} ) => {
+import BadgeBox from '../BadgeBox';
+import PricingTitleBadge from '../PricingTitleBadge';
+
+const BcdcOptionalPaymentMethods = ( { isPayLater, storeCountry } ) => {
 	if ( isPayLater && storeCountry === 'us' ) {
 		return (
 			<div className="ppcp-r-optional-payment-methods__wrapper">
@@ -22,11 +18,9 @@ const BcdcOptionalPaymentMethods = ( {
 						'icon-button-amex.svg',
 						'icon-button-discover.svg',
 					] }
-					textBadge={ generatePriceText(
-						'standardCardFields',
-						countryPriceInfo[ storeCountry ],
-						storeCurrency
-					) }
+					textBadge={
+						<PricingTitleBadge item="standardCardFields" />
+					}
 					description={ sprintf(
 						// translators: %s: Link to PayPal REST application guide
 						__(
@@ -53,11 +47,7 @@ const BcdcOptionalPaymentMethods = ( {
 					'icon-button-amex.svg',
 					'icon-button-discover.svg',
 				] }
-				textBadge={ generatePriceText(
-					'standardCardFields',
-					countryPriceInfo[ storeCountry ],
-					storeCurrency
-				) }
+				textBadge={ <PricingTitleBadge item="standardCardFields" /> }
 				description={ sprintf(
 					// translators: %s: Link to PayPal REST application guide
 					__(

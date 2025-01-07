@@ -57,6 +57,14 @@
 
 	&__content {
 		display: flex;
+		position: relative;
+		pointer-events: none;
+		*:not(a){
+			pointer-events: none;
+		}
+		a {
+			pointer-events: all;
+		}
 	}
 
 	&__title {

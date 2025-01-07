@@ -58,13 +58,13 @@
 		position: relative;
 
 		label {
-			@include font(14, 20, 400);
+			@include font(13, 20, 400);
 			color: $color-gray-800;
 		}
 	}
 
 	&__radio-description {
-		@include font(14, 20, 400);
+		@include font(13, 20, 400);
 		margin: 0;
 		color: $color-gray-800;
 	}

@@ -1,23 +1,34 @@
-import SettingsCard from '../../ReusableComponents/SettingsCard';
 import { __ } from '@wordpress/i18n';
-import PaymentMethodItem from '../../ReusableComponents/PaymentMethodItem';
+import { useMemo } from '@wordpress/element';
+
+import SettingsCard from '../../ReusableComponents/SettingsCard';
+import PaymentMethodsBlock from '../../ReusableComponents/SettingsBlocks/PaymentMethodsBlock';
+import { CommonHooks } from '../../../data';
 import ModalPayPal from './Modals/ModalPayPal';
 import ModalFastlane from './Modals/ModalFastlane';
 import ModalAcdc from './Modals/ModalAcdc';
 
 const TabPaymentMethods = () => {
-	const renderPaymentMethods = ( data ) => {
-		return (
-			<div className="ppcp-r-payment-method-item-list">
-				{ data.map( ( paymentMethod ) => (
-					<PaymentMethodItem
-						key={ paymentMethod.id }
-						{ ...paymentMethod }
-					/>
-				) ) }
-			</div>
-		);
-	};
+	const { storeCountry, storeCurrency } = CommonHooks.useWooSettings();
+
+	const filteredPaymentMethods = useMemo( () => {
+		const contextProps = { storeCountry, storeCurrency };
+
+		return {
+			payPalCheckout: filterPaymentMethods(
+				paymentMethodsPayPalCheckout,
+				contextProps
+			),
+			onlineCardPayments: filterPaymentMethods(
+				paymentMethodsOnlineCardPayments,
+				contextProps
+			),
+			alternative: filterPaymentMethods(
+				paymentMethodsAlternative,
+				contextProps
+			),
+		};
+	}, [ storeCountry, storeCurrency ] );
 
 	return (
 		<div className="ppcp-r-payment-methods">
@@ -28,8 +39,11 @@ const TabPaymentMethods = () => {
 					'woocommerce-paypal-payments'
 				) }
 				icon="icon-checkout-standard.svg"
+				contentContainer={ false }
 			>
-				{ renderPaymentMethods( paymentMethodsPayPalCheckoutDefault ) }
+				<PaymentMethodsBlock
+					paymentMethods={ filteredPaymentMethods.payPalCheckout }
+				/>
 			</SettingsCard>
 			<SettingsCard
 				title={ __(
@@ -41,10 +55,11 @@ const TabPaymentMethods = () => {
 					'woocommerce-paypal-payments'
 				) }
 				icon="icon-checkout-online-methods.svg"
+				contentContainer={ false }
 			>
-				{ renderPaymentMethods(
-					paymentMethodsOnlineCardPaymentsDefault
-				) }
+				<PaymentMethodsBlock
+					paymentMethods={ filteredPaymentMethods.onlineCardPayments }
+				/>
 			</SettingsCard>
 			<SettingsCard
 				title={ __(
@@ -56,14 +71,25 @@ const TabPaymentMethods = () => {
 					'woocommerce-paypal-payments'
 				) }
 				icon="icon-checkout-alternative-methods.svg"
+				contentContainer={ false }
 			>
-				{ renderPaymentMethods( paymentMethodsAlternativeDefault ) }
+				<PaymentMethodsBlock
+					paymentMethods={ filteredPaymentMethods.alternative }
+				/>
 			</SettingsCard>
 		</div>
 	);
 };
 
-const paymentMethodsPayPalCheckoutDefault = [
+function filterPaymentMethods( paymentMethods, contextProps ) {
+	return paymentMethods.filter( ( method ) =>
+		typeof method.condition === 'function'
+			? method.condition( contextProps )
+			: true
+	);
+}
+
+const paymentMethodsPayPalCheckout = [
 	{
 		id: 'paypal',
 		title: __( 'PayPal', 'woocommerce-paypal-payments' ),
@@ -106,7 +132,7 @@ const paymentMethodsPayPalCheckoutDefault = [
 	},
 ];
 
-const paymentMethodsOnlineCardPaymentsDefault = [
+const paymentMethodsOnlineCardPayments = [
 	{
 		id: 'advanced_credit_and_debit_card_payments',
 		title: __(
@@ -124,7 +150,7 @@ const paymentMethodsOnlineCardPaymentsDefault = [
 		id: 'fastlane',
 		title: __( 'Fastlane by PayPal', 'woocommerce-paypal-payments' ),
 		description: __(
-			'Tap into the scale and trust of PayPal’s customer network to recognize shoppers and make guest checkout more seamless than ever.',
+			"Tap into the scale and trust of PayPal's customer network to recognize shoppers and make guest checkout more seamless than ever.",
 			'woocommerce-paypal-payments'
 		),
 		icon: 'payment-method-fastlane',
@@ -150,7 +176,7 @@ const paymentMethodsOnlineCardPaymentsDefault = [
 	},
 ];
 
-const paymentMethodsAlternativeDefault = [
+const paymentMethodsAlternative = [
 	{
 		id: 'bancontact',
 		title: __( 'Bancontact', 'woocommerce-paypal-payments' ),
@@ -173,7 +199,7 @@ const paymentMethodsAlternativeDefault = [
 		id: 'eps',
 		title: __( 'eps', 'woocommerce-paypal-payments' ),
 		description: __(
-			'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum porttitor massa ex, eget luctus lacus iaculis at.',
+			'An online payment method in Austria, enabling Austrian buyers to make secure payments directly through their bank accounts. Transactions are processed in EUR.',
 			'woocommerce-paypal-payments'
 		),
 		icon: 'payment-method-eps',
@@ -182,10 +208,68 @@ const paymentMethodsAlternativeDefault = [
 		id: 'blik',
 		title: __( 'BLIK', 'woocommerce-paypal-payments' ),
 		description: __(
-			'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum porttitor massa ex, eget luctus lacus iaculis at.',
+			'A widely used mobile payment method in Poland, allowing Polish customers to pay directly via their banking apps. Transactions are processed in PLN.',
 			'woocommerce-paypal-payments'
 		),
 		icon: 'payment-method-blik',
+	},
+	{
+		id: 'mybank',
+		title: __( 'MyBank', 'woocommerce-paypal-payments' ),
+		description: __(
+			'A European online banking payment solution primarily used in Italy, enabling customers to make secure bank transfers during checkout. Transactions are processed in EUR.',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-mybank',
+	},
+	{
+		id: 'przelewy24',
+		title: __( 'Przelewy24', 'woocommerce-paypal-payments' ),
+		description: __(
+			'A popular online payment gateway in Poland, offering various payment options for Polish customers. Transactions can be processed in PLN or EUR.',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-przelewy24',
+	},
+	{
+		id: 'trustly',
+		title: __( 'Trustly', 'woocommerce-paypal-payments' ),
+		description: __(
+			'A European payment method that allows buyers to make payments directly from their bank accounts, suitable for customers across multiple European countries. Supported currencies include EUR, DKK, SEK, GBP, and NOK.',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-trustly',
+	},
+	{
+		id: 'multibanco',
+		title: __( 'Multibanco', 'woocommerce-paypal-payments' ),
+		description: __(
+			'An online payment method in Portugal, enabling Portuguese buyers to make secure payments directly through their bank accounts. Transactions are processed in EUR.',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-multibanco',
+	},
+	{
+		id: 'pui',
+		title: __( 'Pay upon Invoice', 'woocommerce-paypal-payments' ),
+		description: __(
+			'Pay upon Invoice is an invoice payment method in Germany. It is a local buy now, pay later payment method that allows the buyer to place an order, receive the goods, try them, verify they are in good order, and then pay the invoice within 30 days.',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-ratepay',
+		condition: ( { storeCountry, storeCurrency } ) =>
+			storeCountry === 'DE' && storeCurrency === 'EUR',
+	},
+	{
+		id: 'oxxo',
+		title: __( 'OXXO', 'woocommerce-paypal-payments' ),
+		description: __(
+			'OXXO is a Mexican chain of convenience stores. *Get PayPal account permission to use OXXO payment functionality by contacting us at (+52) 800–925–0304',
+			'woocommerce-paypal-payments'
+		),
+		icon: 'payment-method-oxxo',
+		condition: ( { storeCountry, storeCurrency } ) =>
+			storeCountry === 'MX' && storeCurrency === 'MXN',
 	},
 ];
 

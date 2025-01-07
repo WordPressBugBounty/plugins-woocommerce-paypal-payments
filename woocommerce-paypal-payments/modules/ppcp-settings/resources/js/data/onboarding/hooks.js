@@ -34,8 +34,12 @@ const useHooks = () => {
 		setProducts,
 	} = useDispatch( STORE_NAME );
 
-	// Read-only flags.
+	// Read-only flags and derived state.
 	const flags = useSelect( ( select ) => select( STORE_NAME ).flags(), [] );
+	const determineProducts = useSelect(
+		( select ) => select( STORE_NAME ).determineProducts(),
+		[]
+	);
 
 	// Transient accessors.
 	const isReady = useTransient( 'isReady' );
@@ -80,6 +84,7 @@ const useHooks = () => {
 			);
 			return savePersistent( setProducts, validProducts );
 		},
+		determineProducts,
 	};
 };
 
@@ -112,4 +117,25 @@ export const useSteps = () => {
 		useHooks();
 
 	return { flags, isReady, step, setStep, completed, setCompleted };
+};
+
+export const useNavigationState = () => {
+	const products = useProducts();
+	const business = useBusiness();
+
+	return {
+		products,
+		business,
+	};
+};
+
+export const useDetermineProducts = () => {
+	const { determineProducts } = useHooks();
+
+	return determineProducts;
+};
+
+export const useFlags = () => {
+	const { flags } = useHooks();
+	return flags;
 };

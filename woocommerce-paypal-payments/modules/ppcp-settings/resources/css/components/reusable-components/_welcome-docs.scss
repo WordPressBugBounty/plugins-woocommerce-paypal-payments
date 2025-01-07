@@ -20,8 +20,7 @@
 			justify-content: center;
 
 			@media screen and (max-width: 480px) {
-				flex-wrap: wrap;
-				row-gap: 8px;
+				display: block;
 			}
 		}
 	}

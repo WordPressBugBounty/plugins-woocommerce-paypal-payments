@@ -10,9 +10,8 @@ const BUSINESS_RADIO_GROUP_NAME = 'business';
 const StepBusiness = ( {} ) => {
 	const { isCasualSeller, setIsCasualSeller } = OnboardingHooks.useBusiness();
 
-	const handleSellerTypeChange = ( value ) => {
+	const handleSellerTypeChange = ( value ) =>
 		setIsCasualSeller( BUSINESS_TYPES.CASUAL_SELLER === value );
-	};
 
 	const getCurrentValue = () => {
 		if ( isCasualSeller === null ) {

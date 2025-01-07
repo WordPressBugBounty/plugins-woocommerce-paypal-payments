@@ -14,8 +14,10 @@ use Psr\Log\LoggerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\PartnerReferrals;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\Cache;
 use WooCommerce\PayPalCommerce\ApiClient\Repository\PartnerReferralsData;
-use WooCommerce\PayPalCommerce\Onboarding\Helper\OnboardingUrl;
 use WooCommerce\WooCommerce\Logging\Logger\NullLogger;
+
+// TODO: Replace the OnboardingUrl with a new implementation for this module.
+use WooCommerce\PayPalCommerce\Onboarding\Helper\OnboardingUrl;
 
 /**
  * Generator that builds the ISU connection URL.
@@ -36,11 +38,11 @@ class ConnectionUrlGenerator {
 	protected PartnerReferralsData $referrals_data;
 
 	/**
-	 * The cache
+	 * Manages access to OnboardingUrl instances
 	 *
-	 * @var Cache
+	 * @var OnboardingUrlManager
 	 */
-	protected Cache $cache;
+	protected OnboardingUrlManager $url_manager;
 
 	/**
 	 * Which environment is used for the connection URL.
@@ -54,7 +56,7 @@ class ConnectionUrlGenerator {
 	 *
 	 * @var LoggerInterface
 	 */
-	private $logger;
+	private LoggerInterface $logger;
 
 	/**
 	 * Constructor for the ConnectionUrlGenerator class.
@@ -63,23 +65,22 @@ class ConnectionUrlGenerator {
 	 *
 	 * @param PartnerReferrals     $partner_referrals PartnerReferrals for URL generation.
 	 * @param PartnerReferralsData $referrals_data    Default partner referrals data.
-	 * @param Cache                $cache             The cache object used for storing and
-	 *                                                retrieving data.
 	 * @param string               $environment       Environment that is used to generate the URL.
 	 *                                                ['production'|'sandbox'].
+	 * @param OnboardingUrlManager $url_manager       Manages access to OnboardingUrl instances.
 	 * @param ?LoggerInterface     $logger            The logger object for logging messages.
 	 */
 	public function __construct(
 		PartnerReferrals $partner_referrals,
 		PartnerReferralsData $referrals_data,
-		Cache $cache,
 		string $environment,
+		OnboardingUrlManager $url_manager,
 		?LoggerInterface $logger = null
 	) {
 		$this->partner_referrals = $partner_referrals;
 		$this->referrals_data    = $referrals_data;
-		$this->cache             = $cache;
 		$this->environment       = $environment;
+		$this->url_manager       = $url_manager;
 		$this->logger            = $logger ?: new NullLogger();
 	}
 
@@ -107,7 +108,7 @@ class ConnectionUrlGenerator {
 	public function generate( array $products = array() ) : string {
 		$cache_key      = $this->cache_key( $products );
 		$user_id        = get_current_user_id();
-		$onboarding_url = new OnboardingUrl( $this->cache, $cache_key, $user_id );
+		$onboarding_url = $this->url_manager->get( $cache_key, $user_id );
 		$cached_url     = $this->try_get_from_cache( $onboarding_url, $cache_key );
 
 		if ( $cached_url ) {

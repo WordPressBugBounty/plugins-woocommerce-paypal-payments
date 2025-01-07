@@ -11,7 +11,6 @@ const PaymentMethodIcons = ( props ) => {
 			<PaymentMethodIcon type="discover" icons={ props.icons } />
 			<PaymentMethodIcon type="apple-pay" icons={ props.icons } />
 			<PaymentMethodIcon type="google-pay" icons={ props.icons } />
-			<PaymentMethodIcon type="sepa" icons={ props.icons } />
 			<PaymentMethodIcon type="ideal" icons={ props.icons } />
 			<PaymentMethodIcon type="bancontact" icons={ props.icons } />
 		</div>

@@ -1,10 +1,10 @@
 === WooCommerce PayPal Payments ===
 Contributors: woocommerce, automattic, syde
 Tags: woocommerce, paypal, payments, ecommerce, credit card
-Requires at least: 6.3
+Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 2.9.5
+Stable tag: 2.9.6
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,23 +179,35 @@ If you encounter issues with the PayPal buttons not appearing after an update, p
 
 == Changelog ==
 
+= 2.9.6 - 2025-01-06 =
+* Fix - NOT_ENABLED_TO_VAULT_PAYMENT_SOURCE on PayPal transactions when using ACDC Vaulting without PayPal Vault approval #2955
+* Fix - Express buttons for Free Trial Subscription products on Block Cart/Checkout trigger CANNOT_BE_ZERO_OR_NEGATIVE error #2872
+* Fix - String translations not applied to Card Fields on Block Checkout #2934
+* Fix - Fastlane component included in script when Fastlane is disabled #2911
+* Fix - Zero amount line items may trigger CANNOT_BE_ZERO_OR_NEGATIVE error after rounding error #2906
+* Fix - “Save changes” is grey and unclickable when switching from Sandbox to Live #2895
+* Fix - plugin queries variations when button/messaging is disabled on single product page #2896
+* Fix - Use get_id instead of get_order_number on setting custom_id (author @0verscore) #2930
+* Enhancement - Improve fraud response order notes for Advanced Card Processing transactions #2905
+* Tweak - Update the minimum plugin requirements to WordPress 6.5 & WooCommerce 9.2 #2920
+
 = 2.9.5 - 2024-12-10 =
-Fix - Early translation loading triggers `Function _load_textdomain_just_in_time was called incorrectly.` notice #2816
-Fix - ACDC card fields not loading and payment not successful when Classic Checkout Smart Button Location disabled #2852
-Fix - ACDC gateway does not appear for guests when is Fastlane enabled and a subscription product is in the cart #2745
-Fix - "Voide authorization" button does not appear for Apple Pay/Google Pay orders when payment buttons are separated #2752
-Fix - Additional payment tokens saved with new customer_id #2820
-Fix - Vaulted payment method may not be displayed in PayPal button for return buyer #2809
-Fix - Conflict with EasyShip plugin due to shipping methods loading too early #2845
-Fix - Restore accidentally removed ACDC currencies #2838
-Enhancement - Native gateway icon for PayPal & Pay upon Invoice gateways #2712
-Enhancement - Allow disabling specific card types for Fastlane #2704
-Enhancement - Fastlane Insights SDK implementation for block Checkout #2737
-Enhancement - Hide split local APMs in Payments settings tab when PayPal is not enabled #2703
-Enhancement - Do not load split local APMs on Checkout when PayPal is not enabled #2792
-Enhancement - Add support for Button Options in the Block Checkout for Apple Pay & Google Pay buttons #2797 #2772
-Enhancement - Disable “Add payment method” button while saving ACDC payment #2794
-Enhancement - Sanitize soft_descriptor field #2846 #2854
+* Fix - Early translation loading triggers `Function _load_textdomain_just_in_time was called incorrectly.` notice #2816
+* Fix - ACDC card fields not loading and payment not successful when Classic Checkout Smart Button Location disabled #2852
+* Fix - ACDC gateway does not appear for guests when is Fastlane enabled and a subscription product is in the cart #2745
+* Fix - "Voide authorization" button does not appear for Apple Pay/Google Pay orders when payment buttons are separated #2752
+* Fix - Additional payment tokens saved with new customer_id #2820
+* Fix - Vaulted payment method may not be displayed in PayPal button for return buyer #2809
+* Fix - Conflict with EasyShip plugin due to shipping methods loading too early #2845
+* Fix - Restore accidentally removed ACDC currencies #2838
+* Enhancement - Native gateway icon for PayPal & Pay upon Invoice gateways #2712
+* Enhancement - Allow disabling specific card types for Fastlane #2704
+* Enhancement - Fastlane Insights SDK implementation for block Checkout #2737
+* Enhancement - Hide split local APMs in Payments settings tab when PayPal is not enabled #2703
+* Enhancement - Do not load split local APMs on Checkout when PayPal is not enabled #2792
+* Enhancement - Add support for Button Options in the Block Checkout for Apple Pay & Google Pay buttons #2797 #2772
+* Enhancement - Disable “Add payment method” button while saving ACDC payment #2794
+* Enhancement - Sanitize soft_descriptor field #2846 #2854
 
 = 2.9.4 - 2024-11-11 =
 * Fix - Apple Pay button preview missing in Standard payment and Advanced Processing tabs #2755

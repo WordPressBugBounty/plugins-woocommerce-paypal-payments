@@ -1,18 +1,10 @@
 import { __ } from '@wordpress/i18n';
-import data from '../../utils/data';
 import { useState } from '@wordpress/element';
 
 const ConnectionInfo = ( { connectionStatusDataDefault } ) => {
 	const [ connectionData, setConnectionData ] = useState( {
 		...connectionStatusDataDefault,
 	} );
-
-	const showAllData = () => {
-		setConnectionData( {
-			...connectionData,
-			showAllData: ! connectionData.showAllData,
-		} );
-	};
 
 	const toggleStatusClassName = [ 'ppcp-r-connection-status__status-toggle' ];
 
@@ -24,43 +16,30 @@ const ConnectionInfo = ( { connectionStatusDataDefault } ) => {
 
 	return (
 		<div className="ppcp-r-connection-status__data">
-			<div
-				className="ppcp-r-connection-status__status-row ppcp-r-connection-status__status-row--first"
-				onClick={ () => showAllData() }
-			>
-				<strong>
-					{ __( 'Email address:', 'woocommerce-paypal-payments' ) }
-				</strong>
-				<span>{ connectionData.email }</span>
-				<span className={ toggleStatusClassName.join( ' ' ) }>
-					{ data().getImage(
-						'icon-arrow-down.svg',
-						'ppcp-r-connection-status__show-all-data'
-					) }
+			<div className="ppcp-r-connection-status__status-row ppcp-r-connection-status__status-row--first">
+				<span className="ppcp-r-connection-status__status-label">
+					{ __( 'Merchant ID', 'woocommerce-paypal-payments' ) }
+				</span>
+				<span className="ppcp-r-connection-status__status-value">
+					{ connectionData.merchantId }
 				</span>
 			</div>
-			{ connectionData.showAllData && (
-				<>
-					<div className="ppcp-r-connection-status__status-row">
-						<strong>
-							{ __(
-								'Merchant ID:',
-								'woocommerce-paypal-payments'
-							) }
-						</strong>
-						<span>{ connectionData.merchantId }</span>
-					</div>
-					<div className="ppcp-r-connection-status__status-row">
-						<strong>
-							{ __(
-								'Client ID:',
-								'woocommerce-paypal-payments'
-							) }
-						</strong>
-						<span>{ connectionData.clientId }</span>
-					</div>
-				</>
-			) }
+			<div className="ppcp-r-connection-status__status-row">
+				<span className="ppcp-r-connection-status__status-label">
+					{ __( 'Email address', 'woocommerce-paypal-payments' ) }
+				</span>
+				<span className="ppcp-r-connection-status__status-value">
+					{ connectionData.email }
+				</span>
+			</div>
+			<div className="ppcp-r-connection-status__status-row">
+				<span className="ppcp-r-connection-status__status-label">
+					{ __( 'Client ID', 'woocommerce-paypal-payments' ) }
+				</span>
+				<span className="ppcp-r-connection-status__status-value">
+					{ connectionData.clientId }
+				</span>
+			</div>
 		</div>
 	);
 };

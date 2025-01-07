@@ -1,40 +1,35 @@
 import Container from '../../ReusableComponents/Container';
 import { OnboardingHooks } from '../../../data';
-import { getSteps } from './availableSteps';
+
+import { getSteps, getCurrentStep } from './availableSteps';
 import Navigation from './Components/Navigation';
 
-const getCurrentStep = ( requestedStep, steps ) => {
-	const isValidStep = ( step ) =>
-		typeof step === 'number' &&
-		Number.isInteger( step ) &&
-		step >= 0 &&
-		step < steps.length;
-
-	const safeCurrentStep = isValidStep( requestedStep ) ? requestedStep : 0;
-	return steps[ safeCurrentStep ];
-};
-
 const Onboarding = () => {
-	const { step, setStep, setCompleted, flags } = OnboardingHooks.useSteps();
-	const steps = getSteps( flags );
+	const { step, setStep, flags } = OnboardingHooks.useSteps();
+	const Steps = getSteps( flags );
+	const currentStep = getCurrentStep( step, Steps );
 
-	const CurrentStepComponent = getCurrentStep( step, steps );
+	const handleNext = () => setStep( currentStep.nextStep );
+	const handlePrev = () => setStep( currentStep.prevStep );
+	const handleExit = () => {
+		window.location.href = window.ppcpSettings.wcPaymentsTabUrl;
+	};
 
 	return (
 		<>
 			<Navigation
-				setStep={ setStep }
-				currentStep={ step }
-				setCompleted={ setCompleted }
-				stepperOrder={ steps }
+				stepDetails={ currentStep }
+				onNext={ handleNext }
+				onPrev={ handlePrev }
+				onExit={ handleExit }
 			/>
+
 			<Container page="onboarding">
 				<div className="ppcp-r-card">
-					<CurrentStepComponent
+					<currentStep.StepComponent
 						setStep={ setStep }
 						currentStep={ step }
-						setCompleted={ setCompleted }
-						stepperOrder={ steps }
+						stepperOrder={ Steps }
 					/>
 				</div>
 			</Container>
