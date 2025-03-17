@@ -1,143 +1,99 @@
 <?php
+
 /**
  * The partner referrals data object.
  *
  * @package WooCommerce\PayPalCommerce\ApiClient\Repository
  */
-
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\ApiClient\Repository;
 
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
-
 /**
  * Class PartnerReferralsData
  */
-class PartnerReferralsData {
-	/**
-	 * The DCC Applies Helper object.
-	 *
-	 * @var DccApplies
-	 */
-	private $dcc_applies;
-
-	/**
-	 * The list of products ('PPCP', 'EXPRESS_CHECKOUT').
-	 *
-	 * @var string[]
-	 */
-	private $products;
-
-	/**
-	 * PartnerReferralsData constructor.
-	 *
-	 * @param DccApplies $dcc_applies The DCC Applies helper.
-	 */
-	public function __construct(
-		DccApplies $dcc_applies
-	) {
-		$this->dcc_applies = $dcc_applies;
-		$this->products    = array(
-			$this->dcc_applies->for_country_currency() ? 'PPCP' : 'EXPRESS_CHECKOUT',
-		);
-	}
-
-	/**
-	 * Returns a new copy of this object with the given value set.
-	 *
-	 * @param string[] $products The list of products ('PPCP', 'EXPRESS_CHECKOUT').
-	 * @return static
-	 */
-	public function with_products( array $products ): self {
-		$obj = clone $this;
-
-		$obj->products = $products;
-
-		return $obj;
-	}
-
-	/**
-	 * Returns a nonce.
-	 *
-	 * @return string
-	 */
-	public function nonce(): string {
-		return 'a1233wtergfsdt4365tzrshgfbaewa36AGa1233wtergfsdt4365tzrshgfbaewa36AG';
-	}
-
-	/**
-	 * Returns the data.
-	 *
-	 * @return array
-	 */
-	public function data(): array {
-		/**
-		 * Returns the partners referrals data.
-		 */
-		return apply_filters(
-			'ppcp_partner_referrals_data',
-			array(
-				'partner_config_override' => array(
-					/**
-					 * Returns the URL which will be opened at the end of onboarding.
-					 */
-					'return_url'             => apply_filters(
-						'woocommerce_paypal_payments_partner_config_override_return_url',
-						admin_url( 'admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway' )
-					),
-					/**
-					 * Returns the description of the URL which will be opened at the end of onboarding.
-					 */
-					'return_url_description' => apply_filters(
-						'woocommerce_paypal_payments_partner_config_override_return_url_description',
-						__( 'Return to your shop.', 'woocommerce-paypal-payments' )
-					),
-					'show_add_credit_card'   => true,
-				),
-				'products'                => $this->products,
-				'legal_consents'          => array(
-					array(
-						'type'    => 'SHARE_DATA_CONSENT',
-						'granted' => true,
-					),
-				),
-				'operations'              => array(
-					array(
-						'operation'                  => 'API_INTEGRATION',
-						'api_integration_preference' => array(
-							'rest_api_integration' => array(
-								'integration_method'  => 'PAYPAL',
-								'integration_type'    => 'FIRST_PARTY',
-								'first_party_details' => array(
-									'features'     => array(
-										'PAYMENT',
-										'FUTURE_PAYMENT',
-										'REFUND',
-										'ADVANCED_TRANSACTIONS_SEARCH',
-										'VAULT',
-										'TRACKING_SHIPMENT_READWRITE',
-									),
-									'seller_nonce' => $this->nonce(),
-								),
-							),
-						),
-					),
-				),
-			)
-		);
-	}
-
-	/**
-	 * Append the validation token to the return_url
-	 *
-	 * @param array  $data The referral data.
-	 * @param string $token The token to be appended.
-	 * @return array
-	 */
-	public function append_onboarding_token( array $data, string $token ): array {
-		$data['partner_config_override']['return_url'] =
-			add_query_arg( 'ppcpToken', $token, $data['partner_config_override']['return_url'] );
-		return $data;
-	}
+class PartnerReferralsData
+{
+    /**
+     * The DCC Applies Helper object.
+     *
+     * @deprecated Deprecates with the new UI. In this class, the products are
+     *             always explicit, and should not be deducted from the
+     *             DccApplies state at this point.
+     *             Remove this with the legacy UI code.
+     * @var DccApplies
+     */
+    private DccApplies $dcc_applies;
+    /**
+     * PartnerReferralsData constructor.
+     *
+     * @param DccApplies $dcc_applies The DCC Applies helper.
+     */
+    public function __construct(DccApplies $dcc_applies)
+    {
+        $this->dcc_applies = $dcc_applies;
+    }
+    /**
+     * Returns a nonce.
+     *
+     * @return string
+     */
+    public function nonce(): string
+    {
+        return 'a1233wtergfsdt4365tzrshgfbaewa36AGa1233wtergfsdt4365tzrshgfbaewa36AG';
+    }
+    /**
+     * Returns the data.
+     *
+     * @param string[] $products          The list of products to use ('PPCP', 'EXPRESS_CHECKOUT').
+     *                                    Default is based on DCC availability.
+     * @param string   $onboarding_token  A security token to finalize the onboarding process.
+     * @param bool     $use_subscriptions If the merchant requires subscription features.
+     * @param bool     $use_card_payments If the merchant wants to process credit card payments.
+     * @return array
+     */
+    public function data(array $products = array(), string $onboarding_token = '', bool $use_subscriptions = null, bool $use_card_payments = \true): array
+    {
+        if (!$products) {
+            $products = array($this->dcc_applies->for_country_currency() ? 'PPCP' : 'EXPRESS_CHECKOUT');
+        }
+        /**
+         * Filter the return-URL, which is called at the end of the OAuth onboarding
+         * process, when the merchant clicks the "Return to your shop" button.
+         */
+        $return_url = apply_filters('woocommerce_paypal_payments_partner_config_override_return_url', admin_url('admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway'));
+        /**
+         * Filter the label of the "Return to your shop" button.
+         * It's displayed on the very last page of the onboarding popup.
+         */
+        $return_url_label = apply_filters('woocommerce_paypal_payments_partner_config_override_return_url_description', __('Return to your shop.', 'woocommerce-paypal-payments'));
+        $capabilities = array();
+        $first_party_features = array('PAYMENT', 'REFUND', 'ADVANCED_TRANSACTIONS_SEARCH', 'TRACKING_SHIPMENT_READWRITE');
+        if (\true === $use_subscriptions) {
+            $capabilities[] = 'PAYPAL_WALLET_VAULTING_ADVANCED';
+            $first_party_features[] = 'BILLING_AGREEMENT';
+        }
+        // Backwards compatibility. Keep those features in the legacy UI (null-value).
+        // Move this into the previous condition, once legacy code is removed.
+        if (\false !== $use_subscriptions) {
+            $first_party_features[] = 'FUTURE_PAYMENT';
+            $first_party_features[] = 'VAULT';
+        }
+        if (\false === $use_subscriptions) {
+            // Only use "ADVANCED_VAULTING" product for onboarding with subscriptions.
+            $products = array_filter($products, static fn($product) => $product !== 'ADVANCED_VAULTING');
+        }
+        $payload = array('partner_config_override' => array('return_url' => $return_url, 'return_url_description' => $return_url_label, 'show_add_credit_card' => $use_card_payments), 'products' => $products, 'capabilities' => $capabilities, 'legal_consents' => array(array('type' => 'SHARE_DATA_CONSENT', 'granted' => \true)), 'operations' => array(array('operation' => 'API_INTEGRATION', 'api_integration_preference' => array('rest_api_integration' => array('integration_method' => 'PAYPAL', 'integration_type' => 'FIRST_PARTY', 'first_party_details' => array('features' => $first_party_features, 'seller_nonce' => $this->nonce()))))));
+        /**
+         * Filter the final partners referrals data collection.
+         */
+        $payload = apply_filters('ppcp_partner_referrals_data', $payload);
+        // An empty array is not permitted.
+        if (isset($payload['capabilities']) && !$payload['capabilities']) {
+            unset($payload['capabilities']);
+        }
+        // Add the nonce in the end, to maintain backwards compatibility of filters.
+        $payload['partner_config_override']['return_url'] = add_query_arg(array('ppcpToken' => $onboarding_token), $payload['partner_config_override']['return_url']);
+        return $payload;
+    }
 }

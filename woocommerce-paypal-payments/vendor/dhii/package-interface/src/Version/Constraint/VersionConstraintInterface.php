@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Package\Version\Constraint;
 
 use Dhii\Package\Version\Constraint\Exception\ConstraintFailedExceptionInterface;
 use Dhii\Package\Version\VersionInterface;
 use Dhii\Validation\ValidatorInterface;
 use Exception;
-
 /**
  * Represents a version constraint.
  */

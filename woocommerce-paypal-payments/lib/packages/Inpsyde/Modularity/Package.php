@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity;
 
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Container\ContainerConfigurator;
@@ -13,7 +12,6 @@ use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\Module;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\Properties;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
-
 class Package
 {
     /**
@@ -21,7 +19,6 @@ class Package
      * @var string
      */
     private const HOOK_PREFIX = 'inpsyde.modularity.';
-
     /**
      * Identifier to access Properties in Container.
      *
@@ -38,7 +35,6 @@ class Package
      * @var string
      */
     public const PROPERTIES = 'properties';
-
     /**
      * Custom action to be used to add Modules to the package.
      * It might also be used to access package properties.
@@ -54,7 +50,6 @@ class Package
      * </code>
      */
     public const ACTION_INIT = 'init';
-
     /**
      * Custom action which is triggered after the application
      * is booted to access container and properties.
@@ -70,7 +65,6 @@ class Package
      * </code>
      */
     public const ACTION_READY = 'ready';
-
     /**
      * Custom action which is triggered when a failure happens during the building stage.
      *
@@ -85,7 +79,6 @@ class Package
      * </code>
      */
     public const ACTION_FAILED_BUILD = 'failed-build';
-
     /**
      * Custom action which is triggered when a failure happens during the booting stage.
      *
@@ -100,17 +93,14 @@ class Package
      * </code>
      */
     public const ACTION_FAILED_BOOT = 'failed-boot';
-
     /**
      * Custom action which is triggered when a package is connected.
      */
     public const ACTION_PACKAGE_CONNECTED = 'package-connected';
-
     /**
      * Custom action which is triggered when a package cannot be connected.
      */
     public const ACTION_FAILED_CONNECTION = 'failed-connection';
-
     /**
      * Module states can be used to get information about your module.
      *
@@ -130,7 +120,6 @@ class Package
     public const MODULE_EXECUTED = 'executed';
     public const MODULE_EXECUTION_FAILED = 'executed-failed';
     public const MODULES_ALL = '*';
-
     /**
      * Custom states for the class.
      *
@@ -148,7 +137,6 @@ class Package
     public const STATUS_READY = 7;
     public const STATUS_BOOTED = 8;
     public const STATUS_FAILED = -8;
-
     /**
      * Current state of the application.
      *
@@ -157,7 +145,6 @@ class Package
      * @var int
      */
     private $status = self::STATUS_IDLE;
-
     /**
      * Contains the progress of all modules.
      *
@@ -166,7 +153,6 @@ class Package
      * @var array<string, list<string>>
      */
     private $moduleStatus = [self::MODULES_ALL => []];
-
     /**
      * Hashmap of where keys are names of connected packages, and values are boolean, true
      * if connection was successful.
@@ -176,48 +162,40 @@ class Package
      * @var array<string, bool>
      */
     private $connectedPackages = [];
-
     /**
      * @var list<ExecutableModule>
      */
     private $executables = [];
-
     /**
      * @var Properties
      */
     private $properties;
-
     /**
      * @var ContainerConfigurator
      */
     private $containerConfigurator;
-
     /**
      * @var bool
      */
-    private $built = false;
-
+    private $built = \false;
     /**
      * @var bool
      */
-    private $hasContainer = false;
-
+    private $hasContainer = \false;
     /**
      * @var \Throwable|null
      */
     private $lastError = null;
-
     /**
      * @param Properties $properties
      * @param ContainerInterface[] $containers
      *
      * @return Package
      */
-    public static function new(Properties $properties, ContainerInterface  ...$containers): Package
+    public static function new(Properties $properties, ContainerInterface ...$containers): \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Package
     {
         return new self($properties, ...$containers);
     }
-
     /**
      * @param Properties $properties
      * @param ContainerInterface[] $containers
@@ -225,150 +203,96 @@ class Package
     private function __construct(Properties $properties, ContainerInterface ...$containers)
     {
         $this->properties = $properties;
-
         $this->containerConfigurator = new ContainerConfigurator($containers);
-        $this->containerConfigurator->addService(
-            self::PROPERTIES,
-            static function () use ($properties) {
-                return $properties;
-            }
-        );
+        $this->containerConfigurator->addService(self::PROPERTIES, static function () use ($properties) {
+            return $properties;
+        });
     }
-
     /**
      * @param Module $module
      *
      * @return static
      * @throws \Exception
      */
-    public function addModule(Module $module): Package
+    public function addModule(Module $module): \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Package
     {
         try {
             $this->assertStatus(self::STATUS_IDLE, sprintf('add module %s', $module->id()));
-
-            $registeredServices = $this->addModuleServices(
-                $module,
-                self::MODULE_REGISTERED
-            );
-            $registeredFactories = $this->addModuleServices(
-                $module,
-                self::MODULE_REGISTERED_FACTORIES
-            );
-            $extended = $this->addModuleServices(
-                $module,
-                self::MODULE_EXTENDED
-            );
+            $registeredServices = $this->addModuleServices($module, self::MODULE_REGISTERED);
+            $registeredFactories = $this->addModuleServices($module, self::MODULE_REGISTERED_FACTORIES);
+            $extended = $this->addModuleServices($module, self::MODULE_EXTENDED);
             $isExecutable = $module instanceof ExecutableModule;
-
             // ExecutableModules are collected and executed on Package::boot()
             // when the Container is being compiled.
             if ($isExecutable) {
                 /** @var ExecutableModule $module */
                 $this->executables[] = $module;
             }
-
             $added = $registeredServices || $registeredFactories || $extended || $isExecutable;
             $status = $added ? self::MODULE_ADDED : self::MODULE_NOT_ADDED;
             $this->moduleProgress($module->id(), $status);
         } catch (\Throwable $throwable) {
             $this->handleFailure($throwable, self::ACTION_FAILED_BUILD);
         }
-
         return $this;
     }
-
     /**
      * @param Package $package
      * @return bool
      * @throws \Exception
      */
-    public function connect(Package $package): bool
+    public function connect(\WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Package $package): bool
     {
         try {
             if ($package === $this) {
-                return false;
+                return \false;
             }
-
             $packageName = $package->name();
             $errorData = ['package' => $packageName, 'status' => $this->status];
             $errorMessage = "Failed connecting package {$packageName}";
-
             // Don't connect, if already connected
             if (array_key_exists($packageName, $this->connectedPackages)) {
                 $error = "{$errorMessage} because it was already connected.";
-                do_action(
-                    $this->hookName(self::ACTION_FAILED_CONNECTION),
-                    $packageName,
-                    new \WP_Error('already_connected', $error, $errorData)
-                );
-
+                do_action($this->hookName(self::ACTION_FAILED_CONNECTION), $packageName, new \WP_Error('already_connected', $error, $errorData));
                 throw new \Exception($error, 0, $this->lastError);
             }
-
             // Don't connect, if already booted or boot failed
             $failed = $this->statusIs(self::STATUS_FAILED);
             if ($failed || $this->statusIs(self::STATUS_BOOTED)) {
                 $status = $failed ? 'errored' : 'booted';
                 $error = "{$errorMessage} to a {$status} package.";
-                do_action(
-                    $this->hookName(self::ACTION_FAILED_CONNECTION),
-                    $packageName,
-                    new \WP_Error("no_connect_on_{$status}", $error, $errorData)
-                );
-
+                do_action($this->hookName(self::ACTION_FAILED_CONNECTION), $packageName, new \WP_Error("no_connect_on_{$status}", $error, $errorData));
                 throw new \Exception($error, 0, $this->lastError);
             }
-
-            $this->connectedPackages[$packageName] = true;
-
+            $this->connectedPackages[$packageName] = \true;
             // We put connected package's properties in this package's container, so that in modules
             // "run" method we can access them if we need to.
-            $this->containerConfigurator->addService(
-                sprintf('%s.%s', $package->name(), self::PROPERTIES),
-                static function () use ($package): Properties {
-                    return $package->properties();
-                }
-            );
-
+            $this->containerConfigurator->addService(sprintf('%s.%s', $package->name(), self::PROPERTIES), static function () use ($package): Properties {
+                return $package->properties();
+            });
             // If the other package is booted, we can obtain a container, otherwise
             // we build a proxy container
-            $container = $package->statusIs(self::STATUS_BOOTED)
-                ? $package->container()
-                : new PackageProxyContainer($package);
-
+            $container = $package->statusIs(self::STATUS_BOOTED) ? $package->container() : new PackageProxyContainer($package);
             $this->containerConfigurator->addContainer($container);
-
-            do_action(
-                $this->hookName(self::ACTION_PACKAGE_CONNECTED),
-                $packageName,
-                $this->status,
-                $container instanceof PackageProxyContainer
-            );
-
-            return true;
+            do_action($this->hookName(self::ACTION_PACKAGE_CONNECTED), $packageName, $this->status, $container instanceof PackageProxyContainer);
+            return \true;
         } catch (\Throwable $throwable) {
             if (isset($packageName)) {
-                $this->connectedPackages[$packageName] = false;
+                $this->connectedPackages[$packageName] = \false;
             }
             $this->handleFailure($throwable, self::ACTION_FAILED_BUILD);
-
-            return false;
+            return \false;
         }
     }
-
     /**
      * @return static
      */
-    public function build(): Package
+    public function build(): \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Package
     {
         try {
             // Don't allow building the application multiple times.
             $this->assertStatus(self::STATUS_IDLE, 'build package');
-
-            do_action(
-                $this->hookName(self::ACTION_INIT),
-                $this
-            );
+            do_action($this->hookName(self::ACTION_INIT), $this);
             // Changing the status here ensures we can not call this method again, and also we can not
             // add new modules, because both this and `addModule()` methods check for idle status.
             // For backward compatibility, adding new modules via `boot()` will still be possible, even
@@ -377,12 +301,10 @@ class Package
         } catch (\Throwable $throwable) {
             $this->handleFailure($throwable, self::ACTION_FAILED_BUILD);
         } finally {
-            $this->built = true;
+            $this->built = \true;
         }
-
         return $this;
     }
-
     /**
      * @param Module ...$defaultModules Deprecated, use `addModule()` to add default modules.
      * @return bool
@@ -395,32 +317,20 @@ class Package
             // Call build() if not called yet, and ensure any new module passed here is added
             // as well, throwing if the container was already built.
             $this->doBuild(...$defaultModules);
-
             // Don't allow booting the application multiple times.
             $this->assertStatus(self::STATUS_MODULES_ADDED, 'boot application', '<');
             $this->assertStatus(self::STATUS_FAILED, 'boot application', '!=');
-
             $this->progress(self::STATUS_MODULES_ADDED);
-
             $this->doExecute();
-
             $this->progress(self::STATUS_READY);
-
-            do_action(
-                $this->hookName(self::ACTION_READY),
-                $this
-            );
+            do_action($this->hookName(self::ACTION_READY), $this);
         } catch (\Throwable $throwable) {
             $this->handleFailure($throwable, self::ACTION_FAILED_BOOT);
-
-            return false;
+            return \false;
         }
-
         $this->progress(self::STATUS_BOOTED);
-
-        return true;
+        return \true;
     }
-
     /**
      * @param Module ...$defaultModules
      * @return void
@@ -428,41 +338,23 @@ class Package
     private function doBuild(Module ...$defaultModules): void
     {
         if ($defaultModules) {
-            $this->deprecatedArgument(
-                sprintf(
-                    'Passing default modules to %1$s::boot() is deprecated since version 1.7.0.'
-                    . ' Please add modules via %1$s::addModule().',
-                    __CLASS__
-                ),
-                __METHOD__,
-                '1.7.0'
-            );
+            $this->deprecatedArgument(sprintf('Passing default modules to %1$s::boot() is deprecated since version 1.7.0.' . ' Please add modules via %1$s::addModule().', __CLASS__), __METHOD__, '1.7.0');
         }
-
         if (!$this->built) {
             array_map([$this, 'addModule'], $defaultModules);
             $this->build();
-
             return;
         }
-
-        if (
-            !$defaultModules
-            || ($this->status >= self::STATUS_MODULES_ADDED)
-            || ($this->statusIs(self::STATUS_FAILED))
-        ) {
+        if (!$defaultModules || $this->status >= self::STATUS_MODULES_ADDED || $this->statusIs(self::STATUS_FAILED)) {
             // if we don't have default modules, there's nothing to do, and if the status is beyond
             // "modules added" or is failed, we do nothing as well and let `boot()` throw.
             return;
         }
-
         $backup = $this->status;
-
         try {
             // simulate idle status to prevent `addModule()` from throwing
             // only if we don't have a container yet
             $this->hasContainer or $this->status = self::STATUS_IDLE;
-
             foreach ($defaultModules as $defaultModule) {
                 // If a module was added by `build()` or `addModule()` we can skip it, a
                 // deprecation was trigger to make it noticeable without breakage
@@ -474,7 +366,6 @@ class Package
             $this->status = $backup;
         }
     }
-
     /**
      * @param Module $module
      * @param string $status
@@ -498,27 +389,20 @@ class Package
                 $addCallback = [$this->containerConfigurator, 'addExtension'];
                 break;
         }
-
         if (!$services) {
-            return false;
+            return \false;
         }
-
         $ids = [];
-        array_walk(
-            $services,
-            static function (callable $service, string $id) use ($addCallback, &$ids) {
-                /** @var callable(string, callable) $addCallback */
-                $addCallback($id, $service);
-                /** @var list<string> $ids */
-                $ids[] = $id;
-            }
-        );
+        array_walk($services, static function (callable $service, string $id) use ($addCallback, &$ids) {
+            /** @var callable(string, callable) $addCallback */
+            $addCallback($id, $service);
+            /** @var list<string> $ids */
+            $ids[] = $id;
+        });
         /** @var list<string> $ids */
         $this->moduleProgress($module->id(), $status, $ids);
-
-        return true;
+        return \true;
     }
-
     /**
      * @return void
      *
@@ -528,15 +412,9 @@ class Package
     {
         foreach ($this->executables as $executable) {
             $success = $executable->run($this->container());
-            $this->moduleProgress(
-                $executable->id(),
-                $success
-                    ? self::MODULE_EXECUTED
-                    : self::MODULE_EXECUTION_FAILED
-            );
+            $this->moduleProgress($executable->id(), $success ? self::MODULE_EXECUTED : self::MODULE_EXECUTION_FAILED);
         }
     }
-
     /**
      * @param string $moduleId
      * @param string $status
@@ -548,17 +426,13 @@ class Package
     {
         isset($this->moduleStatus[$status]) or $this->moduleStatus[$status] = [];
         $this->moduleStatus[$status][] = $moduleId;
-
         if (!$serviceIds || !$this->properties->isDebug()) {
             $this->moduleStatus[self::MODULES_ALL][] = "{$moduleId} {$status}";
-
             return;
         }
-
         $description = sprintf('%s %s (%s)', $moduleId, $status, implode(', ', $serviceIds));
         $this->moduleStatus[self::MODULES_ALL][] = $description;
     }
-
     /**
      * @return array<string, list<string>>
      */
@@ -566,7 +440,6 @@ class Package
     {
         return $this->moduleStatus;
     }
-
     /**
      * @return array<string, bool>
      */
@@ -574,16 +447,14 @@ class Package
     {
         return $this->connectedPackages;
     }
-
     /**
      * @param string $packageName
      * @return bool
      */
     public function isPackageConnected(string $packageName): bool
     {
-        return $this->connectedPackages[$packageName] ?? false;
+        return $this->connectedPackages[$packageName] ?? \false;
     }
-
     /**
      * @param string $moduleId
      * @param string $status
@@ -592,9 +463,8 @@ class Package
      */
     public function moduleIs(string $moduleId, string $status): bool
     {
-        return in_array($moduleId, $this->moduleStatus[$status] ?? [], true);
+        return in_array($moduleId, $this->moduleStatus[$status] ?? [], \true);
     }
-
     /**
      * Return the filter name to be used to extend modules of the plugin.
      *
@@ -613,14 +483,11 @@ class Package
     public function hookName(string $suffix = ''): string
     {
         $filter = self::HOOK_PREFIX . $this->properties->baseName();
-
         if ($suffix) {
             $filter .= '.' . $suffix;
         }
-
         return $filter;
     }
-
     /**
      * @return Properties
      */
@@ -628,7 +495,6 @@ class Package
     {
         return $this->properties;
     }
-
     /**
      * @return ContainerInterface
      *
@@ -637,11 +503,9 @@ class Package
     public function container(): ContainerInterface
     {
         $this->assertStatus(self::STATUS_INITIALIZED, 'obtain the container instance', '>=');
-        $this->hasContainer = true;
-
+        $this->hasContainer = \true;
         return $this->containerConfigurator->createReadOnlyContainer();
     }
-
     /**
      * @return string
      */
@@ -649,7 +513,6 @@ class Package
     {
         return $this->properties->baseName();
     }
-
     /**
      * @param int $status
      */
@@ -657,7 +520,6 @@ class Package
     {
         $this->status = $status;
     }
-
     /**
      * @param int $status
      *
@@ -667,7 +529,6 @@ class Package
     {
         return $this->status === $status;
     }
-
     /**
      * @param \Throwable $throwable
      * @param Package::ACTION_FAILED_* $action
@@ -679,14 +540,11 @@ class Package
         $this->progress(self::STATUS_FAILED);
         $hook = $this->hookName($action);
         did_action($hook) or do_action($hook, $throwable);
-
         if ($this->properties->isDebug()) {
             throw $throwable;
         }
-
         $this->lastError = $throwable;
     }
-
     /**
      * @param int $status
      * @param string $action
@@ -698,14 +556,9 @@ class Package
     private function assertStatus(int $status, string $action, string $operator = '=='): void
     {
         if (!version_compare((string) $this->status, (string) $status, $operator)) {
-            throw new \Exception(
-                sprintf("Can't %s at this point of application.", $action),
-                0,
-                $this->lastError
-            );
+            throw new \Exception(sprintf("Can't %s at this point of application.", $action), 0, $this->lastError);
         }
     }
-
     /**
      * Similar to WP's `_deprecated_argument()`, but executes regardless of WP_DEBUG and without
      * translated message (so without attempting loading translation files).
@@ -719,8 +572,7 @@ class Package
     private function deprecatedArgument(string $message, string $function, string $version): void
     {
         do_action('deprecated_argument_run', $function, $message, $version);
-
-        if (apply_filters('deprecated_argument_trigger_error', true)) {
+        if (apply_filters('deprecated_argument_trigger_error', \true)) {
             trigger_error($message, \E_USER_DEPRECATED);
         }
     }

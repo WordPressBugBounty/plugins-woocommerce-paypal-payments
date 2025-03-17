@@ -1,11 +1,9 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Util\String;
 
 use Stringable;
-
 /**
  * Something that is aware of a caption.
  */

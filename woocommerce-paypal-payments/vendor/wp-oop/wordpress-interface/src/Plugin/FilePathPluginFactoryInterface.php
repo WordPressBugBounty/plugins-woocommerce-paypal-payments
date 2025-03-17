@@ -1,11 +1,9 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WpOop\WordPress\Plugin;
 
 use Exception;
-
 /**
  * Can create a plugin from a plugin file path.
  */
@@ -20,5 +18,5 @@ interface FilePathPluginFactoryInterface
      *
      * @throws Exception If problem creating.
      */
-    public function createPluginFromFilePath(string $filePath): PluginInterface;
+    public function createPluginFromFilePath(string $filePath): \WpOop\WordPress\Plugin\PluginInterface;
 }

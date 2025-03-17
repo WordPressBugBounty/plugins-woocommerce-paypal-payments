@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WpOop\WordPress\Plugin;
 
 use Dhii\Package\PackageInterface;
@@ -9,14 +8,10 @@ use Dhii\Package\Version\VersionInterface;
 use Dhii\Util\String\DescriptionAwareInterface;
 use Dhii\Util\String\TitleAwareInterface;
 use Exception;
-
 /**
  * Represents a WordPress plugin.
  */
-interface PluginInterface extends
-    PackageInterface,
-    TitleAwareInterface,
-    DescriptionAwareInterface
+interface PluginInterface extends PackageInterface, TitleAwareInterface, DescriptionAwareInterface
 {
     /**
      * Retrieves the minimal version of PHP required by this plugin.
@@ -26,7 +21,6 @@ interface PluginInterface extends
      * @throws Exception If problem retrieving.
      */
     public function getMinPhpVersion(): VersionInterface;
-
     /**
      * Retrieves the minimal version of WP required by this plugin.
      *
@@ -35,7 +29,6 @@ interface PluginInterface extends
      * @throws Exception If problem retrieving.
      */
     public function getMinWpVersion(): VersionInterface;
-
     /**
      * Retrieves the text domain of this plugin
      *
@@ -44,7 +37,6 @@ interface PluginInterface extends
      * @throws Exception If problem retrieving.
      */
     public function getTextDomain(): string;
-
     /**
      * Retrieves the basename of this plugin.
      *

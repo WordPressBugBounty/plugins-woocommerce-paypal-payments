@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Composer Merge plugin.
  *
@@ -7,11 +8,9 @@
  * This software may be modified and distributed under the terms of the MIT
  * license. See the LICENSE file for details.
  */
-
 namespace Wikimedia\Composer\Merge\V2;
 
 use Composer\IO\IOInterface;
-
 /**
  * Simple logging wrapper for Composer\IO\IOInterface
  *
@@ -23,12 +22,10 @@ class Logger
      * @var string $name
      */
     protected $name;
-
     /**
      * @var IOInterface $inputOutput
      */
     protected $inputOutput;
-
     /**
      * @param string $name
      * @param IOInterface $io
@@ -38,7 +35,6 @@ class Logger
         $this->name = $name;
         $this->inputOutput = $io;
     }
-
     /**
      * Log a debug message
      *
@@ -54,7 +50,6 @@ class Logger
             $this->log($message);
         }
     }
-
     /**
      * Log an informative message
      *
@@ -70,7 +65,6 @@ class Logger
             $this->log($message);
         }
     }
-
     /**
      * Log a warning message
      *
@@ -81,7 +75,6 @@ class Logger
         $message = "  <error>[{$this->name}]</error> {$message}";
         $this->log($message);
     }
-
     /**
      * Write a message
      *

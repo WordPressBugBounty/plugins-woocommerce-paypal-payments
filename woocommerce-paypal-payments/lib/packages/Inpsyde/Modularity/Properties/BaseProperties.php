@@ -1,60 +1,48 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties;
 
-class BaseProperties implements Properties
+class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\Properties
 {
     /**
      * @var null|bool
      */
     protected $isDebug = null;
-
     /**
      * @var string
      */
     protected $baseName;
-
     /**
      * @var string
      */
     protected $basePath;
-
     /**
      * @var string|null
      */
     protected $baseUrl;
-
     /**
      * @var array
      */
     protected $properties;
-
     /**
      * @param string $baseName
      * @param string $basePath
      * @param string|null $baseUrl
      * @param array $properties
      */
-    protected function __construct(
-        string $baseName,
-        string $basePath,
-        string $baseUrl = null,
-        array $properties = []
-    ) {
+    protected function __construct(string $baseName, string $basePath, string $baseUrl = null, array $properties = [])
+    {
         $baseName = $this->sanitizeBaseName($baseName);
         $basePath = (string) trailingslashit($basePath);
         if ($baseUrl) {
             $baseUrl = (string) trailingslashit($baseUrl);
         }
-
         $this->baseName = $baseName;
         $this->basePath = $basePath;
         $this->baseUrl = $baseUrl;
-        $this->properties = array_replace(Properties::DEFAULT_PROPERTIES, $properties);
+        $this->properties = array_replace(\WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\Properties::DEFAULT_PROPERTIES, $properties);
     }
-
     /**
      * @param string $name
      *
@@ -63,10 +51,8 @@ class BaseProperties implements Properties
     protected function sanitizeBaseName(string $name): string
     {
         substr_count($name, '/') and $name = dirname($name);
-
-        return strtolower(pathinfo($name, PATHINFO_FILENAME));
+        return strtolower(pathinfo($name, \PATHINFO_FILENAME));
     }
-
     /**
      * @return string
      */
@@ -74,7 +60,6 @@ class BaseProperties implements Properties
     {
         return $this->baseName;
     }
-
     /**
      * @return string
      */
@@ -82,7 +67,6 @@ class BaseProperties implements Properties
     {
         return $this->basePath;
     }
-
     /**
      * @return string|null
      */
@@ -90,7 +74,6 @@ class BaseProperties implements Properties
     {
         return $this->baseUrl;
     }
-
     /**
      * @return string
      */
@@ -98,7 +81,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_AUTHOR);
     }
-
     /**
      * @return string
      */
@@ -106,7 +88,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_AUTHOR_URI);
     }
-
     /**
      * @return string
      */
@@ -114,7 +95,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_DESCRIPTION);
     }
-
     /**
      * @return string
      */
@@ -122,7 +102,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_TEXTDOMAIN);
     }
-
     /**
      * @return string
      */
@@ -130,7 +109,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_DOMAIN_PATH);
     }
-
     /**
      * @return string
      */
@@ -138,7 +116,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_NAME);
     }
-
     /**
      * @return string
      */
@@ -146,7 +123,6 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_URI);
     }
-
     /**
      * @return string
      */
@@ -154,27 +130,22 @@ class BaseProperties implements Properties
     {
         return (string) $this->get(self::PROP_VERSION);
     }
-
     /**
      * @return string|null
      */
     public function requiresWp(): ?string
     {
         $value = $this->get(self::PROP_REQUIRES_WP);
-
         return $value && is_string($value) ? $value : null;
     }
-
     /**
      * @return string|null
      */
     public function requiresPhp(): ?string
     {
         $value = $this->get(self::PROP_REQUIRES_PHP);
-
         return $value && is_string($value) ? $value : null;
     }
-
     /**
      * @return array
      */
@@ -182,7 +153,6 @@ class BaseProperties implements Properties
     {
         return (array) $this->get(self::PROP_TAGS);
     }
-
     /**
      * @param string $key
      * @param null $default
@@ -192,7 +162,6 @@ class BaseProperties implements Properties
     {
         return $this->properties[$key] ?? $default;
     }
-
     /**
      * @param string $key
      * @return bool
@@ -201,7 +170,6 @@ class BaseProperties implements Properties
     {
         return isset($this->properties[$key]);
     }
-
     /**
      * @return bool
      * @see Properties::isDebug()
@@ -211,7 +179,6 @@ class BaseProperties implements Properties
         if ($this->isDebug === null) {
             $this->isDebug = defined('WP_DEBUG') && WP_DEBUG;
         }
-
         return $this->isDebug;
     }
 }

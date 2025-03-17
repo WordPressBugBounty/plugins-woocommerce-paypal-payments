@@ -1,41 +1,34 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Container;
 
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\NotFoundExceptionInterface;
-
 class ReadOnlyContainer implements ContainerInterface
 {
     /**
      * @var array<string, callable(\WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface $container):mixed>
      */
     private $services;
-
     /**
      * @var array<string, bool>
      */
     private $factoryIds;
-
     /**
      * @var array<string, array<callable(mixed, ContainerInterface $container):mixed>>
      */
     private $extensions;
-
     /**
      * Resolved factories.
      *
      * @var array<string, mixed>
      */
     private $resolvedServices = [];
-
     /**
      * @var ContainerInterface[]
      */
     private $containers;
-
     /**
      * ReadOnlyContainer constructor.
      *
@@ -44,18 +37,13 @@ class ReadOnlyContainer implements ContainerInterface
      * @param array<string, array<callable(mixed, ContainerInterface $container):mixed>> $extensions
      * @param ContainerInterface[] $containers
      */
-    public function __construct(
-        array $services,
-        array $factoryIds,
-        array $extensions,
-        array $containers
-    ) {
+    public function __construct(array $services, array $factoryIds, array $extensions, array $containers)
+    {
         $this->services = $services;
         $this->factoryIds = $factoryIds;
         $this->extensions = $extensions;
         $this->containers = $containers;
     }
-
     /**
      * @param string $id
      *
@@ -66,33 +54,25 @@ class ReadOnlyContainer implements ContainerInterface
         if (array_key_exists($id, $this->resolvedServices)) {
             return $this->resolvedServices[$id];
         }
-
         if (array_key_exists($id, $this->services)) {
             $service = $this->services[$id]($this);
             $resolved = $this->resolveExtensions($id, $service);
-
             if (!isset($this->factoryIds[$id])) {
                 $this->resolvedServices[$id] = $resolved;
                 unset($this->services[$id]);
             }
-
             return $resolved;
         }
-
         foreach ($this->containers as $container) {
             if ($container->has($id)) {
                 $service = $container->get($id);
-
                 return $this->resolveExtensions($id, $service);
             }
         }
-
-        throw new class ("Service with ID {$id} not found.")
-            extends \Exception
-            implements NotFoundExceptionInterface {
+        throw new class("Service with ID {$id} not found.") extends \Exception implements NotFoundExceptionInterface
+        {
         };
     }
-
     /**
      * @param string $id
      *
@@ -101,22 +81,18 @@ class ReadOnlyContainer implements ContainerInterface
     public function has(string $id): bool
     {
         if (array_key_exists($id, $this->services)) {
-            return true;
+            return \true;
         }
-
         if (array_key_exists($id, $this->resolvedServices)) {
-            return true;
+            return \true;
         }
-
         foreach ($this->containers as $container) {
             if ($container->has($id)) {
-                return true;
+                return \true;
             }
         }
-
-        return false;
+        return \false;
     }
-
     /**
      * @param string $id
      * @param mixed $service
@@ -128,11 +104,9 @@ class ReadOnlyContainer implements ContainerInterface
         if (!isset($this->extensions[$id])) {
             return $service;
         }
-
         foreach ($this->extensions[$id] as $extender) {
             $service = $extender($service, $this);
         }
-
         return $service;
     }
 }

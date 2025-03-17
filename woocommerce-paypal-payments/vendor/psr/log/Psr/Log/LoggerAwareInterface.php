@@ -1,6 +1,6 @@
 <?php
 
-namespace Psr\Log;
+namespace WooCommerce\PayPalCommerce\Vendor\Psr\Log;
 
 /**
  * Describes a logger-aware instance.

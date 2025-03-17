@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Composer Merge plugin.
  *
@@ -7,7 +8,6 @@
  * This software may be modified and distributed under the terms of the MIT
  * license. See the LICENSE file for details.
  */
-
 namespace Wikimedia\Composer\Merge\V2;
 
 /**
@@ -17,7 +17,6 @@ namespace Wikimedia\Composer\Merge\V2;
  */
 class NestedArray
 {
-
     /**
      * Merges multiple arrays, recursively, and returns the merged array.
      *
@@ -52,7 +51,6 @@ class NestedArray
     {
         return self::mergeDeepArray($params);
     }
-
     /**
      * Merges multiple arrays, recursively, and returns the merged array.
      *
@@ -79,10 +77,8 @@ class NestedArray
      *
      * @see NestedArray::mergeDeep()
      */
-    public static function mergeDeepArray(
-        array $arrays,
-        $preserveIntegerKeys = false
-    ) {
+    public static function mergeDeepArray(array $arrays, $preserveIntegerKeys = \false)
+    {
         $result = [];
         foreach ($arrays as $array) {
             foreach ($array as $key => $value) {
@@ -92,15 +88,9 @@ class NestedArray
                 // (e.g., '1') to integers.
                 if (is_int($key) && !$preserveIntegerKeys) {
                     $result[] = $value;
-                } elseif (isset($result[$key]) &&
-                    is_array($result[$key]) &&
-                    is_array($value)
-                ) {
+                } elseif (isset($result[$key]) && is_array($result[$key]) && is_array($value)) {
                     // Recurse when both values are arrays.
-                    $result[$key] = self::mergeDeepArray(
-                        [$result[$key], $value],
-                        $preserveIntegerKeys
-                    );
+                    $result[$key] = self::mergeDeepArray([$result[$key], $value], $preserveIntegerKeys);
                 } else {
                     // Otherwise, use the latter value, overriding any
                     // previous value.

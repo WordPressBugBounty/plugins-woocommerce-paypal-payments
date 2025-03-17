@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Composer Merge plugin.
  *
@@ -7,12 +8,10 @@
  * This software may be modified and distributed under the terms of the MIT
  * license. See the LICENSE file for details.
  */
-
 namespace Wikimedia\Composer\Merge\V2;
 
 use Composer\Composer;
 use Composer\Plugin\PluginInterface;
-
 /**
  * Mutable plugin state
  *
@@ -24,48 +23,39 @@ class PluginState
      * @var Composer $composer
      */
     protected $composer;
-
     /**
      * @var bool $isComposer1
      */
     protected $isComposer1;
-
     /**
      * @var array $includes
      */
     protected $includes = [];
-
     /**
      * @var array $requires
      */
     protected $requires = [];
-
     /**
      * @var bool $devMode
      */
-    protected $devMode = false;
-
+    protected $devMode = \false;
     /**
      * @var bool $recurse
      */
-    protected $recurse = true;
-
+    protected $recurse = \true;
     /**
      * @var bool $replace
      */
-    protected $replace = false;
-
+    protected $replace = \false;
     /**
      * @var bool $ignore
      */
-    protected $ignore = false;
-
+    protected $ignore = \false;
     /**
      * Whether to merge the -dev sections.
      * @var bool $mergeDev
      */
-    protected $mergeDev = true;
-
+    protected $mergeDev = \true;
     /**
      * Whether to merge the extra section.
      *
@@ -78,8 +68,7 @@ class PluginState
      *
      * @var bool $mergeExtra
      */
-    protected $mergeExtra = false;
-
+    protected $mergeExtra = \false;
     /**
      * Whether to merge the extra section in a deep / recursive way.
      *
@@ -96,42 +85,35 @@ class PluginState
      *
      * @var bool $mergeExtraDeep
      */
-    protected $mergeExtraDeep = false;
-
+    protected $mergeExtraDeep = \false;
     /**
      * Whether to merge the replace section.
      *
      * @var bool $mergeReplace
      */
-    protected $mergeReplace = true;
-
+    protected $mergeReplace = \true;
     /**
      * Whether to merge the scripts section.
      *
      * @var bool $mergeScripts
      */
-    protected $mergeScripts = false;
-
+    protected $mergeScripts = \false;
     /**
      * @var bool $firstInstall
      */
-    protected $firstInstall = false;
-
+    protected $firstInstall = \false;
     /**
      * @var bool $locked
      */
-    protected $locked = false;
-
+    protected $locked = \false;
     /**
      * @var bool $dumpAutoloader
      */
-    protected $dumpAutoloader = false;
-
+    protected $dumpAutoloader = \false;
     /**
      * @var bool $optimizeAutoloader
      */
-    protected $optimizeAutoloader = false;
-
+    protected $optimizeAutoloader = \false;
     /**
      * @param Composer $composer
      */
@@ -140,7 +122,6 @@ class PluginState
         $this->composer = $composer;
         $this->isComposer1 = version_compare(PluginInterface::PLUGIN_API_VERSION, '2.0.0', '<');
     }
-
     /**
      * Test if this plugin runs within Composer 1.
      *
@@ -150,43 +131,24 @@ class PluginState
     {
         return $this->isComposer1;
     }
-
     /**
      * Load plugin settings
      */
     public function loadSettings()
     {
         $extra = $this->composer->getPackage()->getExtra();
-        $config = array_merge(
-            [
-                'include' => [],
-                'require' => [],
-                'recurse' => true,
-                'replace' => false,
-                'ignore-duplicates' => false,
-                'merge-dev' => true,
-                'merge-extra' => false,
-                'merge-extra-deep' => false,
-                'merge-replace' => true,
-                'merge-scripts' => false,
-            ],
-            $extra['merge-plugin'] ?? []
-        );
-
-        $this->includes = (is_array($config['include'])) ?
-            $config['include'] : [$config['include']];
-        $this->requires = (is_array($config['require'])) ?
-            $config['require'] : [$config['require']];
-        $this->recurse = (bool)$config['recurse'];
-        $this->replace = (bool)$config['replace'];
-        $this->ignore = (bool)$config['ignore-duplicates'];
-        $this->mergeDev = (bool)$config['merge-dev'];
-        $this->mergeExtra = (bool)$config['merge-extra'];
-        $this->mergeExtraDeep = (bool)$config['merge-extra-deep'];
-        $this->mergeReplace = (bool)$config['merge-replace'];
-        $this->mergeScripts = (bool)$config['merge-scripts'];
+        $config = array_merge(['include' => [], 'require' => [], 'recurse' => \true, 'replace' => \false, 'ignore-duplicates' => \false, 'merge-dev' => \true, 'merge-extra' => \false, 'merge-extra-deep' => \false, 'merge-replace' => \true, 'merge-scripts' => \false], $extra['merge-plugin'] ?? []);
+        $this->includes = is_array($config['include']) ? $config['include'] : [$config['include']];
+        $this->requires = is_array($config['require']) ? $config['require'] : [$config['require']];
+        $this->recurse = (bool) $config['recurse'];
+        $this->replace = (bool) $config['replace'];
+        $this->ignore = (bool) $config['ignore-duplicates'];
+        $this->mergeDev = (bool) $config['merge-dev'];
+        $this->mergeExtra = (bool) $config['merge-extra'];
+        $this->mergeExtraDeep = (bool) $config['merge-extra-deep'];
+        $this->mergeReplace = (bool) $config['merge-replace'];
+        $this->mergeScripts = (bool) $config['merge-scripts'];
     }
-
     /**
      * Get list of filenames and/or glob patterns to include
      *
@@ -196,7 +158,6 @@ class PluginState
     {
         return $this->includes;
     }
-
     /**
      * Get list of filenames and/or glob patterns to require
      *
@@ -206,7 +167,6 @@ class PluginState
     {
         return $this->requires;
     }
-
     /**
      * Set the first install flag
      *
@@ -214,9 +174,8 @@ class PluginState
      */
     public function setFirstInstall($flag)
     {
-        $this->firstInstall = (bool)$flag;
+        $this->firstInstall = (bool) $flag;
     }
-
     /**
      * Is this the first time that the plugin has been installed?
      *
@@ -226,7 +185,6 @@ class PluginState
     {
         return $this->firstInstall;
     }
-
     /**
      * Set the locked flag
      *
@@ -234,9 +192,8 @@ class PluginState
      */
     public function setLocked($flag)
     {
-        $this->locked = (bool)$flag;
+        $this->locked = (bool) $flag;
     }
-
     /**
      * Was a lockfile present when the plugin was installed?
      *
@@ -246,7 +203,6 @@ class PluginState
     {
         return $this->locked;
     }
-
     /**
      * Should an update be forced?
      *
@@ -256,7 +212,6 @@ class PluginState
     {
         return !$this->locked;
     }
-
     /**
      * Set the devMode flag
      *
@@ -264,9 +219,8 @@ class PluginState
      */
     public function setDevMode($flag)
     {
-        $this->devMode = (bool)$flag;
+        $this->devMode = (bool) $flag;
     }
-
     /**
      * Should devMode settings be processed?
      *
@@ -276,7 +230,6 @@ class PluginState
     {
         return $this->shouldMergeDev() && $this->devMode;
     }
-
     /**
      * Should devMode settings be merged?
      *
@@ -286,7 +239,6 @@ class PluginState
     {
         return $this->mergeDev;
     }
-
     /**
      * Set the dumpAutoloader flag
      *
@@ -294,9 +246,8 @@ class PluginState
      */
     public function setDumpAutoloader($flag)
     {
-        $this->dumpAutoloader = (bool)$flag;
+        $this->dumpAutoloader = (bool) $flag;
     }
-
     /**
      * Is the autoloader file supposed to be written out?
      *
@@ -306,7 +257,6 @@ class PluginState
     {
         return $this->dumpAutoloader;
     }
-
     /**
      * Set the optimizeAutoloader flag
      *
@@ -314,9 +264,8 @@ class PluginState
      */
     public function setOptimizeAutoloader($flag)
     {
-        $this->optimizeAutoloader = (bool)$flag;
+        $this->optimizeAutoloader = (bool) $flag;
     }
-
     /**
      * Should the autoloader be optimized?
      *
@@ -326,7 +275,6 @@ class PluginState
     {
         return $this->optimizeAutoloader;
     }
-
     /**
      * Should includes be recursively processed?
      *
@@ -336,7 +284,6 @@ class PluginState
     {
         return $this->recurse;
     }
-
     /**
      * Should duplicate links be replaced in a 'last definition wins' order?
      *
@@ -346,7 +293,6 @@ class PluginState
     {
         return $this->replace;
     }
-
     /**
      * Should duplicate links be ignored?
      *
@@ -356,7 +302,6 @@ class PluginState
     {
         return $this->ignore;
     }
-
     /**
      * Should the extra section be merged?
      *
@@ -373,7 +318,6 @@ class PluginState
     {
         return $this->mergeExtra;
     }
-
     /**
      * Should the extra section be merged deep / recursively?
      *
@@ -394,7 +338,6 @@ class PluginState
     {
         return $this->mergeExtraDeep;
     }
-
     /**
      * Should the replace section be merged?
      *
@@ -406,7 +349,6 @@ class PluginState
     {
         return $this->mergeReplace;
     }
-
     /**
      * Should the scripts section be merged?
      *

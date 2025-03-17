@@ -1,38 +1,32 @@
 <?php
-declare(strict_types=1);
 
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Container;
 
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerExceptionInterface;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
-
 class ContainerConfigurator
 {
     /**
      * @var array<string, callable(ContainerInterface $container):mixed>
      */
     private $services = [];
-
     /**
      * @var array<string, bool>
      */
     private $factoryIds = [];
-
     /**
      * @var array<string, array<callable(mixed $service, ContainerInterface $container):mixed>>
      */
     private $extensions = [];
-
     /**
      * @var ContainerInterface[]
      */
     private $containers = [];
-
     /**
      * @var null|ContainerInterface
      */
     private $compiledContainer;
-
     /**
      * ContainerConfigurator constructor.
      *
@@ -42,7 +36,6 @@ class ContainerConfigurator
     {
         array_map([$this, 'addContainer'], $containers);
     }
-
     /**
      * Allowing to add child containers.
      *
@@ -52,7 +45,6 @@ class ContainerConfigurator
     {
         $this->containers[] = $container;
     }
-
     /**
      * @param string $id
      * @param callable(ContainerInterface $container):mixed $factory
@@ -62,9 +54,8 @@ class ContainerConfigurator
         $this->addService($id, $factory);
         // We're using a hash table to detect later
         // via isset() if a Service as a Factory.
-        $this->factoryIds[$id] = true;
+        $this->factoryIds[$id] = \true;
     }
-
     /**
      * @param string $id
      * @param callable(ContainerInterface $container):mixed $service
@@ -83,10 +74,8 @@ class ContainerConfigurator
          * If needs be, it will get re-added after this function completes.
          */
         unset($this->factoryIds[$id]);
-
         $this->services[$id] = $service;
     }
-
     /**
      * @param string $id
      *
@@ -95,18 +84,15 @@ class ContainerConfigurator
     public function hasService(string $id): bool
     {
         if (array_key_exists($id, $this->services)) {
-            return true;
+            return \true;
         }
-
         foreach ($this->containers as $container) {
             if ($container->has($id)) {
-                return true;
+                return \true;
             }
         }
-
-        return false;
+        return \false;
     }
-
     /**
      * @param string $id
      * @param callable(mixed $service, ContainerInterface $container):mixed $extender
@@ -118,10 +104,8 @@ class ContainerConfigurator
         if (!isset($this->extensions[$id])) {
             $this->extensions[$id] = [];
         }
-
         $this->extensions[$id][] = $extender;
     }
-
     /**
      * @param string $id
      *
@@ -131,7 +115,6 @@ class ContainerConfigurator
     {
         return isset($this->extensions[$id]);
     }
-
     /**
      * Returns a read only version of this Container.
      *
@@ -140,14 +123,8 @@ class ContainerConfigurator
     public function createReadOnlyContainer(): ContainerInterface
     {
         if (!$this->compiledContainer) {
-            $this->compiledContainer = new ReadOnlyContainer(
-                $this->services,
-                $this->factoryIds,
-                $this->extensions,
-                $this->containers
-            );
+            $this->compiledContainer = new \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Container\ReadOnlyContainer($this->services, $this->factoryIds, $this->extensions, $this->containers);
         }
-
         return $this->compiledContainer;
     }
 }

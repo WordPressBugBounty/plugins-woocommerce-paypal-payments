@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Validation;
 
 use Dhii\Validation\Exception\ValidationFailedExceptionInterface;
 use RuntimeException;
-
 /**
  * Something that can validate a value.
  */

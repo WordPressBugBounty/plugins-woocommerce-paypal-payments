@@ -1,16 +1,13 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Dhii\Container;
 
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Collection\ContainerInterface;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Container\Exception\NotFoundException;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Container\Util\StringTranslatingTrait;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface as PsrContainerInterface;
-
 use function array_key_exists;
-
 /**
  * An implementation of a container that wraps around another to selectively expose or mask certain keys.
  *
@@ -20,22 +17,18 @@ class MaskingContainer implements ContainerInterface
 {
     /* @since [*next-version*] */
     use StringTranslatingTrait;
-
     /**
      * @var PsrContainerInterface
      */
     protected $inner;
-
     /**
      * @var bool[]
      */
     protected $mask;
-
     /**
      * @var bool
      */
     protected $defMask;
-
     /**
      * Constructor.
      *
@@ -54,7 +47,6 @@ class MaskingContainer implements ContainerInterface
         $this->defMask = $defaultMask;
         $this->mask = $mask;
     }
-
     /**
      * @inheritdoc
      *
@@ -63,16 +55,10 @@ class MaskingContainer implements ContainerInterface
     public function get($key)
     {
         if (!$this->isExposed($key)) {
-            throw new NotFoundException(
-                $this->__('Inner key "%1$s" is not exposed', [$key]),
-                0,
-                null
-            );
+            throw new NotFoundException($this->__('Inner key "%1$s" is not exposed', [$key]), 0, null);
         }
-
         return $this->inner->get($key);
     }
-
     /**
      * @inheritdoc
      *
@@ -82,7 +68,6 @@ class MaskingContainer implements ContainerInterface
     {
         return $this->isExposed($key) && $this->inner->has($key);
     }
-
     /**
      * Checks if a key is exposed through the mask.
      *
@@ -94,8 +79,6 @@ class MaskingContainer implements ContainerInterface
      */
     protected function isExposed(string $key): bool
     {
-        return array_key_exists($key, $this->mask)
-            ? $this->mask[$key] !== false
-            : $this->defMask;
+        return array_key_exists($key, $this->mask) ? $this->mask[$key] !== \false : $this->defMask;
     }
 }

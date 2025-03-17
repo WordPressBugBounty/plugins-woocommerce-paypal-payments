@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Composer Merge plugin.
  *
@@ -7,7 +8,6 @@
  * This software may be modified and distributed under the terms of the MIT
  * license. See the LICENSE file for details.
  */
-
 namespace Wikimedia\Composer\Merge\V2;
 
 use Composer\Composer;
@@ -22,7 +22,6 @@ use Composer\Package\RootPackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Semver\Intervals;
 use UnexpectedValueException;
-
 /**
  * Processing for a composer.json file that will be merged into
  * a RootPackageInterface
@@ -31,48 +30,40 @@ use UnexpectedValueException;
  */
 class ExtraPackage
 {
-
     /**
      * @var Composer $composer
      */
     protected $composer;
-
     /**
      * @var Logger $logger
      */
     protected $logger;
-
     /**
      * @var string $path
      */
     protected $path;
-
     /**
      * @var array $json
      */
     protected $json;
-
     /**
      * @var CompletePackage $package
      */
     protected $package;
-
     /**
      * @var array<string, bool> $mergedRequirements
      */
     protected $mergedRequirements = [];
-
     /**
      * @var VersionParser $versionParser
      */
     protected $versionParser;
-
     /**
      * @param string $path Path to composer.json file
      * @param Composer $composer
      * @param Logger $logger
      */
-    public function __construct($path, Composer $composer, Logger $logger)
+    public function __construct($path, Composer $composer, \Wikimedia\Composer\Merge\V2\Logger $logger)
     {
         $this->path = $path;
         $this->composer = $composer;
@@ -81,7 +72,6 @@ class ExtraPackage
         $this->package = $this->loadPackage($this->json);
         $this->versionParser = new VersionParser();
     }
-
     /**
      * Get list of additional packages to include if precessing recursively.
      *
@@ -89,10 +79,8 @@ class ExtraPackage
      */
     public function getIncludes()
     {
-        return isset($this->json['extra']['merge-plugin']['include']) ?
-            $this->fixRelativePaths($this->json['extra']['merge-plugin']['include']) : [];
+        return isset($this->json['extra']['merge-plugin']['include']) ? $this->fixRelativePaths($this->json['extra']['merge-plugin']['include']) : [];
     }
-
     /**
      * Get list of additional packages to require if precessing recursively.
      *
@@ -100,10 +88,8 @@ class ExtraPackage
      */
     public function getRequires()
     {
-        return isset($this->json['extra']['merge-plugin']['require']) ?
-            $this->fixRelativePaths($this->json['extra']['merge-plugin']['require']) : [];
+        return isset($this->json['extra']['merge-plugin']['require']) ? $this->fixRelativePaths($this->json['extra']['merge-plugin']['require']) : [];
     }
-
     /**
      * Get list of merged requirements from this package.
      *
@@ -113,7 +99,6 @@ class ExtraPackage
     {
         return array_keys($this->mergedRequirements);
     }
-
     /**
      * Read the contents of a composer.json style file into an array.
      *
@@ -130,15 +115,13 @@ class ExtraPackage
         $file = new JsonFile($path);
         $json = $file->read();
         if (!isset($json['name'])) {
-            $json['name'] = 'merge-plugin/' .
-                strtr($path, DIRECTORY_SEPARATOR, '-');
+            $json['name'] = 'merge-plugin/' . strtr($path, \DIRECTORY_SEPARATOR, '-');
         }
         if (!isset($json['version'])) {
             $json['version'] = '1.0.0';
         }
         return $json;
     }
-
     /**
      * @param array $json
      * @return CompletePackage
@@ -149,43 +132,30 @@ class ExtraPackage
         $package = $loader->load($json);
         // @codeCoverageIgnoreStart
         if (!$package instanceof CompletePackage) {
-            throw new UnexpectedValueException(
-                'Expected instance of CompletePackage, got ' .
-                get_class($package)
-            );
+            throw new UnexpectedValueException('Expected instance of CompletePackage, got ' . get_class($package));
         }
         // @codeCoverageIgnoreEnd
         return $package;
     }
-
     /**
      * Merge this package into a RootPackageInterface
      *
      * @param RootPackageInterface $root
      * @param PluginState $state
      */
-    public function mergeInto(RootPackageInterface $root, PluginState $state)
+    public function mergeInto(RootPackageInterface $root, \Wikimedia\Composer\Merge\V2\PluginState $state)
     {
         $this->prependRepositories($root);
-
         $this->mergeRequires('require', $root, $state);
-
         $this->mergePackageLinks('conflict', $root);
-
         if ($state->shouldMergeReplace()) {
             $this->mergePackageLinks('replace', $root);
         }
-
         $this->mergePackageLinks('provide', $root);
-
         $this->mergeSuggests($root);
-
         $this->mergeAutoload('autoload', $root);
-
         $this->mergeExtra($root, $state);
-
         $this->mergeScripts($root, $state);
-
         if ($state->isDevMode()) {
             $this->mergeDevInto($root, $state);
         } else {
@@ -193,21 +163,19 @@ class ExtraPackage
             $this->mergeAliases($root);
         }
     }
-
     /**
      * Merge just the dev portion into a RootPackageInterface
      *
      * @param RootPackageInterface $root
      * @param PluginState $state
      */
-    public function mergeDevInto(RootPackageInterface $root, PluginState $state)
+    public function mergeDevInto(RootPackageInterface $root, \Wikimedia\Composer\Merge\V2\PluginState $state)
     {
         $this->mergeRequires('require-dev', $root, $state);
         $this->mergeAutoload('devAutoload', $root);
         $this->mergeReferences($root);
         $this->mergeAliases($root);
     }
-
     /**
      * Add a collection of repositories described by the given configuration
      * to the given package and the global repository manager.
@@ -221,7 +189,6 @@ class ExtraPackage
         }
         $repoManager = $this->composer->getRepositoryManager();
         $newRepos = [];
-
         foreach ($this->json['repositories'] as $repoJson) {
             if (!isset($repoJson['type'])) {
                 continue;
@@ -230,21 +197,13 @@ class ExtraPackage
                 $repoJson['url'] = $this->fixRelativePaths(array($repoJson['url']))[0];
             }
             $this->logger->info("Prepending {$repoJson['type']} repository");
-            $repo = $repoManager->createRepository(
-                $repoJson['type'],
-                $repoJson
-            );
+            $repo = $repoManager->createRepository($repoJson['type'], $repoJson);
             $repoManager->prependRepository($repo);
             $newRepos[] = $repo;
         }
-
         $unwrapped = self::unwrapIfNeeded($root, 'setRepositories');
-        $unwrapped->setRepositories(array_merge(
-            $newRepos,
-            $root->getRepositories()
-        ));
+        $unwrapped->setRepositories(array_merge($newRepos, $root->getRepositories()));
     }
-
     /**
      * Merge require or require-dev into a RootPackageInterface
      *
@@ -252,36 +211,19 @@ class ExtraPackage
      * @param RootPackageInterface $root
      * @param PluginState $state
      */
-    protected function mergeRequires(
-        $type,
-        RootPackageInterface $root,
-        PluginState $state
-    ) {
+    protected function mergeRequires($type, RootPackageInterface $root, \Wikimedia\Composer\Merge\V2\PluginState $state)
+    {
         $linkType = BasePackage::$supportedLinkTypes[$type];
         $getter = 'get' . ucfirst($linkType['method']);
         $setter = 'set' . ucfirst($linkType['method']);
-
         $requires = $this->package->{$getter}();
         if (empty($requires)) {
             return;
         }
-
         $this->mergeStabilityFlags($root, $requires);
-
-        $requires = $this->replaceSelfVersionDependencies(
-            $type,
-            $requires,
-            $root
-        );
-
-        $root->{$setter}($this->mergeOrDefer(
-            $type,
-            $root->{$getter}(),
-            $requires,
-            $state
-        ));
+        $requires = $this->replaceSelfVersionDependencies($type, $requires, $root);
+        $root->{$setter}($this->mergeOrDefer($type, $root->{$getter}(), $requires, $state));
     }
-
     /**
      * Merge two collections of package links and collect duplicates for
      * subsequent processing.
@@ -292,47 +234,38 @@ class ExtraPackage
      * @param PluginState $state
      * @return array Merged collection
      */
-    protected function mergeOrDefer(
-        $type,
-        array $origin,
-        array $merge,
-        PluginState $state
-    ) {
+    protected function mergeOrDefer($type, array $origin, array $merge, \Wikimedia\Composer\Merge\V2\PluginState $state)
+    {
         if ($state->ignoreDuplicateLinks() && $state->replaceDuplicateLinks()) {
             $this->logger->warning("Both replace and ignore-duplicates are true. These are mutually exclusive.");
             $this->logger->warning("Duplicate packages will be ignored.");
         }
-
         foreach ($merge as $name => $link) {
             if (isset($origin[$name])) {
                 if ($state->ignoreDuplicateLinks()) {
                     $this->logger->info("Ignoring duplicate <comment>{$name}</comment>");
                     continue;
                 }
-
                 if ($state->replaceDuplicateLinks()) {
                     $this->logger->info("Replacing <comment>{$name}</comment>");
-                    $this->mergedRequirements[$name] = true;
+                    $this->mergedRequirements[$name] = \true;
                     $origin[$name] = $link;
                 } else {
                     $this->logger->info("Merging <comment>{$name}</comment>");
-                    $this->mergedRequirements[$name] = true;
+                    $this->mergedRequirements[$name] = \true;
                     $origin[$name] = $this->mergeConstraints($origin[$name], $link, $state);
                 }
             } else {
                 $this->logger->info("Adding <comment>{$name}</comment>");
-                $this->mergedRequirements[$name] = true;
+                $this->mergedRequirements[$name] = \true;
                 $origin[$name] = $link;
             }
         }
-
         if (!$state->isComposer1()) {
             Intervals::clear();
         }
-
         return $origin;
     }
-
     /**
      * Merge package constraints.
      *
@@ -343,40 +276,25 @@ class ExtraPackage
      * @param PluginState $state
      * @return Link Merged link.
      */
-    protected function mergeConstraints(Link $origin, Link $merge, PluginState $state)
+    protected function mergeConstraints(Link $origin, Link $merge, \Wikimedia\Composer\Merge\V2\PluginState $state)
     {
         $oldPrettyString = $origin->getConstraint()->getPrettyString();
         $newPrettyString = $merge->getConstraint()->getPrettyString();
-
         if ($state->isComposer1()) {
-            $constraintClass = MultiConstraint::class;
+            $constraintClass = \Wikimedia\Composer\Merge\V2\MultiConstraint::class;
         } else {
             $constraintClass = \Composer\Semver\Constraint\MultiConstraint::class;
-
             if (Intervals::isSubsetOf($origin->getConstraint(), $merge->getConstraint())) {
                 return $origin;
             }
-
             if (Intervals::isSubsetOf($merge->getConstraint(), $origin->getConstraint())) {
                 return $merge;
             }
         }
-
-        $newConstraint = $constraintClass::create([
-            $origin->getConstraint(),
-            $merge->getConstraint()
-        ], true);
-        $newConstraint->setPrettyString($oldPrettyString.', '.$newPrettyString);
-
-        return new Link(
-            $origin->getSource(),
-            $origin->getTarget(),
-            $newConstraint,
-            $origin->getDescription(),
-            $origin->getPrettyConstraint() . ', ' . $newPrettyString
-        );
+        $newConstraint = $constraintClass::create([$origin->getConstraint(), $merge->getConstraint()], \true);
+        $newConstraint->setPrettyString($oldPrettyString . ', ' . $newPrettyString);
+        return new Link($origin->getSource(), $origin->getTarget(), $newConstraint, $origin->getDescription(), $origin->getPrettyConstraint() . ', ' . $newPrettyString);
     }
-
     /**
      * Merge autoload or autoload-dev into a RootPackageInterface
      *
@@ -387,19 +305,13 @@ class ExtraPackage
     {
         $getter = 'get' . ucfirst($type);
         $setter = 'set' . ucfirst($type);
-
         $autoload = $this->package->{$getter}();
         if (empty($autoload)) {
             return;
         }
-
         $unwrapped = self::unwrapIfNeeded($root, $setter);
-        $unwrapped->{$setter}(array_merge_recursive(
-            $root->{$getter}(),
-            $this->fixRelativePaths($autoload)
-        ));
+        $unwrapped->{$setter}(array_merge_recursive($root->{$getter}(), $this->fixRelativePaths($autoload)));
     }
-
     /**
      * Fix a collection of paths that are relative to this package to be
      * relative to the base package.
@@ -410,17 +322,12 @@ class ExtraPackage
     protected function fixRelativePaths(array $paths)
     {
         $base = dirname($this->path);
-        $base = ($base === '.') ? '' : "{$base}/";
-
-        array_walk_recursive(
-            $paths,
-            function (&$path) use ($base) {
-                $path = "{$base}{$path}";
-            }
-        );
+        $base = $base === '.' ? '' : "{$base}/";
+        array_walk_recursive($paths, function (&$path) use ($base) {
+            $path = "{$base}{$path}";
+        });
         return $paths;
     }
-
     /**
      * Extract and merge stability flags from the given collection of
      * requires and merge them into a RootPackageInterface
@@ -428,20 +335,13 @@ class ExtraPackage
      * @param RootPackageInterface $root
      * @param array $requires
      */
-    protected function mergeStabilityFlags(
-        RootPackageInterface $root,
-        array $requires
-    ) {
+    protected function mergeStabilityFlags(RootPackageInterface $root, array $requires)
+    {
         $flags = $root->getStabilityFlags();
-        $sf = new StabilityFlags($flags, $root->getMinimumStability());
-
+        $sf = new \Wikimedia\Composer\Merge\V2\StabilityFlags($flags, $root->getMinimumStability());
         $unwrapped = self::unwrapIfNeeded($root, 'setStabilityFlags');
-        $unwrapped->setStabilityFlags(array_merge(
-            $flags,
-            $sf->extractAll($requires)
-        ));
+        $unwrapped->setStabilityFlags(array_merge($flags, $sf->extractAll($requires)));
     }
-
     /**
      * Merge package links of the given type into a RootPackageInterface
      *
@@ -453,25 +353,17 @@ class ExtraPackage
         $linkType = BasePackage::$supportedLinkTypes[$type];
         $getter = 'get' . ucfirst($linkType['method']);
         $setter = 'set' . ucfirst($linkType['method']);
-
         $links = $this->package->{$getter}();
         if (!empty($links)) {
             $unwrapped = self::unwrapIfNeeded($root, $setter);
             // @codeCoverageIgnoreStart
             if ($root !== $unwrapped) {
-                $this->logger->warning(
-                    'This Composer version does not support ' .
-                    "'{$type}' merging for aliased packages."
-                );
+                $this->logger->warning('This Composer version does not support ' . "'{$type}' merging for aliased packages.");
             }
             // @codeCoverageIgnoreEnd
-            $unwrapped->{$setter}(array_merge(
-                $root->{$getter}(),
-                $this->replaceSelfVersionDependencies($type, $links, $root)
-            ));
+            $unwrapped->{$setter}(array_merge($root->{$getter}(), $this->replaceSelfVersionDependencies($type, $links, $root)));
         }
     }
-
     /**
      * Merge suggested packages into a RootPackageInterface
      *
@@ -482,79 +374,55 @@ class ExtraPackage
         $suggests = $this->package->getSuggests();
         if (!empty($suggests)) {
             $unwrapped = self::unwrapIfNeeded($root, 'setSuggests');
-            $unwrapped->setSuggests(array_merge(
-                $root->getSuggests(),
-                $suggests
-            ));
+            $unwrapped->setSuggests(array_merge($root->getSuggests(), $suggests));
         }
     }
-
     /**
      * Merge extra config into a RootPackageInterface
      *
      * @param RootPackageInterface $root
      * @param PluginState $state
      */
-    public function mergeExtra(RootPackageInterface $root, PluginState $state)
+    public function mergeExtra(RootPackageInterface $root, \Wikimedia\Composer\Merge\V2\PluginState $state)
     {
         $extra = $this->package->getExtra();
         unset($extra['merge-plugin']);
         if (!$state->shouldMergeExtra() || empty($extra)) {
             return;
         }
-
         $rootExtra = $root->getExtra();
         $unwrapped = self::unwrapIfNeeded($root, 'setExtra');
-
         if ($state->replaceDuplicateLinks()) {
-            $unwrapped->setExtra(
-                self::mergeExtraArray($state->shouldMergeExtraDeep(), $rootExtra, $extra)
-            );
+            $unwrapped->setExtra(self::mergeExtraArray($state->shouldMergeExtraDeep(), $rootExtra, $extra));
         } else {
             if (!$state->shouldMergeExtraDeep()) {
-                foreach (array_intersect(
-                    array_keys($extra),
-                    array_keys($rootExtra)
-                ) as $key) {
-                    $this->logger->info(
-                        "Ignoring duplicate <comment>{$key}</comment> in ".
-                        "<comment>{$this->path}</comment> extra config."
-                    );
+                foreach (array_intersect(array_keys($extra), array_keys($rootExtra)) as $key) {
+                    $this->logger->info("Ignoring duplicate <comment>{$key}</comment> in " . "<comment>{$this->path}</comment> extra config.");
                 }
             }
-            $unwrapped->setExtra(
-                self::mergeExtraArray($state->shouldMergeExtraDeep(), $extra, $rootExtra)
-            );
+            $unwrapped->setExtra(self::mergeExtraArray($state->shouldMergeExtraDeep(), $extra, $rootExtra));
         }
     }
-
     /**
      * Merge scripts config into a RootPackageInterface
      *
      * @param RootPackageInterface $root
      * @param PluginState $state
      */
-    public function mergeScripts(RootPackageInterface $root, PluginState $state)
+    public function mergeScripts(RootPackageInterface $root, \Wikimedia\Composer\Merge\V2\PluginState $state)
     {
         $scripts = $this->package->getScripts();
         if (!$state->shouldMergeScripts() || empty($scripts)) {
             return;
         }
-
         $rootScripts = $root->getScripts();
         $unwrapped = self::unwrapIfNeeded($root, 'setScripts');
-
         if ($state->replaceDuplicateLinks()) {
-            $unwrapped->setScripts(
-                array_merge($rootScripts, $scripts)
-            );
+            $unwrapped->setScripts(array_merge($rootScripts, $scripts));
         } else {
-            $unwrapped->setScripts(
-                array_merge($scripts, $rootScripts)
-            );
+            $unwrapped->setScripts(array_merge($scripts, $rootScripts));
         }
     }
-
     /**
      * Merges two arrays either via arrayMergeDeep or via array_merge.
      *
@@ -566,12 +434,10 @@ class ExtraPackage
     public static function mergeExtraArray($mergeDeep, $array1, $array2)
     {
         if ($mergeDeep) {
-            return NestedArray::mergeDeep($array1, $array2);
+            return \Wikimedia\Composer\Merge\V2\NestedArray::mergeDeep($array1, $array2);
         }
-
         return array_merge($array1, $array2);
     }
-
     /**
      * Update Links with a 'self.version' constraint with the root package's
      * version.
@@ -581,48 +447,26 @@ class ExtraPackage
      * @param RootPackageInterface $root
      * @return array
      */
-    protected function replaceSelfVersionDependencies(
-        $type,
-        array $links,
-        RootPackageInterface $root
-    ) {
+    protected function replaceSelfVersionDependencies($type, array $links, RootPackageInterface $root)
+    {
         $linkType = BasePackage::$supportedLinkTypes[$type];
         $version = $root->getVersion();
         $prettyVersion = $root->getPrettyVersion();
         $vp = $this->versionParser;
-
         $method = 'get' . ucfirst($linkType['method']);
-        $packages = $root->$method();
-
-        return array_map(
-            static function ($link) use ($linkType, $version, $prettyVersion, $vp, $packages) {
-                if ('self.version' === $link->getPrettyConstraint()) {
-                    if (isset($packages[$link->getSource()])) {
-                        /** @var Link $package */
-                        $package = $packages[$link->getSource()];
-                        return new Link(
-                            $link->getSource(),
-                            $link->getTarget(),
-                            $vp->parseConstraints($package->getConstraint()->getPrettyString()),
-                            $linkType['description'],
-                            $package->getPrettyConstraint()
-                        );
-                    }
-
-                    return new Link(
-                        $link->getSource(),
-                        $link->getTarget(),
-                        $vp->parseConstraints($version),
-                        $linkType['description'],
-                        $prettyVersion
-                    );
+        $packages = $root->{$method}();
+        return array_map(static function ($link) use ($linkType, $version, $prettyVersion, $vp, $packages) {
+            if ('self.version' === $link->getPrettyConstraint()) {
+                if (isset($packages[$link->getSource()])) {
+                    /** @var Link $package */
+                    $package = $packages[$link->getSource()];
+                    return new Link($link->getSource(), $link->getTarget(), $vp->parseConstraints($package->getConstraint()->getPrettyString()), $linkType['description'], $package->getPrettyConstraint());
                 }
-                return $link;
-            },
-            $links
-        );
+                return new Link($link->getSource(), $link->getTarget(), $vp->parseConstraints($version), $linkType['description'], $prettyVersion);
+            }
+            return $link;
+        }, $links);
     }
-
     /**
      * Get a full featured Package from a RootPackageInterface.
      *
@@ -640,37 +484,31 @@ class ExtraPackage
      * @param string $method Method needed
      * @return RootPackageInterface|RootPackage
      */
-    public static function unwrapIfNeeded(
-        RootPackageInterface $root,
-        $method = 'setExtra'
-    ) {
+    public static function unwrapIfNeeded(RootPackageInterface $root, $method = 'setExtra')
+    {
         // @codeCoverageIgnoreStart
-        if ($root instanceof RootAliasPackage &&
-            !method_exists($root, $method)
-        ) {
+        if ($root instanceof RootAliasPackage && !method_exists($root, $method)) {
             // Unwrap and return the aliased RootPackage.
             $root = $root->getAliasOf();
         }
         // @codeCoverageIgnoreEnd
         return $root;
     }
-
     protected function mergeAliases(RootPackageInterface $root)
     {
         $aliases = [];
         $unwrapped = self::unwrapIfNeeded($root, 'setAliases');
         foreach (array('require', 'require-dev') as $linkType) {
             $linkInfo = BasePackage::$supportedLinkTypes[$linkType];
-            $method = 'get'.ucfirst($linkInfo['method']);
+            $method = 'get' . ucfirst($linkInfo['method']);
             $links = [];
-            foreach ($unwrapped->$method() as $link) {
+            foreach ($unwrapped->{$method}() as $link) {
                 $links[$link->getTarget()] = $link->getConstraint()->getPrettyString();
             }
             $aliases = $this->extractAliases($links, $aliases);
         }
         $unwrapped->setAliases($aliases);
     }
-
     /**
      * Extract aliases from version constraints (dev-branch as 1.0.0).
      *
@@ -683,23 +521,13 @@ class ExtraPackage
     {
         foreach ($requires as $reqName => $reqVersion) {
             if (preg_match('{^([^,\s#]+)(?:#[^ ]+)? +as +([^,\s]+)$}', $reqVersion, $match)) {
-                $aliases[] = [
-                    'package' => strtolower($reqName),
-                    'version' => $this->versionParser->normalize($match[1], $reqVersion),
-                    'alias' => $match[2],
-                    'alias_normalized' => $this->versionParser->normalize($match[2], $reqVersion),
-                ];
-            } elseif (strpos($reqVersion, ' as ') !== false) {
-                throw new UnexpectedValueException(
-                    'Invalid alias definition in "'.$reqName.'": "'.$reqVersion.'". '
-                    . 'Aliases should be in the form "exact-version as other-exact-version".'
-                );
+                $aliases[] = ['package' => strtolower($reqName), 'version' => $this->versionParser->normalize($match[1], $reqVersion), 'alias' => $match[2], 'alias_normalized' => $this->versionParser->normalize($match[2], $reqVersion)];
+            } elseif (strpos($reqVersion, ' as ') !== \false) {
+                throw new UnexpectedValueException('Invalid alias definition in "' . $reqName . '": "' . $reqVersion . '". ' . 'Aliases should be in the form "exact-version as other-exact-version".');
             }
         }
-
         return $aliases;
     }
-
     /**
      * Update the root packages reference information.
      *
@@ -713,16 +541,15 @@ class ExtraPackage
         $unwrapped = self::unwrapIfNeeded($root, 'setReferences');
         foreach (['require', 'require-dev'] as $linkType) {
             $linkInfo = BasePackage::$supportedLinkTypes[$linkType];
-            $method = 'get'.ucfirst($linkInfo['method']);
+            $method = 'get' . ucfirst($linkInfo['method']);
             $links = [];
-            foreach ($unwrapped->$method() as $link) {
+            foreach ($unwrapped->{$method}() as $link) {
                 $links[$link->getTarget()] = $link->getConstraint()->getPrettyString();
             }
             $references = $this->extractReferences($links, $references);
         }
         $unwrapped->setReferences($references);
     }
-
     /**
      * Extract vcs revision from version constraint (dev-master#abc123.
      *
@@ -736,14 +563,11 @@ class ExtraPackage
         foreach ($requires as $reqName => $reqVersion) {
             $reqVersion = preg_replace('{^([^,\s@]+) as .+$}', '$1', $reqVersion);
             $stabilityName = VersionParser::parseStability($reqVersion);
-            if ($stabilityName === 'dev' &&
-                preg_match('{^[^,\s@]+?#([a-f0-9]+)$}', $reqVersion, $match)
-            ) {
+            if ($stabilityName === 'dev' && preg_match('{^[^,\s@]+?#([a-f0-9]+)$}', $reqVersion, $match)) {
                 $name = strtolower($reqName);
                 $references[$name] = $match[1];
             }
         }
-
         return $references;
     }
 }

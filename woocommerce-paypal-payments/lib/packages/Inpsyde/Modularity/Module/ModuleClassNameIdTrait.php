@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module;
 
 /**
@@ -11,7 +10,6 @@ namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module;
  */
 trait ModuleClassNameIdTrait
 {
-
     /**
      * @return string
      * @see Module::id()

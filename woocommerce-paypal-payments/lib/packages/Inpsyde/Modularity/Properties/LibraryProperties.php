@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties;
 
 /**
@@ -9,22 +8,14 @@ namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties;
  *
  * @package WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties
  */
-class LibraryProperties extends BaseProperties
+class LibraryProperties extends \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\BaseProperties
 {
     /**
      * Allowed configuration in composer.json "extra.modularity".
      *
      * @var array
      */
-    public const EXTRA_KEYS = [
-        self::PROP_DOMAIN_PATH,
-        self::PROP_NAME,
-        self::PROP_TEXTDOMAIN,
-        self::PROP_URI,
-        self::PROP_VERSION,
-        self::PROP_REQUIRES_WP,
-    ];
-
+    public const EXTRA_KEYS = [self::PROP_DOMAIN_PATH, self::PROP_NAME, self::PROP_TEXTDOMAIN, self::PROP_URI, self::PROP_VERSION, self::PROP_REQUIRES_WP];
     /**
      * @param string $composerJsonFile
      * @param string|null $baseUrl
@@ -34,20 +25,17 @@ class LibraryProperties extends BaseProperties
      * @throws \Exception
      * @psalm-suppress MixedArrayAccess
      */
-    public static function new(string $composerJsonFile, ?string $baseUrl = null): LibraryProperties
+    public static function new(string $composerJsonFile, ?string $baseUrl = null): \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\LibraryProperties
     {
         if (!\is_file($composerJsonFile) || !\is_readable($composerJsonFile)) {
             throw new \Exception("File {$composerJsonFile} does not exist or is not readable.");
         }
-
         $content = (string) file_get_contents($composerJsonFile);
         /** @var array $composerJsonData */
-        $composerJsonData = json_decode($content, true);
-
-        $properties = Properties::DEFAULT_PROPERTIES;
+        $composerJsonData = json_decode($content, \true);
+        $properties = \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\Properties::DEFAULT_PROPERTIES;
         $properties[self::PROP_DESCRIPTION] = $composerJsonData['description'] ?? '';
         $properties[self::PROP_TAGS] = $composerJsonData['keywords'] ?? [];
-
         $authors = $composerJsonData['authors'] ?? [];
         $names = [];
         foreach ((array) $authors as $author) {
@@ -63,36 +51,25 @@ class LibraryProperties extends BaseProperties
         if (count($names) > 0) {
             $properties[self::PROP_AUTHOR] = implode(', ', $names);
         }
-
         // Custom settings which can be stored in composer.json "extra.modularity"
         $extra = $composerJsonData['extra']['modularity'] ?? [];
         foreach (self::EXTRA_KEYS as $key) {
             $properties[$key] = $extra[$key] ?? '';
         }
-
         // PHP requirement in composer.json "require" or "require-dev"
         $properties[self::PROP_REQUIRES_PHP] = self::extractPhpVersion($composerJsonData);
-
         // composer.json might have "version" in root
         $version = $composerJsonData['version'] ?? null;
         if ($version && is_string($version)) {
             $properties[self::PROP_VERSION] = $version;
         }
-
         [$baseName, $name] = static::buildNames($composerJsonData);
         $basePath = dirname($composerJsonFile);
         if (empty($properties[self::PROP_NAME])) {
             $properties[self::PROP_NAME] = $name;
         }
-
-        return new self(
-            $baseName,
-            $basePath,
-            $baseUrl,
-            $properties
-        );
+        return new self($baseName, $basePath, $baseUrl, $properties);
     }
-
     /**
      * @param array $composerJsonData
      *
@@ -104,14 +81,9 @@ class LibraryProperties extends BaseProperties
         $packageNamePieces = explode('/', $composerName, 2);
         $basename = implode('-', $packageNamePieces);
         // "inpsyde/foo-bar-baz" => "Inpsyde Foo Bar Baz"
-        $name = mb_convert_case(
-            str_replace(['-', '_', '.'], ' ', implode(' ', $packageNamePieces)),
-            MB_CASE_TITLE
-        );
-
+        $name = mb_convert_case(str_replace(['-', '_', '.'], ' ', implode(' ', $packageNamePieces)), \MB_CASE_TITLE);
         return [$basename, $name];
     }
-
     /**
      * Check PHP version in require, require-dev.
      *
@@ -129,47 +101,34 @@ class LibraryProperties extends BaseProperties
      */
     private static function extractPhpVersion(array $composerData, string $key = 'require'): ?string
     {
-        $nextKey = ($key === 'require')
-            ? 'require-dev'
-            : null;
+        $nextKey = $key === 'require' ? 'require-dev' : null;
         $base = (array) ($composerData[$key] ?? []);
         $requirement = $base['php'] ?? null;
-        $version = ($requirement && is_string($requirement))
-            ? trim($requirement)
-            : null;
+        $version = $requirement && is_string($requirement) ? trim($requirement) : null;
         if (!$version) {
-            return $nextKey
-                ? static::extractPhpVersion($composerData, $nextKey)
-                : null;
+            return $nextKey ? static::extractPhpVersion($composerData, $nextKey) : null;
         }
-
         static $matcher;
         $matcher or $matcher = static function (string $version): ?string {
             $version = trim($version);
             if (!$version) {
                 return null;
             }
-
             // versions range like `>= 7.2.4 < 8`
             if (preg_match('{>=?([\s0-9\.]+)<}', $version, $matches)) {
-                return trim($matches[1], " \t\n\r\0\x0B.");
+                return trim($matches[1], " \t\n\r\x00\v.");
             }
-
             // aliases like `dev-src#abcde as 7.4`
             if (preg_match('{as\s*([\s0-9\.]+)}', $version, $matches)) {
-                return trim($matches[1], " \t\n\r\0\x0B.");
+                return trim($matches[1], " \t\n\r\x00\v.");
             }
-
             // Basic requirements like 7.2, >=7.2, ^7.2, ~7.2
             if (preg_match('{^(?:[>=\s~\^]+)?([0-9\.]+)}', $version, $matches)) {
-                return trim($matches[1], " \t\n\r\0\x0B.");
+                return trim($matches[1], " \t\n\r\x00\v.");
             }
-
             return null;
         };
-
         // support for simpler requirements like `7.3`, `>=7.4` or alternative like `5.6 || >=7`
-
         $alternatives = explode('||', $version);
         $found = null;
         foreach ($alternatives as $alternative) {
@@ -179,16 +138,11 @@ class LibraryProperties extends BaseProperties
                 $found = $itemFound;
             }
         }
-
         if ($found) {
             return $found;
         }
-
-        return $nextKey
-            ? static::extractPhpVersion($composerData, $nextKey)
-            : null;
+        return $nextKey ? static::extractPhpVersion($composerData, $nextKey) : null;
     }
-
     /**
      * @param string $url
      *
@@ -196,14 +150,12 @@ class LibraryProperties extends BaseProperties
      *
      * @throws \Exception
      */
-    public function withBaseUrl(string $url): LibraryProperties
+    public function withBaseUrl(string $url): \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\LibraryProperties
     {
         if ($this->baseUrl !== null) {
             throw new \Exception(sprintf('%s::$baseUrl property is not overridable.', __CLASS__));
         }
-
         $this->baseUrl = trailingslashit($url);
-
         return $this;
     }
 }

@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Package\Version;
 
 use Exception;
 use Stringable;
-
 /**
  * Represents a SemVer-compliant version.
  */
@@ -20,7 +18,6 @@ interface VersionInterface extends Stringable
      * @throws Exception If problem retrieving.
      */
     public function getMajor(): int;
-
     /**
      * Retrieves the version's minor number.
      *
@@ -29,7 +26,6 @@ interface VersionInterface extends Stringable
      * @throws Exception If problem retrieving.
      */
     public function getMinor(): int;
-
     /**
      * Retrieves the version's patch number.
      *
@@ -38,7 +34,6 @@ interface VersionInterface extends Stringable
      * @throws Exception If problem retrieving.
      */
     public function getPatch(): int;
-
     /**
      * Retrieves the version's pre-release identifier.
      *
@@ -49,7 +44,6 @@ interface VersionInterface extends Stringable
      * @throws Exception If problem retrieving.
      */
     public function getPreRelease(): array;
-
     /**
      * Retrieves the version's build metadata.
      *

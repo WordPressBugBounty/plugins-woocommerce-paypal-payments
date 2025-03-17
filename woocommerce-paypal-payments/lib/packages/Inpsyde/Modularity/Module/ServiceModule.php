@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module;
 
-interface ServiceModule extends Module
+interface ServiceModule extends \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\Module
 {
-
     /**
      * Return application services' factories.
      *

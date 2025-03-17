@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Package;
 
 use Exception;
 use Dhii\Package\Version\VersionInterface;
-
 /**
  * Represents a software package.
  */
@@ -21,7 +19,6 @@ interface PackageInterface
      * @throws Exception If problem retrieving.
      */
     public function getName(): string;
-
     /**
      * Retrieves the package version.
      *
@@ -30,7 +27,6 @@ interface PackageInterface
      * @throws Exception If problem retrieving.
      */
     public function getVersion(): VersionInterface;
-
     /**
      * Retrieves the path to the package base directory.
      *

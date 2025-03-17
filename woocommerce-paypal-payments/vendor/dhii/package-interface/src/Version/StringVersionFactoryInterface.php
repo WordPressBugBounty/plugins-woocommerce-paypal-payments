@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Dhii\Package\Version;
 
 use DomainException;
 use Exception;
-
 /**
  * Represents a factory that can create a version from a version string.
  */
@@ -22,5 +20,5 @@ interface StringVersionFactoryInterface
      * @throws DomainException If version string is malformed.
      * @throws Exception If problem creating.
      */
-    public function createVersionFromString(string $version): VersionInterface;
+    public function createVersionFromString(string $version): \Dhii\Package\Version\VersionInterface;
 }

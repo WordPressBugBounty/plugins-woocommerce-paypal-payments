@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Composer Merge plugin.
  *
@@ -7,49 +8,38 @@
  * This software may be modified and distributed under the terms of the MIT
  * license. See the LICENSE file for details.
  */
-
 namespace Wikimedia\Composer\Merge\V2;
 
 use Composer\Package\BasePackage;
 use Composer\Package\Version\VersionParser;
-
 /**
  * Adapted from Composer's RootPackageLoader::extractStabilityFlags
  * @author Bryan Davis <bd808@bd808.com>
  */
 class StabilityFlags
 {
-
     /**
      * @var array Current package name => stability mappings
      */
     protected $stabilityFlags;
-
     /**
      * @var int Current default minimum stability
      */
     protected $minimumStability;
-
     /**
      * @var string Regex to extract an explicit stability flag (eg '@dev')
      */
     protected $explicitStabilityRe;
-
     /**
      * @param array $stabilityFlags Current package name => stability mappings
      * @param int|string $minimumStability Current default minimum stability
      */
-    public function __construct(
-        array $stabilityFlags = [],
-        $minimumStability = BasePackage::STABILITY_STABLE
-    ) {
+    public function __construct(array $stabilityFlags = [], $minimumStability = BasePackage::STABILITY_STABLE)
+    {
         $this->stabilityFlags = $stabilityFlags;
-        $this->minimumStability = $this->getStabilityInt((string)$minimumStability);
-        $this->explicitStabilityRe = '/^[^@]*?@(' .
-            implode('|', array_keys(BasePackage::$stabilities)) .
-            ')$/i';
+        $this->minimumStability = $this->getStabilityInt((string) $minimumStability);
+        $this->explicitStabilityRe = '/^[^@]*?@(' . implode('|', array_keys(BasePackage::$stabilities)) . ')$/i';
     }
-
     /**
      * Get the stability value for a given string.
      *
@@ -61,7 +51,6 @@ class StabilityFlags
         $name = VersionParser::normalizeStability($name);
         return BasePackage::$stabilities[$name] ?? BasePackage::STABILITY_STABLE;
     }
-
     /**
      * Extract and merge stability flags from the given collection of
      * requires with another collection of stability flags.
@@ -72,26 +61,20 @@ class StabilityFlags
     public function extractAll(array $requires)
     {
         $flags = [];
-
         foreach ($requires as $name => $link) {
             $name = strtolower($name);
             $version = $link->getPrettyConstraint();
-
             $stability = $this->getExplicitStability($version);
-
             if ($stability === null) {
                 $stability = $this->getParsedStability($version);
             }
-
             $flags[$name] = max($stability, $this->getCurrentStability($name));
         }
-
         // Filter out null stability values
         return array_filter($flags, function ($v) {
             return $v !== null;
         });
     }
-
     /**
      * Extract the most unstable explicit stability (eg '@dev') from a version
      * specification.
@@ -111,7 +94,6 @@ class StabilityFlags
         }
         return $found;
     }
-
     /**
      * Split a version specification into a list of version constraints.
      *
@@ -123,17 +105,13 @@ class StabilityFlags
         $found = [];
         $orConstraints = preg_split('/\s*\|\|?\s*/', trim($version));
         foreach ($orConstraints as $constraints) {
-            $andConstraints = preg_split(
-                '/(?<!^|as|[=>< ,]) *(?<!-)[, ](?!-) *(?!,|as|$)/',
-                $constraints
-            );
+            $andConstraints = preg_split('/(?<!^|as|[=>< ,]) *(?<!-)[, ](?!-) *(?!,|as|$)/', $constraints);
             foreach ($andConstraints as $constraint) {
                 $found[] = $constraint;
             }
         }
         return $found;
     }
-
     /**
      * Get the stability of a version
      *
@@ -144,21 +122,14 @@ class StabilityFlags
     {
         // Drop aliasing if used
         $version = preg_replace('/^([^,\s@]+) as .+$/', '$1', $version);
-        $stability = $this->getStabilityInt(
-            VersionParser::parseStability($version)
-        );
-
-        if ($stability === BasePackage::STABILITY_STABLE ||
-            $this->minimumStability > $stability
-        ) {
+        $stability = $this->getStabilityInt(VersionParser::parseStability($version));
+        if ($stability === BasePackage::STABILITY_STABLE || $this->minimumStability > $stability) {
             // Ignore if 'stable' or more stable than the global
             // minimum
             $stability = null;
         }
-
         return $stability;
     }
-
     /**
      * Get the current stability of a given package.
      *

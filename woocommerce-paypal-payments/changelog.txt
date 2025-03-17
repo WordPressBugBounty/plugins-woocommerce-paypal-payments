@@ -1,5 +1,21 @@
 *** Changelog ***
 
+= 3.0.0 - 2025-03-17 =
+* Enhancement - Redesigned settings UI for new users #2908
+* Enhancement - Enable Fastlane by default on new store setups when eligible #3199
+* Enhancement - Enable support for advanced card payments and features for Hong Kong & Singapore #3089
+* Fix - Dependency conflict with more recent psr/log versions on PHP8+ #2993
+* Fix - PayPal Checkout Gateway subscription migration layer not renewing subscriptions #2699
+* Fix - Fatal error when gateway settings initialized too early by third-party plugin #2766
+* Fix - Next Payment date for Subscriptions not updating when processing a PayPal Subscriptions renewal order #2959
+* Fix - Changing the subscription payment method to ACDC triggers error #2891
+* Fix - Standard Card button not appearing in standalone gateway for free trial subscription products #2935
+* Fix - Validation error when using Trustly payment method #3031
+* Fix - Error in continuation mode due to wrong gateway selection on Checkout block #2996
+* Fix - Error in error in PayLaterConfigurator #2989
+* Tweak - Removed currency requirement for Vault v3 #2919
+* Tweak - Update plugin author from WooCommerce to PayPal
+
 = 2.9.6 - 2025-01-06 =
 * Fix - NOT_ENABLED_TO_VAULT_PAYMENT_SOURCE on PayPal transactions when using ACDC Vaulting without PayPal Vault approval #2955
 * Fix - Express buttons for Free Trial Subscription products on Block Cart/Checkout trigger CANNOT_BE_ZERO_OR_NEGATIVE error #2872

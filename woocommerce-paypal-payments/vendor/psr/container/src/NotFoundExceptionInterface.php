@@ -1,6 +1,6 @@
 <?php
 
-namespace Psr\Container;
+namespace WooCommerce\PayPalCommerce\Vendor\Psr\Container;
 
 /**
  * No entry was found in the container.
