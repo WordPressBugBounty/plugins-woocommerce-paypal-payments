@@ -45,6 +45,8 @@ use WooCommerce\PayPalCommerce\Settings\Endpoint\StylingRestEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Endpoint\TodosRestEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Handler\ConnectionListener;
 use WooCommerce\PayPalCommerce\Settings\Service\AuthenticationManager;
+use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\ActivationDetector;
+use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\PathRepository;
 use WooCommerce\PayPalCommerce\Settings\Service\ConnectionUrlGenerator;
 use WooCommerce\PayPalCommerce\Settings\Service\FeaturesEligibilityService;
 use WooCommerce\PayPalCommerce\Settings\Service\GatewayRedirectService;
@@ -120,32 +122,34 @@ return array(
         $environment = new Environment($data->is_sandbox_merchant());
         return new ConnectionState($is_connected, $environment);
     },
+    /**
+     * Returns details about the connected environment (production/sandbox).
+     *
+     * @deprecated Directly use 'settings.connection-state' instead of this.
+     */
     'settings.environment' => static function (ContainerInterface $container): Environment {
-        // We should remove this service in favor of directly using `settings.connection-state`.
         $state = $container->get('settings.connection-state');
         assert($state instanceof ConnectionState);
         return $state->get_environment();
     },
     /**
-     * Checks if valid merchant connection details are stored in the DB.
+     * Checks if the onboarding process is completed and the merchant API can be used.
+     * This service only resolves the connection status once per request.
+     *
+     * @deprecated Use 'settings.connection-state' instead.
      */
     'settings.flag.is-connected' => static function (ContainerInterface $container): bool {
-        /*
-         * This service only resolves the connection status once per request.
-         * We should remove this service in favor of directly using `settings.connection-state`.
-         */
         $state = $container->get('settings.connection-state');
         assert($state instanceof ConnectionState);
         return $state->is_connected();
     },
     /**
-     * Checks if the merchant is connected to a sandbox environment.
+     * Determines whether the merchant is connected to a sandbox account.
+     * This service only resolves the sandbox flag once per request.
+     *
+     * @deprecated Use 'settings.connection-state' instead.
      */
     'settings.flag.is-sandbox' => static function (ContainerInterface $container): bool {
-        /*
-         * This service only resolves the sandbox flag once per request.
-         * We should remove this service in favor of directly using `settings.connection-state`.
-         */
         $state = $container->get('settings.connection-state');
         assert($state instanceof ConnectionState);
         return $state->is_sandbox();
@@ -230,7 +234,7 @@ return array(
         $axo_incompatible_plugins_notice = $container->get('axo.incompatible-plugins-notice.raw');
         // Combine the notices - only include non-empty ones.
         $axo_notices = array_filter(array($axo_checkout_config_notice, $axo_incompatible_plugins_notice));
-        return new PaymentMethodsDefinition($container->get('settings.data.payment'), $axo_notices);
+        return new PaymentMethodsDefinition($container->get('settings.data.payment'), $container->get('settings.data.general'), $axo_notices);
     },
     'settings.data.definition.method_dependencies' => static function (ContainerInterface $container): PaymentMethodsDependenciesDefinition {
         return new PaymentMethodsDependenciesDefinition($container->get('wcgateway.settings'));
@@ -330,19 +334,19 @@ return array(
         // Settings status.
         $gateways = array('card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false);
         // Merchant capabilities, serve to show active or inactive badge and buttons.
-        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false);
+        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false);
         $merchant_capabilities = array(
             'save_paypal' => $capabilities['save_paypal'],
             // Save PayPal and Venmo eligibility.
             'acdc' => $capabilities['acdc'] && !$gateways['card-button'],
             // Advanced credit and debit cards eligibility.
-            'apm' => $capabilities['apm'],
+            'apm' => $capabilities['acdc'] && !$gateways['card-button'],
             // Alternative payment methods eligibility.
             'google_pay' => $capabilities['acdc'] && $capabilities['google_pay'],
             // Google Pay eligibility.
             'apple_pay' => $capabilities['acdc'] && $capabilities['apple_pay'],
             // Apple Pay eligibility.
-            'pay_later' => $capabilities['paylater'],
+            'pay_later' => $capabilities['acdc'] && !$gateways['card-button'],
         );
         return new FeaturesDefinition($container->get('settings.service.features_eligibilities'), $container->get('settings.data.general'), $merchant_capabilities, $container->get('settings.data.settings'));
     },
@@ -356,13 +360,13 @@ return array(
         return new FeaturesEligibilityService(
             $container->get('save-payment-methods.eligible'),
             // Save PayPal and Venmo eligibility.
-            $container->get('card-fields.eligible'),
+            $container->get('card-fields.eligibility.check'),
             // Advanced credit and debit cards eligibility.
             $apm_eligible,
             // Alternative payment methods eligibility.
-            $container->get('googlepay.eligible'),
+            $container->get('googlepay.eligibility.check'),
             // Google Pay eligibility.
-            $container->get('applepay.eligible'),
+            $container->get('applepay.eligibility.check'),
             // Apple Pay eligibility.
             $pay_later_eligible
         );
@@ -380,5 +384,11 @@ return array(
      */
     'settings.config.all-gateway-ids' => static function (): array {
         return array(PayPalGateway::ID, CardButtonGateway::ID, CreditCardGateway::ID, AxoGateway::ID, ApplePayGateway::ID, GooglePayGateway::ID, BancontactGateway::ID, BlikGateway::ID, EPSGateway::ID, IDealGateway::ID, MyBankGateway::ID, P24Gateway::ID, TrustlyGateway::ID, MultibancoGateway::ID, PayUponInvoiceGateway::ID, OXXO::ID);
+    },
+    'settings.service.branded-experience.activation-detector' => static function (): ActivationDetector {
+        return new ActivationDetector();
+    },
+    'settings.service.branded-experience.path-repository' => static function (ContainerInterface $container): PathRepository {
+        return new PathRepository($container->get('settings.service.branded-experience.activation-detector'), $container->get('settings.data.general'));
     },
 );

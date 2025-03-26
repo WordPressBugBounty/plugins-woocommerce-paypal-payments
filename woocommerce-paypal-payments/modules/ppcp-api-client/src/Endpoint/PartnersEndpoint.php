@@ -88,7 +88,7 @@ class PartnersEndpoint
      * Returns the current seller status.
      *
      * @return SellerStatus
-     * @throws RuntimeException When request could not be fullfilled.
+     * @throws RuntimeException When request could not be fulfilled.
      */
     public function seller_status(): SellerStatus
     {

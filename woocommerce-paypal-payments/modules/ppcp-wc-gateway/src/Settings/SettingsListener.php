@@ -216,7 +216,7 @@ class SettingsListener
         $retry_count = isset($_GET['ppcpRetry']) ? (int) sanitize_text_field(wp_unslash($_GET['ppcpRetry'])) : 0;
         // phpcs:enable WordPress.Security.NonceVerification.Missing
         // phpcs:enable WordPress.Security.NonceVerification.Recommended
-        // This method is only used for legacy UI, `settings->set` is valid here.
+        // This method is only used for #legacy-ui, `settings->set` is valid here.
         $this->settings->set('merchant_id', $merchant_id);
         $this->settings->set('merchant_email', $merchant_email);
         // If no client_id is present we will try to wait for PayPal to invoke LoginSellerEndpoint.
@@ -305,7 +305,7 @@ class SettingsListener
         if (!$this->is_valid_site_request() || State::STATE_ONBOARDED !== $this->state->current_state()) {
             return;
         }
-        // This method is only used for legacy UI, `settings->set` is valid here.
+        // This method is only used for #legacy-ui, `settings->set` is valid here.
         try {
             $token = $this->bearer->bearer();
             if (!$token->vaulting_available()) {
@@ -653,7 +653,7 @@ class SettingsListener
         if (!$this->is_valid_site_request() || State::STATE_ONBOARDED !== $this->state->current_state()) {
             return;
         }
-        // This method is only used for legacy UI, `settings->set` is valid here.
+        // This method is only used for #legacy-ui, `settings->set` is valid here.
         $existing_setting_value = $this->settings->has($setting_slug) ? $this->settings->get($setting_slug) : null;
         if ($condition) {
             $new_setting_value = $filter_function($existing_setting_value);

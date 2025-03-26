@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Handels the Webhook PAYMENT.CAPTURE.REFUNDED
+ * Handles the Webhook PAYMENT.CAPTURE.REFUNDED
  *
  * @package WooCommerce\PayPalCommerce\Webhooks\Handler
  */

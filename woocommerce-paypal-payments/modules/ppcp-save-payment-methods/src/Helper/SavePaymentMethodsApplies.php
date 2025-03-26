@@ -45,4 +45,14 @@ class SavePaymentMethodsApplies
     {
         return in_array($this->country, $this->allowed_countries, \true);
     }
+    /**
+     * Indicates, whether the current merchant is eligible for Save Payment Methods. Always true,
+     * but the filter allows other modules to disable Save Payment Methods site-wide.
+     *
+     * @return bool
+     */
+    public function for_merchant(): bool
+    {
+        return apply_filters('woocommerce_paypal_payments_is_eligible_for_save_payment_methods', \true);
+    }
 }

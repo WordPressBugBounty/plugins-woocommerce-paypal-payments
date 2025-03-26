@@ -8,6 +8,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\PayLaterWCBlocks;
 
+use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 /**
  * Class PayLaterWCBlocksRenderer
@@ -89,7 +90,9 @@ class PayLaterWCBlocksRenderer
     public function render(array $attributes, string $location, ContainerInterface $c)
     {
         if (\WooCommerce\PayPalCommerce\PayLaterWCBlocks\PayLaterWCBlocksModule::is_placement_enabled($c->get('wcgateway.settings.status'), $location)) {
-            $bn_code = PPCP_PAYPAL_BN_CODE;
+            $partner_attribution = $c->get('api.helper.partner-attribution');
+            assert($partner_attribution instanceof PartnerAttribution);
+            $bn_code = $partner_attribution->get_bn_code();
             $html = '<div id="' . esc_attr($attributes['ppcpId'] ?? '') . '" class="ppcp-messages" data-partner-attribution-id="' . esc_attr($bn_code) . '"></div>';
             $processor = new \WP_HTML_Tag_Processor($html);
             if ($processor->next_tag('div')) {

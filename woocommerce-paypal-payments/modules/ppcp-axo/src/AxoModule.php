@@ -29,7 +29,7 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\CartCheckoutDetector;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsListener;
 use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 use WC_Payment_Gateways;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Class AxoModule
  *
@@ -90,8 +90,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
                 if (is_user_logged_in()) {
                     return $methods;
                 }
-                $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-                assert($dcc_configuration instanceof DCCGatewayConfiguration);
+                $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+                assert($dcc_configuration instanceof CardPaymentsConfiguration);
                 if (!$dcc_configuration->is_enabled()) {
                     return $methods;
                 }
@@ -139,8 +139,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
         add_action('admin_init', static function () use ($c) {
             $listener = $c->get('wcgateway.settings.listener');
             assert($listener instanceof SettingsListener);
-            $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-            assert($dcc_configuration instanceof DCCGatewayConfiguration);
+            $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+            assert($dcc_configuration instanceof CardPaymentsConfiguration);
             $listener->filter_settings($dcc_configuration->use_fastlane(), 'smart_button_locations', function (array $existing_setting_value) {
                 $axo_forced_locations = array('cart-block', 'cart');
                 return array_unique(array_merge($existing_setting_value, $axo_forced_locations));
@@ -186,8 +186,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
              * @psalm-suppress MissingClosureParamType
              */
             add_filter('woocommerce_paypal_payments_sdk_components_hook', function ($components) use ($c) {
-                $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-                assert($dcc_configuration instanceof DCCGatewayConfiguration);
+                $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+                assert($dcc_configuration instanceof CardPaymentsConfiguration);
                 if (!$dcc_configuration->use_fastlane()) {
                     return $components;
                 }
@@ -196,8 +196,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
             });
             add_action('wp_head', function () use ($c) {
                 // Add meta tag to allow feature-detection of the site's AXO payment state.
-                $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-                assert($dcc_configuration instanceof DCCGatewayConfiguration);
+                $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+                assert($dcc_configuration instanceof CardPaymentsConfiguration);
                 if ($dcc_configuration->use_fastlane()) {
                     // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript
                     echo '<script async src="https://www.paypalobjects.com/insights/v1/paypal-insights.sandbox.min.js"></script>';
@@ -295,8 +295,8 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
      */
     private function should_render_fastlane(ContainerInterface $c): bool
     {
-        $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-        assert($dcc_configuration instanceof DCCGatewayConfiguration);
+        $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+        assert($dcc_configuration instanceof CardPaymentsConfiguration);
         $subscription_helper = $c->get('wc-subscriptions.helper');
         assert($subscription_helper instanceof SubscriptionHelper);
         return !is_user_logged_in() && CartCheckoutDetector::has_classic_checkout() && $dcc_configuration->use_fastlane() && !$this->is_excluded_endpoint() && is_checkout() && !$subscription_helper->cart_contains_subscription();
@@ -342,7 +342,7 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
      */
     private function add_feature_detection_tag(bool $axo_enabled)
     {
-        $show_tag = is_checkout() || is_cart() || is_shop();
+        $show_tag = is_home() || is_checkout() || is_cart() || is_shop();
         if (!$show_tag) {
             return;
         }

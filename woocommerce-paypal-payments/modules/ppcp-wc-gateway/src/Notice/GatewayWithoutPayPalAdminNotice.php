@@ -12,6 +12,7 @@ use WC_Payment_Gateway;
 use WooCommerce\PayPalCommerce\AdminNotices\Entity\Message;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Creates the admin message about the gateway being enabled without the PayPal gateway.
  */
@@ -58,22 +59,30 @@ class GatewayWithoutPayPalAdminNotice
      */
     protected $settings_status;
     /**
+     * Provides details about the DCC configuration.
+     *
+     * @var CardPaymentsConfiguration
+     */
+    private CardPaymentsConfiguration $dcc_configuration;
+    /**
      * ConnectAdminNotice constructor.
      *
-     * @param string              $id The gateway ID.
-     * @param bool                $is_connected Whether onboading was completed.
-     * @param ContainerInterface  $settings The settings.
-     * @param bool                $is_payments_page Whether the current page is the WC payment page.
-     * @param bool                $is_ppcp_settings_page Whether the current page is the PPCP settings page.
-     * @param SettingsStatus|null $settings_status The Settings status helper.
+     * @param string                    $id                    The gateway ID.
+     * @param bool                      $is_connected          Whether onboarding was completed.
+     * @param ContainerInterface        $settings              The settings.
+     * @param bool                      $is_payments_page      Whether the current page is the WC payment page.
+     * @param bool                      $is_ppcp_settings_page Whether the current page is the PPCP settings page.
+     * @param CardPaymentsConfiguration $dcc_configuration     DCC gateway configuration.
+     * @param SettingsStatus|null       $settings_status       The Settings status helper.
      */
-    public function __construct(string $id, bool $is_connected, ContainerInterface $settings, bool $is_payments_page, bool $is_ppcp_settings_page, ?SettingsStatus $settings_status = null)
+    public function __construct(string $id, bool $is_connected, ContainerInterface $settings, bool $is_payments_page, bool $is_ppcp_settings_page, CardPaymentsConfiguration $dcc_configuration, ?SettingsStatus $settings_status = null)
     {
         $this->id = $id;
         $this->is_connected = $is_connected;
         $this->settings = $settings;
         $this->is_payments_page = $is_payments_page;
         $this->is_ppcp_settings_page = $is_ppcp_settings_page;
+        $this->dcc_configuration = $dcc_configuration;
         $this->settings_status = $settings_status;
     }
     /**
@@ -137,7 +146,7 @@ class GatewayWithoutPayPalAdminNotice
         if ($this->settings_status && !$this->settings_status->is_smart_button_enabled_for_location('checkout')) {
             return self::NOTICE_DISABLED_LOCATION;
         }
-        $is_dcc_enabled = $this->settings->has('dcc_enabled') && $this->settings->get('dcc_enabled') ?? \false;
+        $is_dcc_enabled = $this->dcc_configuration->is_enabled();
         $is_card_button_allowed = $this->settings->has('allow_card_button_gateway') && $this->settings->get('allow_card_button_gateway');
         if ($is_dcc_enabled && $is_card_button_allowed) {
             return self::NOTICE_DISABLED_CARD_BUTTON;

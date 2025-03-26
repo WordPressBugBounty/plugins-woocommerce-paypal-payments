@@ -13,6 +13,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Authentication\UserIdToken;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\Cache;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\FailureRegistry;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\OrderTransient;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
@@ -90,6 +91,30 @@ class ApiModule implements ServiceModule, ExtendingModule, ExecutableModule
                     }
                 }
             }
+        });
+        /**
+         * Filters the request arguments to add the `'PayPal-Partner-Attribution-Id'` header.
+         *
+         * This ensures that all API requests include the appropriate BN code retrieved
+         * from the `PartnerAttribution` helper. Using this approach avoids the need
+         * for extensive refactoring of existing classes that use the `RequestTrait`.
+         *
+         * The filter is applied in {@see RequestTrait::request()} before making an API request.
+         *
+         * @see PartnerAttribution::get_bn_code() Retrieves the BN code dynamically.
+         * @see RequestTrait::request() Where the filter `ppcp_request_args` is applied.
+         */
+        add_filter('ppcp_request_args', static function (array $args) use ($c) {
+            if (isset($args['headers']['PayPal-Partner-Attribution-Id'])) {
+                return $args;
+            }
+            $partner_attribution = $c->get('api.helper.partner-attribution');
+            assert($partner_attribution instanceof PartnerAttribution);
+            if (!isset($args['headers']) || !is_array($args['headers'])) {
+                $args['headers'] = array();
+            }
+            $args['headers']['PayPal-Partner-Attribution-Id'] = $partner_attribution->get_bn_code();
+            return $args;
         });
         return \true;
     }

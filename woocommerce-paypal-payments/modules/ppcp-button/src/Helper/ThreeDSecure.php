@@ -18,7 +18,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Factory\CardAuthenticationResultFactory
 class ThreeDSecure
 {
     const NO_DECISION = 0;
-    const PROCCEED = 1;
+    const PROCEED = 1;
     const REJECT = 2;
     const RETRY = 3;
     /**
@@ -71,7 +71,7 @@ class ThreeDSecure
             $result = $this->card_authentication_result_factory->from_paypal_response($authentication_result);
             $this->logger->info('3DS Authentication Result: ' . wc_print_r($result->to_array(), \true));
             if ($result->liability_shift() === AuthResult::LIABILITY_SHIFT_POSSIBLE) {
-                return $this->return_decision(self::PROCCEED, $order);
+                return $this->return_decision(self::PROCEED, $order);
             }
             if ($result->liability_shift() === AuthResult::LIABILITY_SHIFT_UNKNOWN) {
                 return $this->return_decision(self::RETRY, $order);
@@ -105,13 +105,13 @@ class ThreeDSecure
     private function no_liability_shift(AuthResult $result): int
     {
         if ($result->enrollment_status() === AuthResult::ENROLLMENT_STATUS_BYPASS && !$result->authentication_result()) {
-            return self::PROCCEED;
+            return self::PROCEED;
         }
         if ($result->enrollment_status() === AuthResult::ENROLLMENT_STATUS_UNAVAILABLE && !$result->authentication_result()) {
-            return self::PROCCEED;
+            return self::PROCEED;
         }
         if ($result->enrollment_status() === AuthResult::ENROLLMENT_STATUS_NO && !$result->authentication_result()) {
-            return self::PROCCEED;
+            return self::PROCEED;
         }
         if ($result->authentication_result() === AuthResult::AUTHENTICATION_RESULT_REJECTED) {
             return self::REJECT;

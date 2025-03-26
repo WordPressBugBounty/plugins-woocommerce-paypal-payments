@@ -57,7 +57,7 @@ use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsListener;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsRenderer;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrarInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\LocalApmProductStatus;
 /**
  * Class WcGatewayModule
@@ -159,8 +159,8 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             assert($settings_status instanceof SettingsStatus);
             $settings = $c->get('wcgateway.settings');
             assert($settings instanceof Settings);
-            $dcc_configuration = $c->get('wcgateway.configuration.dcc');
-            assert($dcc_configuration instanceof DCCGatewayConfiguration);
+            $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
+            assert($dcc_configuration instanceof CardPaymentsConfiguration);
             $assets = new SettingsPageAssets($c->get('wcgateway.url'), $c->get('ppcp.asset-version'), $c->get('wc-subscriptions.helper'), $c->get('button.client_id_for_admin'), $c->get('api.shop.currency.getter'), $c->get('api.shop.country'), $c->get('settings.environment'), $settings_status->is_pay_later_button_enabled(), $settings->has('disable_funding') ? $settings->get('disable_funding') : array(), $c->get('wcgateway.settings.funding-sources'), $c->get('wcgateway.is-ppcp-settings-page'), $dcc_configuration->is_enabled(), $c->get('api.endpoint.billing-agreements'), $c->get('wcgateway.is-ppcp-settings-payment-methods-page'));
             $assets->register_assets();
         });
@@ -325,7 +325,9 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             $listener->listen_for_uninstall();
         });
         if (defined('WP_CLI') && WP_CLI) {
-            \WP_CLI::add_command('pcp settings', $c->get('wcgateway.cli.settings.command'));
+            add_action('init', function () use ($c) {
+                \WP_CLI::add_command('pcp settings', $c->get('wcgateway.cli.settings.command'));
+            });
         }
         // Clears product status when appropriate.
         add_action('woocommerce_paypal_payments_clear_apm_product_status', function (Settings $settings = null) use ($c): void {
@@ -419,8 +421,8 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             if (!$is_connected) {
                 return $methods;
             }
-            $dcc_configuration = $container->get('wcgateway.configuration.dcc');
-            assert($dcc_configuration instanceof DCCGatewayConfiguration);
+            $dcc_configuration = $container->get('wcgateway.configuration.card-configuration');
+            assert($dcc_configuration instanceof CardPaymentsConfiguration);
             $standard_card_button = get_option('woocommerce_ppcp-card-button-gateway_settings');
             if ($dcc_configuration->is_enabled() && isset($standard_card_button['enabled'])) {
                 $standard_card_button['enabled'] = 'no';

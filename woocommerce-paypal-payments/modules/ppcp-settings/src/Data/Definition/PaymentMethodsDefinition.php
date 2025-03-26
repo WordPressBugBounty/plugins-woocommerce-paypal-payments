@@ -20,6 +20,7 @@ use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MyBankGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\P24Gateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\TrustlyGateway;
 use WooCommerce\PayPalCommerce\Settings\Data\PaymentSettings;
+use WooCommerce\PayPalCommerce\Settings\Data\GeneralSettings;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CardButtonGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\OXXO\OXXO;
@@ -39,6 +40,13 @@ class PaymentMethodsDefinition
      */
     private PaymentSettings $settings;
     /**
+     * Data model for the general plugin settings, used to access flags like
+     * "own brand only" to modify the payment method details.
+     *
+     * @var GeneralSettings
+     */
+    private GeneralSettings $general_settings;
+    /**
      * Conflict notices for Axo gateway.
      *
      * @var array
@@ -53,12 +61,14 @@ class PaymentMethodsDefinition
     /**
      * Constructor.
      *
-     * @param PaymentSettings $settings Payment methods data model.
+     * @param PaymentSettings $settings              Payment methods data model.
+     * @param GeneralSettings $general_settings      General plugin settings model.
      * @param array           $axo_conflicts_notices Conflicts notices for Axo.
      */
-    public function __construct(PaymentSettings $settings, array $axo_conflicts_notices = array())
+    public function __construct(PaymentSettings $settings, GeneralSettings $general_settings, array $axo_conflicts_notices = array())
     {
         $this->settings = $settings;
+        $this->general_settings = $general_settings;
         $this->axo_conflicts_notices = $axo_conflicts_notices;
     }
     /**
@@ -86,9 +96,11 @@ class PaymentMethodsDefinition
      * @param string      $title                      Admin-side payment method title.
      * @param string      $description                Admin-side info about the payment method.
      * @param string      $icon                       Admin-side icon of the payment method.
-     * @param array|false $fields                     Optional. Additional fields to display in the edit modal.
-     *                                                Setting this to false omits all fields.
-     * @param array       $warning_messages           Optional. Warning messages to display in the UI.
+     * @param array|false $fields                     Optional. Additional fields to display in the
+     *                                                edit modal. Setting this to false omits all
+     *                                                fields.
+     * @param array       $warning_messages           Optional. Warning messages to display in the
+     *                                                UI.
      * @return array Payment method definition.
      */
     private function build_method_definition(string $gateway_id, string $title, string $description, string $icon, $fields = array(), array $warning_messages = array()): array
@@ -110,7 +122,10 @@ class PaymentMethodsDefinition
      */
     public function group_paypal_methods(): array
     {
-        $group = array(array('id' => PayPalGateway::ID, 'title' => __('PayPal', 'woocommerce-paypal-payments'), 'description' => __('Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximize conversion.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => array('paypalShowLogo' => array('type' => 'toggle', 'default' => $this->settings->get_paypal_show_logo(), 'label' => __('Show logo', 'woocommerce-paypal-payments')))), array('id' => 'venmo', 'title' => __('Venmo', 'woocommerce-paypal-payments'), 'description' => __('Offer Venmo at checkout to millions of active users.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-venmo', 'fields' => \false), array('id' => 'pay-later', 'title' => __('Pay Later', 'woocommerce-paypal-payments'), 'description' => __('Get paid in full at checkout while giving your customers the flexibility to pay in installments over time with no late fees.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => \false), array('id' => CardButtonGateway::ID, 'title' => __('Credit and debit card payments', 'woocommerce-paypal-payments'), 'description' => __("Accept all major credit and debit cards - even if your customer doesn't have a PayPal account . ", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-cards'));
+        $group = array(array('id' => PayPalGateway::ID, 'title' => __('PayPal', 'woocommerce-paypal-payments'), 'description' => __('Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximize conversion.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => array('paypalShowLogo' => array('type' => 'toggle', 'default' => $this->settings->get_paypal_show_logo(), 'label' => __('Show logo', 'woocommerce-paypal-payments')))), array('id' => 'venmo', 'title' => __('Venmo', 'woocommerce-paypal-payments'), 'description' => __('Offer Venmo at checkout to millions of active users.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-venmo', 'fields' => \false), array('id' => 'pay-later', 'title' => __('Pay Later', 'woocommerce-paypal-payments'), 'description' => __('Get paid in full at checkout while giving your customers the flexibility to pay in installments over time with no late fees.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => \false));
+        if (!$this->general_settings->own_brand_only()) {
+            $group[] = array('id' => CardButtonGateway::ID, 'title' => __('Credit and debit card payments', 'woocommerce-paypal-payments'), 'description' => __("Accept all major credit and debit cards - even if your customer doesn't have a PayPal account . ", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-cards');
+        }
         return apply_filters('woocommerce_paypal_payments_gateway_group_paypal', $group);
     }
     /**
@@ -120,7 +135,13 @@ class PaymentMethodsDefinition
      */
     public function group_card_methods(): array
     {
-        $group = array(array('id' => CreditCardGateway::ID, 'title' => __('Advanced Credit and Debit Card Payments', 'woocommerce-paypal-payments'), 'description' => __("Present custom credit and debit card fields to your payers so they can pay with credit and debit cards using your site's branding.", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-advanced-cards', 'fields' => array('threeDSecure' => array('type' => 'radio', 'default' => $this->settings->get_three_d_secure(), 'label' => __('3D Secure', 'woocommerce-paypal-payments'), 'description' => __('Authenticate cardholders through their card issuers to reduce fraud and improve transaction security. Successful 3D Secure authentication can shift liability for fraudulent chargebacks to the card issuer.', 'woocommerce-paypal-payments'), 'options' => array(array('label' => __('No 3D Secure', 'woocommerce-paypal-payments'), 'value' => 'no-3d-secure'), array('label' => __('Only when required', 'woocommerce-paypal-payments'), 'value' => 'only-required-3d-secure'), array('label' => __('Always require 3D Secure', 'woocommerce-paypal-payments'), 'value' => 'always-3d-secure'))))), array('id' => AxoGateway::ID, 'title' => __('Fastlane by PayPal', 'woocommerce-paypal-payments'), 'description' => __("Tap into the scale and trust of PayPal's customer network to recognize shoppers and make guest checkout more seamless than ever.", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-fastlane', 'fields' => array('fastlaneCardholderName' => array('type' => 'toggle', 'default' => $this->settings->get_fastlane_cardholder_name(), 'label' => __('Display cardholder name', 'woocommerce-paypal-payments')), 'fastlaneDisplayWatermark' => array('type' => 'toggle', 'default' => $this->settings->get_fastlane_display_watermark(), 'label' => __('Display Fastlane Watermark', 'woocommerce-paypal-payments'))), 'warningMessages' => $this->axo_conflicts_notices), array('id' => ApplePayGateway::ID, 'title' => __('Apple Pay', 'woocommerce-paypal-payments'), 'description' => __('Allow customers to pay via their Apple Pay digital wallet.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-apple-pay'), array('id' => GooglePayGateway::ID, 'title' => __('Google Pay', 'woocommerce-paypal-payments'), 'description' => __('Allow customers to pay via their Google Pay digital wallet.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-google-pay'));
+        $group = array();
+        if (!$this->general_settings->own_brand_only()) {
+            $group[] = array('id' => CreditCardGateway::ID, 'title' => __('Advanced Credit and Debit Card Payments', 'woocommerce-paypal-payments'), 'description' => __("Present custom credit and debit card fields to your payers so they can pay with credit and debit cards using your site's branding.", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-advanced-cards', 'fields' => array('threeDSecure' => array('type' => 'radio', 'default' => $this->settings->get_three_d_secure(), 'label' => __('3D Secure', 'woocommerce-paypal-payments'), 'description' => __('Authenticate cardholders through their card issuers to reduce fraud and improve transaction security. Successful 3D Secure authentication can shift liability for fraudulent chargebacks to the card issuer.', 'woocommerce-paypal-payments'), 'options' => array(array('label' => __('No 3D Secure', 'woocommerce-paypal-payments'), 'value' => 'no-3d-secure'), array('label' => __('Only when required', 'woocommerce-paypal-payments'), 'value' => 'only-required-3d-secure'), array('label' => __('Always require 3D Secure', 'woocommerce-paypal-payments'), 'value' => 'always-3d-secure')))));
+            $group[] = array('id' => AxoGateway::ID, 'title' => __('Fastlane by PayPal', 'woocommerce-paypal-payments'), 'description' => __("Tap into the scale and trust of PayPal's customer network to recognize shoppers and make guest checkout more seamless than ever.", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-fastlane', 'fields' => array('fastlaneCardholderName' => array('type' => 'toggle', 'default' => $this->settings->get_fastlane_cardholder_name(), 'label' => __('Display cardholder name', 'woocommerce-paypal-payments')), 'fastlaneDisplayWatermark' => array('type' => 'toggle', 'default' => $this->settings->get_fastlane_display_watermark(), 'label' => __('Display Fastlane Watermark', 'woocommerce-paypal-payments'))), 'warningMessages' => $this->axo_conflicts_notices);
+            $group[] = array('id' => ApplePayGateway::ID, 'title' => __('Apple Pay', 'woocommerce-paypal-payments'), 'description' => __('Allow customers to pay via their Apple Pay digital wallet.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-apple-pay');
+            $group[] = array('id' => GooglePayGateway::ID, 'title' => __('Google Pay', 'woocommerce-paypal-payments'), 'description' => __('Allow customers to pay via their Google Pay digital wallet.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-google-pay');
+        }
         return apply_filters('woocommerce_paypal_payments_gateway_group_cards', $group);
     }
     /**

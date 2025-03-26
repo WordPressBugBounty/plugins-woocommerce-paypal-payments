@@ -15,7 +15,7 @@ use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Class CardFieldsModule
  */
@@ -44,24 +44,29 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
         if (!$c->get('card-fields.eligible')) {
             return \true;
         }
-        /**
-         * Param types removed to avoid third-party issues.
-         *
-         * @psalm-suppress MissingClosureParamType
-         */
-        add_filter('woocommerce_paypal_payments_sdk_components_hook', function ($components) use ($c) {
-            if (!$c->get('wcgateway.configuration.dcc')->is_enabled()) {
+        add_filter('woocommerce_paypal_payments_sdk_components_hook', static function (array $components) use ($c) {
+            $dcc_config = $c->get('wcgateway.configuration.card-configuration');
+            assert($dcc_config instanceof CardPaymentsConfiguration);
+            if (!$dcc_config->is_acdc_enabled()) {
                 return $components;
             }
-            if (in_array('hosted-fields', $components, \true)) {
-                $key = array_search('hosted-fields', $components, \true);
-                if ($key !== \false) {
-                    unset($components[$key]);
-                }
-            }
+            // Enable the new "card-fields" component.
             $components[] = 'card-fields';
-            return $components;
+            // Ensure the older "hosted-fields" component is not loaded.
+            return array_filter($components, static fn(string $component) => $component !== 'hosted-fields');
         });
+        add_filter('woocommerce_paypal_payments_sdk_disabled_funding_hook', static function (array $disable_funding, array $flags) use ($c) {
+            if (\true === $flags['is_block_context']) {
+                return $disable_funding;
+            }
+            $dcc_config = $c->get('wcgateway.configuration.card-configuration');
+            assert($dcc_config instanceof CardPaymentsConfiguration);
+            if (!$dcc_config->is_acdc_enabled()) {
+                return $disable_funding;
+            }
+            // For ACDC payments we need the funding source "card"!
+            return array_filter($disable_funding, static fn(string $funding_source) => $funding_source !== 'card');
+        }, 10, 2);
         add_filter(
             'woocommerce_credit_card_form_fields',
             /**
@@ -71,7 +76,7 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
              * @psalm-suppress MissingClosureParamType
              */
             function ($default_fields, $id) use ($c) {
-                if (!$c->get('wcgateway.configuration.dcc')->is_enabled()) {
+                if (!$c->get('wcgateway.configuration.card-configuration')->is_enabled()) {
                     return $default_fields;
                 }
                 if (CreditCardGateway::ID === $id && apply_filters('woocommerce_paypal_payments_enable_cardholder_name_field', \false)) {
@@ -96,7 +101,7 @@ class CardFieldsModule implements ServiceModule, ExtendingModule, ExecutableModu
             2
         );
         add_filter('ppcp_create_order_request_body_data', function (array $data, string $payment_method) use ($c): array {
-            if (!$c->get('wcgateway.configuration.dcc')->is_enabled()) {
+            if (!$c->get('wcgateway.configuration.card-configuration')->is_enabled()) {
                 return $data;
             }
             // phpcs:ignore WordPress.Security.NonceVerification.Missing

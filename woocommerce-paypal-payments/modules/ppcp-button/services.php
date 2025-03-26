@@ -36,7 +36,7 @@ use WooCommerce\PayPalCommerce\Button\Helper\MessagesApply;
 use WooCommerce\PayPalCommerce\Button\Helper\ThreeDSecure;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 return array(
     'button.client_id' => static function (ContainerInterface $container): string {
         $settings = $container->get('wcgateway.settings');
@@ -96,8 +96,8 @@ return array(
                 return new DisabledSmartButton();
             }
             $no_smart_buttons = !$settings_status->is_smart_button_enabled_for_location($context);
-            $dcc_configuration = $container->get('wcgateway.configuration.dcc');
-            assert($dcc_configuration instanceof DCCGatewayConfiguration);
+            $dcc_configuration = $container->get('wcgateway.configuration.card-configuration');
+            assert($dcc_configuration instanceof CardPaymentsConfiguration);
             if ($no_smart_buttons && !$dcc_configuration->is_enabled()) {
                 // Smart buttons disabled, and also not using advanced card payments.
                 return new DisabledSmartButton();
@@ -120,7 +120,7 @@ return array(
         $messages_apply = $container->get('button.helper.messages-apply');
         $environment = $container->get('settings.environment');
         $payment_token_repository = $container->get('vaulting.repository.payment-token');
-        return new SmartButton($container->get('button.url'), $container->get('ppcp.asset-version'), $container->get('session.handler'), $settings, $payer_factory, $client_id, $request_data, $dcc_applies, $subscription_helper, $messages_apply, $environment, $payment_token_repository, $settings_status, $container->get('api.shop.currency.getter'), $container->get('wcgateway.all-funding-sources'), $container->get('button.basic-checkout-validation-enabled'), $container->get('button.early-wc-checkout-validation-enabled'), $container->get('button.pay-now-contexts'), $container->get('wcgateway.funding-sources-without-redirect'), $container->get('vaulting.vault-v3-enabled'), $container->get('api.endpoint.payment-tokens'), $container->get('woocommerce.logger.woocommerce'), $container->get('button.handle-shipping-in-paypal'), $container->get('button.helper.disabled-funding-sources'));
+        return new SmartButton($container->get('button.url'), $container->get('ppcp.asset-version'), $container->get('session.handler'), $settings, $payer_factory, $client_id, $request_data, $dcc_applies, $subscription_helper, $messages_apply, $environment, $payment_token_repository, $settings_status, $container->get('api.shop.currency.getter'), $container->get('wcgateway.all-funding-sources'), $container->get('button.basic-checkout-validation-enabled'), $container->get('button.early-wc-checkout-validation-enabled'), $container->get('button.pay-now-contexts'), $container->get('wcgateway.funding-sources-without-redirect'), $container->get('vaulting.vault-v3-enabled'), $container->get('api.endpoint.payment-tokens'), $container->get('woocommerce.logger.woocommerce'), $container->get('button.handle-shipping-in-paypal'), $container->get('button.helper.disabled-funding-sources'), $container->get('wcgateway.configuration.card-configuration'), $container->get('api.helper.partner-attribution'));
     },
     'button.url' => static function (ContainerInterface $container): string {
         return plugins_url('/modules/ppcp-button/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
@@ -222,7 +222,7 @@ return array(
         return new MessagesApply($container->get('api.paylater-countries'), $container->get('api.shop.country'));
     },
     'button.helper.disabled-funding-sources' => static function (ContainerInterface $container): DisabledFundingSources {
-        return new DisabledFundingSources($container->get('wcgateway.settings'), $container->get('wcgateway.all-funding-sources'));
+        return new DisabledFundingSources($container->get('wcgateway.settings'), $container->get('wcgateway.all-funding-sources'), $container->get('wcgateway.configuration.card-configuration'));
     },
     'button.is-logged-in' => static function (ContainerInterface $container): bool {
         return is_user_logged_in();

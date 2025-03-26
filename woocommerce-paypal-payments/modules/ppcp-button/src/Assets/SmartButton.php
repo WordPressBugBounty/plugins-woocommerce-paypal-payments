@@ -20,6 +20,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentToken;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PayerFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\CurrencyGetter;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Blocks\Endpoint\UpdateShippingEndpoint;
 use WooCommerce\PayPalCommerce\Button\Endpoint\ApproveOrderEndpoint;
 use WooCommerce\PayPalCommerce\Button\Endpoint\ApproveSubscriptionEndpoint;
@@ -53,6 +54,7 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WC_Shipping_Method;
 use WC_Cart;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Class SmartButton
  */
@@ -210,34 +212,48 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
      */
     private $disabled_funding_sources;
     /**
+     * Provides details about the DCC configuration.
+     *
+     * @var CardPaymentsConfiguration
+     */
+    private CardPaymentsConfiguration $dcc_configuration;
+    /**
+     * The PayPal Partner Attribution Helper.
+     *
+     * @var PartnerAttribution
+     */
+    protected PartnerAttribution $partner_attribution;
+    /**
      * SmartButton constructor.
      *
-     * @param string                 $module_url The URL to the module.
-     * @param string                 $version The assets version.
-     * @param SessionHandler         $session_handler The Session handler.
-     * @param Settings               $settings The Settings.
-     * @param PayerFactory           $payer_factory The Payer factory.
-     * @param string                 $client_id The client ID.
-     * @param RequestData            $request_data The Request Data helper.
-     * @param DccApplies             $dcc_applies The DCC applies helper.
-     * @param SubscriptionHelper     $subscription_helper The subscription helper.
-     * @param MessagesApply          $messages_apply The Messages apply helper.
-     * @param Environment            $environment The environment object.
-     * @param PaymentTokenRepository $payment_token_repository The payment token repository.
-     * @param SettingsStatus         $settings_status The Settings status helper.
-     * @param CurrencyGetter         $currency The getter of the 3-letter currency code of the shop.
-     * @param array                  $all_funding_sources All existing funding sources.
-     * @param bool                   $basic_checkout_validation_enabled Whether the basic JS validation of the form iss enabled.
-     * @param bool                   $early_validation_enabled Whether to execute WC validation of the checkout form.
-     * @param array                  $pay_now_contexts The contexts that should have the Pay Now button.
-     * @param string[]               $funding_sources_without_redirect The sources that do not cause issues about redirecting (on mobile, ...) and sometimes not returning back.
-     * @param bool                   $vault_v3_enabled Whether Vault v3 module is enabled.
-     * @param PaymentTokensEndpoint  $payment_tokens_endpoint Payment tokens endpoint.
-     * @param LoggerInterface        $logger The logger.
-     * @param bool                   $should_handle_shipping_in_paypal Whether the shipping should be handled in PayPal.
-     * @param DisabledFundingSources $disabled_funding_sources List of funding sources to be disabled.
+     * @param string                    $module_url                        The URL to the module.
+     * @param string                    $version                           The assets version.
+     * @param SessionHandler            $session_handler                   The Session handler.
+     * @param Settings                  $settings                          The Settings.
+     * @param PayerFactory              $payer_factory                     The Payer factory.
+     * @param string                    $client_id                         The client ID.
+     * @param RequestData               $request_data                      The Request Data helper.
+     * @param DccApplies                $dcc_applies                       The DCC applies helper.
+     * @param SubscriptionHelper        $subscription_helper               The subscription helper.
+     * @param MessagesApply             $messages_apply                    The Messages apply helper.
+     * @param Environment               $environment                       The environment object.
+     * @param PaymentTokenRepository    $payment_token_repository          The payment token repository.
+     * @param SettingsStatus            $settings_status                   The Settings status helper.
+     * @param CurrencyGetter            $currency                          The getter of the 3-letter currency code of the shop.
+     * @param array                     $all_funding_sources               All existing funding sources.
+     * @param bool                      $basic_checkout_validation_enabled Whether the basic JS validation of the form iss enabled.
+     * @param bool                      $early_validation_enabled          Whether to execute WC validation of the checkout form.
+     * @param array                     $pay_now_contexts                  The contexts that should have the Pay Now button.
+     * @param string[]                  $funding_sources_without_redirect  The sources that do not cause issues about redirecting (on mobile, ...) and sometimes not returning back.
+     * @param bool                      $vault_v3_enabled                  Whether Vault v3 module is enabled.
+     * @param PaymentTokensEndpoint     $payment_tokens_endpoint           Payment tokens endpoint.
+     * @param LoggerInterface           $logger                            The logger.
+     * @param bool                      $should_handle_shipping_in_paypal  Whether the shipping should be handled in PayPal.
+     * @param DisabledFundingSources    $disabled_funding_sources          List of funding sources to be disabled.
+     * @param CardPaymentsConfiguration $dcc_configuration                 The DCC Gateway Configuration.
+     * @param PartnerAttribution        $partner_attribution The PayPal Partner Attribution Helper.
      */
-    public function __construct(string $module_url, string $version, SessionHandler $session_handler, Settings $settings, PayerFactory $payer_factory, string $client_id, RequestData $request_data, DccApplies $dcc_applies, SubscriptionHelper $subscription_helper, MessagesApply $messages_apply, Environment $environment, PaymentTokenRepository $payment_token_repository, SettingsStatus $settings_status, CurrencyGetter $currency, array $all_funding_sources, bool $basic_checkout_validation_enabled, bool $early_validation_enabled, array $pay_now_contexts, array $funding_sources_without_redirect, bool $vault_v3_enabled, PaymentTokensEndpoint $payment_tokens_endpoint, LoggerInterface $logger, bool $should_handle_shipping_in_paypal, DisabledFundingSources $disabled_funding_sources)
+    public function __construct(string $module_url, string $version, SessionHandler $session_handler, Settings $settings, PayerFactory $payer_factory, string $client_id, RequestData $request_data, DccApplies $dcc_applies, SubscriptionHelper $subscription_helper, MessagesApply $messages_apply, Environment $environment, PaymentTokenRepository $payment_token_repository, SettingsStatus $settings_status, CurrencyGetter $currency, array $all_funding_sources, bool $basic_checkout_validation_enabled, bool $early_validation_enabled, array $pay_now_contexts, array $funding_sources_without_redirect, bool $vault_v3_enabled, PaymentTokensEndpoint $payment_tokens_endpoint, LoggerInterface $logger, bool $should_handle_shipping_in_paypal, DisabledFundingSources $disabled_funding_sources, CardPaymentsConfiguration $dcc_configuration, PartnerAttribution $partner_attribution)
     {
         $this->module_url = $module_url;
         $this->version = $version;
@@ -263,6 +279,8 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
         $this->payment_tokens_endpoint = $payment_tokens_endpoint;
         $this->should_handle_shipping_in_paypal = $should_handle_shipping_in_paypal;
         $this->disabled_funding_sources = $disabled_funding_sources;
+        $this->dcc_configuration = $dcc_configuration;
+        $this->partner_attribution = $partner_attribution;
     }
     /**
      * Registers the necessary action hooks to render the HTML depending on the settings.
@@ -276,30 +294,8 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
             $this->render_button_wrapper_registrar();
             $this->render_message_wrapper_registrar();
         }
-        if ($this->settings->has('dcc_enabled') && $this->settings->get('dcc_enabled')) {
-            add_action($this->checkout_dcc_button_renderer_hook(), array($this, 'dcc_renderer'), 11);
-            add_action($this->pay_order_renderer_hook(), array($this, 'dcc_renderer'), 11);
-            $subscription_helper = $this->subscription_helper;
-            add_filter('woocommerce_credit_card_form_fields', function (array $default_fields, $id) use ($subscription_helper): array {
-                if (is_user_logged_in() && $this->settings->has('vault_enabled_dcc') && $this->settings->get('vault_enabled_dcc') && CreditCardGateway::ID === $id && apply_filters('woocommerce_paypal_payments_should_render_card_custom_fields', \true)) {
-                    $default_fields['card-vault'] = sprintf('<p class="form-row form-row-wide"><label for="ppcp-credit-card-vault"><input class="ppcp-credit-card-vault" type="checkbox" id="ppcp-credit-card-vault" name="vault">%s</label></p>', esc_html__('Save your Credit Card', 'woocommerce-paypal-payments'));
-                    if ($subscription_helper->cart_contains_subscription() || $subscription_helper->order_pay_contains_subscription()) {
-                        $default_fields['card-vault'] = '';
-                    }
-                    $tokens = $this->payment_token_repository->all_for_user_id(get_current_user_id());
-                    if ($tokens && $this->payment_token_repository->tokens_contains_card($tokens)) {
-                        $output = sprintf('<p class="form-row form-row-wide"><label>%1$s</label><select id="saved-credit-card" name="saved_credit_card"><option value="">%2$s</option>', esc_html__('Or select a saved Credit Card payment', 'woocommerce-paypal-payments'), esc_html__('Choose a saved payment', 'woocommerce-paypal-payments'));
-                        foreach ($tokens as $token) {
-                            if (isset($token->source()->card)) {
-                                $output .= sprintf('<option value="%1$s">%2$s ...%3$s</option>', $token->id(), $token->source()->card->brand, $token->source()->card->last_digits);
-                            }
-                        }
-                        $output .= '</select></p>';
-                        $default_fields['saved-credit-card'] = $output;
-                    }
-                }
-                return $default_fields;
-            }, 10, 2);
+        if ($this->dcc_configuration->is_enabled()) {
+            $this->render_dcc_wrapper();
         }
         if ($this->is_free_trial_cart()) {
             add_action('woocommerce_review_order_after_submit', function () {
@@ -324,6 +320,37 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
         }
         $this->sanitize_woocommerce_filters();
         return \true;
+    }
+    /**
+     * Registers hooks and callbacks that are only relevant for DCC (ACDC) payments.
+     *
+     * @return void
+     */
+    private function render_dcc_wrapper(): void
+    {
+        add_action($this->checkout_dcc_button_renderer_hook(), array($this, 'dcc_renderer'), 11);
+        add_action($this->pay_order_renderer_hook(), array($this, 'dcc_renderer'), 11);
+        $subscription_helper = $this->subscription_helper;
+        add_filter('woocommerce_credit_card_form_fields', function (array $default_fields, $id) use ($subscription_helper): array {
+            if (CreditCardGateway::ID === $id && is_user_logged_in() && $this->settings->has('vault_enabled_dcc') && $this->settings->get('vault_enabled_dcc') && apply_filters('woocommerce_paypal_payments_should_render_card_custom_fields', \true)) {
+                $default_fields['card-vault'] = sprintf('<p class="form-row form-row-wide"><label for="ppcp-credit-card-vault"><input class="ppcp-credit-card-vault" type="checkbox" id="ppcp-credit-card-vault" name="vault">%s</label></p>', esc_html__('Save your Credit Card', 'woocommerce-paypal-payments'));
+                if ($subscription_helper->cart_contains_subscription() || $subscription_helper->order_pay_contains_subscription()) {
+                    $default_fields['card-vault'] = '';
+                }
+                $tokens = $this->payment_token_repository->all_for_user_id(get_current_user_id());
+                if ($tokens && $this->payment_token_repository->tokens_contains_card($tokens)) {
+                    $output = sprintf('<p class="form-row form-row-wide"><label>%1$s</label><select id="saved-credit-card" name="saved_credit_card"><option value="">%2$s</option>', esc_html__('Or select a saved Credit Card payment', 'woocommerce-paypal-payments'), esc_html__('Choose a saved payment', 'woocommerce-paypal-payments'));
+                    foreach ($tokens as $token) {
+                        if (isset($token->source()->card)) {
+                            $output .= sprintf('<option value="%1$s">%2$s ...%3$s</option>', $token->id(), $token->source()->card->brand, $token->source()->card->last_digits);
+                        }
+                    }
+                    $output .= '</select></p>';
+                    $default_fields['saved-credit-card'] = $output;
+                }
+            }
+            return $default_fields;
+        }, 10, 2);
     }
     /**
      * Registers the hooks to render the credit messaging HTML depending on the settings.
@@ -506,7 +533,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
      */
     public function can_render_dcc(): bool
     {
-        return $this->settings->has('dcc_enabled') && $this->settings->get('dcc_enabled') && $this->settings->has('client_id') && $this->settings->get('client_id') && $this->dcc_applies->for_country_currency() && in_array($this->context(), apply_filters('woocommerce_paypal_payments_can_render_dcc_contexts', array('checkout', 'pay-now', 'add-payment-method')), \true);
+        return $this->dcc_configuration->is_acdc_enabled() && in_array($this->context(), apply_filters('woocommerce_paypal_payments_can_render_dcc_contexts', array('checkout', 'pay-now', 'add-payment-method')), \true);
     }
     /**
      * Enqueues our scripts/styles (for DCC and product, mini-cart and non-block cart/checkout)
@@ -572,8 +599,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
          * A hook executed before rendering of the PCP Pay Later messages wrapper.
          */
         do_action("ppcp_before_{$location_hook}_message_wrapper");
-        $bn_code = PPCP_PAYPAL_BN_CODE;
-        $messages_placeholder = '<div class="ppcp-messages" data-partner-attribution-id="' . esc_attr($bn_code) . '"></div>';
+        $messages_placeholder = '<div class="ppcp-messages" data-partner-attribution-id="' . esc_attr($this->partner_attribution->get_bn_code()) . '"></div>';
         if (is_array($block_params) && ($block_params['blockName'] ?? \false)) {
             $this->render_after_block($block_params['blockName'], '<div class="wp-block-group alignwide">' . $messages_placeholder . '</div>', $block_params['priority'] ?? 10);
         } else {
@@ -798,9 +824,10 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
     public function script_data(): array
     {
         $is_free_trial_cart = $this->is_free_trial_cart();
+        $is_acdc_enabled = $this->dcc_configuration->is_acdc_enabled();
         $url_params = $this->url_params();
         $this->request_data->enqueue_nonce_fix();
-        $localize = array('url' => add_query_arg($url_params, 'https://www.paypal.com/sdk/js'), 'url_params' => $url_params, 'script_attributes' => $this->attributes(), 'client_id' => $this->client_id, 'currency' => $this->currency->get(), 'data_client_id' => array('set_attribute' => is_checkout() && $this->dcc_is_enabled() || $this->can_save_vault_token(), 'endpoint' => \WC_AJAX::get_endpoint(DataClientIdEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(DataClientIdEndpoint::nonce()), 'user' => get_current_user_id(), 'has_subscriptions' => $this->has_subscriptions(), 'paypal_subscriptions_enabled' => $this->paypal_subscriptions_enabled()), 'redirect' => wc_get_checkout_url(), 'context' => $this->context(), 'ajax' => array('simulate_cart' => array('endpoint' => \WC_AJAX::get_endpoint(SimulateCartEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SimulateCartEndpoint::nonce())), 'change_cart' => array('endpoint' => \WC_AJAX::get_endpoint(ChangeCartEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ChangeCartEndpoint::nonce())), 'create_order' => array('endpoint' => \WC_AJAX::get_endpoint(CreateOrderEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(CreateOrderEndpoint::nonce())), 'approve_order' => array('endpoint' => \WC_AJAX::get_endpoint(ApproveOrderEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ApproveOrderEndpoint::nonce())), 'approve_subscription' => array('endpoint' => \WC_AJAX::get_endpoint(ApproveSubscriptionEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ApproveSubscriptionEndpoint::nonce())), 'vault_paypal' => array('endpoint' => \WC_AJAX::get_endpoint(StartPayPalVaultingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(StartPayPalVaultingEndpoint::nonce())), 'save_checkout_form' => array('endpoint' => \WC_AJAX::get_endpoint(SaveCheckoutFormEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SaveCheckoutFormEndpoint::nonce())), 'validate_checkout' => array('endpoint' => \WC_AJAX::get_endpoint(ValidateCheckoutEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ValidateCheckoutEndpoint::nonce())), 'cart_script_params' => array('endpoint' => \WC_AJAX::get_endpoint(CartScriptParamsEndpoint::ENDPOINT)), 'create_setup_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreateSetupToken::ENDPOINT), 'nonce' => wp_create_nonce(CreateSetupToken::nonce())), 'create_payment_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentToken::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentToken::nonce())), 'create_payment_token_for_guest' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentTokenForGuest::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentTokenForGuest::nonce())), 'update_shipping' => array('endpoint' => \WC_AJAX::get_endpoint(UpdateShippingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(UpdateShippingEndpoint::nonce())), 'update_customer_shipping' => array('shipping_options' => array('endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT . 'select-shipping-rate')), 'shipping_address' => array('cart_endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT), 'update_customer_endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT . 'update-customer')), 'wp_rest_nonce' => wp_create_nonce('wc_store_api'), 'update_shipping_method' => \WC_AJAX::get_endpoint('update_shipping_method'))), 'cart_contains_subscription' => $this->subscription_helper->cart_contains_subscription(), 'subscription_plan_id' => $this->subscription_helper->paypal_subscription_id(), 'vault_v3_enabled' => $this->vault_v3_enabled, 'variable_paypal_subscription_variations' => $this->subscription_helper->variable_paypal_subscription_variations(), 'variable_paypal_subscription_variation_from_cart' => $this->subscription_helper->paypal_subscription_variation_from_cart(), 'subscription_product_allowed' => $this->subscription_helper->checkout_subscription_product_allowed(), 'locations_with_subscription_product' => $this->subscription_helper->locations_with_subscription_product(), 'enforce_vault' => $this->has_subscriptions(), 'can_save_vault_token' => $this->can_save_vault_token(), 'is_free_trial_cart' => $is_free_trial_cart, 'vaulted_paypal_email' => is_checkout() && $is_free_trial_cart ? $this->get_vaulted_paypal_email() : '', 'bn_codes' => $this->bn_codes(), 'payer' => $this->payerData(), 'button' => array('wrapper' => '#ppc-button-' . PayPalGateway::ID, 'is_disabled' => $this->is_button_disabled(), 'mini_cart_wrapper' => '#ppc-button-minicart', 'is_mini_cart_disabled' => $this->is_button_disabled('mini-cart'), 'cancel_wrapper' => '#ppcp-cancel', 'mini_cart_style' => $this->normalize_style(array('layout' => $this->style_for_context('layout', 'mini-cart'), 'color' => $this->style_for_context('color', 'mini-cart'), 'shape' => $this->style_for_context('shape', 'mini-cart'), 'label' => $this->style_for_context('label', 'mini-cart'), 'tagline' => $this->style_for_context('tagline', 'mini-cart'), 'height' => $this->normalize_height($this->style_for_context('height', 'mini-cart', 35), 25, 55))), 'style' => $this->normalize_style(array('layout' => $this->style_for_context('layout', $this->context()), 'color' => $this->style_for_context('color', $this->context()), 'shape' => $this->style_for_context('shape', $this->context()), 'label' => $this->style_for_context('label', $this->context()), 'tagline' => $this->style_for_context('tagline', $this->context()), 'height' => in_array($this->context(), array('cart-block', 'checkout-block'), \true) ? $this->normalize_height($this->style_for_context('height', $this->context(), 48), 40, 55) : null))), 'separate_buttons' => array('card' => array('id' => CardButtonGateway::ID, 'wrapper' => '#ppc-button-' . CardButtonGateway::ID, 'style' => $this->normalize_style(array('shape' => $this->style_for_apm('shape', 'card'), 'color' => $this->style_for_apm('color', 'card', 'black'), 'layout' => $this->style_for_apm('poweredby_tagline', 'card', \false) === $this->normalize_style_value(\true) ? 'vertical' : 'horizontal')))), 'hosted_fields' => array('wrapper' => '#ppcp-hosted-fields', 'labels' => array('credit_card_number' => '', 'cvv' => '', 'mm_yy' => __('MM/YY', 'woocommerce-paypal-payments'), 'fields_empty' => __('Card payment details are missing. Please fill in all required fields.', 'woocommerce-paypal-payments'), 'fields_not_valid' => __('Unfortunately, your credit card details are not valid.', 'woocommerce-paypal-payments'), 'card_not_supported' => __('Unfortunately, we do not support your credit card.', 'woocommerce-paypal-payments'), 'cardholder_name_required' => __('Cardholder\'s first and last name are required, please fill the checkout form required fields.', 'woocommerce-paypal-payments')), 'valid_cards' => $this->dcc_applies->valid_cards(), 'contingency' => $this->get_3ds_contingency()), 'messages' => $this->message_values(), 'labels' => array(
+        $localize = array('url' => add_query_arg($url_params, 'https://www.paypal.com/sdk/js'), 'url_params' => $url_params, 'script_attributes' => $this->attributes(), 'client_id' => $this->client_id, 'currency' => $this->currency->get(), 'data_client_id' => array('set_attribute' => is_checkout() && $is_acdc_enabled || $this->can_save_vault_token(), 'endpoint' => \WC_AJAX::get_endpoint(DataClientIdEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(DataClientIdEndpoint::nonce()), 'user' => get_current_user_id(), 'has_subscriptions' => $this->has_subscriptions(), 'paypal_subscriptions_enabled' => $this->paypal_subscriptions_enabled()), 'redirect' => wc_get_checkout_url(), 'context' => $this->context(), 'ajax' => array('simulate_cart' => array('endpoint' => \WC_AJAX::get_endpoint(SimulateCartEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SimulateCartEndpoint::nonce())), 'change_cart' => array('endpoint' => \WC_AJAX::get_endpoint(ChangeCartEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ChangeCartEndpoint::nonce())), 'create_order' => array('endpoint' => \WC_AJAX::get_endpoint(CreateOrderEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(CreateOrderEndpoint::nonce())), 'approve_order' => array('endpoint' => \WC_AJAX::get_endpoint(ApproveOrderEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ApproveOrderEndpoint::nonce())), 'approve_subscription' => array('endpoint' => \WC_AJAX::get_endpoint(ApproveSubscriptionEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ApproveSubscriptionEndpoint::nonce())), 'vault_paypal' => array('endpoint' => \WC_AJAX::get_endpoint(StartPayPalVaultingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(StartPayPalVaultingEndpoint::nonce())), 'save_checkout_form' => array('endpoint' => \WC_AJAX::get_endpoint(SaveCheckoutFormEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SaveCheckoutFormEndpoint::nonce())), 'validate_checkout' => array('endpoint' => \WC_AJAX::get_endpoint(ValidateCheckoutEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(ValidateCheckoutEndpoint::nonce())), 'cart_script_params' => array('endpoint' => \WC_AJAX::get_endpoint(CartScriptParamsEndpoint::ENDPOINT)), 'create_setup_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreateSetupToken::ENDPOINT), 'nonce' => wp_create_nonce(CreateSetupToken::nonce())), 'create_payment_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentToken::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentToken::nonce())), 'create_payment_token_for_guest' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentTokenForGuest::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentTokenForGuest::nonce())), 'update_shipping' => array('endpoint' => \WC_AJAX::get_endpoint(UpdateShippingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(UpdateShippingEndpoint::nonce())), 'update_customer_shipping' => array('shipping_options' => array('endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT . 'select-shipping-rate')), 'shipping_address' => array('cart_endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT), 'update_customer_endpoint' => home_url(UpdateShippingEndpoint::WC_STORE_API_ENDPOINT . 'update-customer')), 'wp_rest_nonce' => wp_create_nonce('wc_store_api'), 'update_shipping_method' => \WC_AJAX::get_endpoint('update_shipping_method'))), 'cart_contains_subscription' => $this->subscription_helper->cart_contains_subscription(), 'subscription_plan_id' => $this->subscription_helper->paypal_subscription_id(), 'vault_v3_enabled' => $this->vault_v3_enabled, 'variable_paypal_subscription_variations' => $this->subscription_helper->variable_paypal_subscription_variations(), 'variable_paypal_subscription_variation_from_cart' => $this->subscription_helper->paypal_subscription_variation_from_cart(), 'subscription_product_allowed' => $this->subscription_helper->checkout_subscription_product_allowed(), 'locations_with_subscription_product' => $this->subscription_helper->locations_with_subscription_product(), 'enforce_vault' => $this->has_subscriptions(), 'can_save_vault_token' => $this->can_save_vault_token(), 'is_free_trial_cart' => $is_free_trial_cart, 'vaulted_paypal_email' => is_checkout() && $is_free_trial_cart ? $this->get_vaulted_paypal_email() : '', 'bn_codes' => $this->bn_codes(), 'payer' => $this->payerData(), 'button' => array('wrapper' => '#ppc-button-' . PayPalGateway::ID, 'is_disabled' => $this->is_button_disabled(), 'mini_cart_wrapper' => '#ppc-button-minicart', 'is_mini_cart_disabled' => $this->is_button_disabled('mini-cart'), 'cancel_wrapper' => '#ppcp-cancel', 'mini_cart_style' => $this->normalize_style(array('layout' => $this->style_for_context('layout', 'mini-cart'), 'color' => $this->style_for_context('color', 'mini-cart'), 'shape' => $this->style_for_context('shape', 'mini-cart'), 'label' => $this->style_for_context('label', 'mini-cart'), 'tagline' => $this->style_for_context('tagline', 'mini-cart'), 'height' => $this->normalize_height($this->style_for_context('height', 'mini-cart', 35), 25, 55))), 'style' => $this->normalize_style(array('layout' => $this->style_for_context('layout', $this->context()), 'color' => $this->style_for_context('color', $this->context()), 'shape' => $this->style_for_context('shape', $this->context()), 'label' => $this->style_for_context('label', $this->context()), 'tagline' => $this->style_for_context('tagline', $this->context()), 'height' => in_array($this->context(), array('cart-block', 'checkout-block'), \true) ? $this->normalize_height($this->style_for_context('height', $this->context(), 48), 40, 55) : null))), 'separate_buttons' => array('card' => array('id' => CardButtonGateway::ID, 'wrapper' => '#ppc-button-' . CardButtonGateway::ID, 'style' => $this->normalize_style(array('shape' => $this->style_for_apm('shape', 'card'), 'color' => $this->style_for_apm('color', 'card', 'black'), 'layout' => $this->style_for_apm('poweredby_tagline', 'card', \false) === $this->normalize_style_value(\true) ? 'vertical' : 'horizontal')))), 'hosted_fields' => array('wrapper' => '#ppcp-hosted-fields', 'labels' => array('credit_card_number' => '', 'cvv' => '', 'mm_yy' => __('MM/YY', 'woocommerce-paypal-payments'), 'fields_empty' => __('Card payment details are missing. Please fill in all required fields.', 'woocommerce-paypal-payments'), 'fields_not_valid' => __('Unfortunately, your credit card details are not valid.', 'woocommerce-paypal-payments'), 'card_not_supported' => __('Unfortunately, we do not support your credit card.', 'woocommerce-paypal-payments'), 'cardholder_name_required' => __('Cardholder\'s first and last name are required, please fill the checkout form required fields.', 'woocommerce-paypal-payments')), 'valid_cards' => $this->dcc_applies->valid_cards(), 'contingency' => $this->get_3ds_contingency()), 'messages' => $this->message_values(), 'labels' => array(
             'error' => array('generic' => __('Something went wrong. Please try again or choose another payment source.', 'woocommerce-paypal-payments'), 'required' => array(
                 'generic' => __('Required form fields are not filled.', 'woocommerce-paypal-payments'),
                 // phpcs:ignore WordPress.WP.I18n
@@ -908,19 +935,6 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
         } else {
             $disabled_funding_sources[] = 'paylater';
         }
-        $disabled_funding_sources = array_filter(
-            $disabled_funding_sources,
-            /**
-             * Make sure paypal is not sent in disable funding.
-             *
-             * @param string $funding_source The funding_source.
-             *
-             * @psalm-suppress MissingClosureParamType
-             */
-            function ($funding_source) {
-                return $funding_source !== 'paypal';
-            }
-        );
         if (count($disabled_funding_sources) > 0) {
             $params['disable-funding'] = implode(',', array_unique($disabled_funding_sources));
         }
@@ -988,8 +1002,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
     private function bn_code_for_context(string $context): string
     {
         $codes = $this->bn_codes();
-        $bn_code = PPCP_PAYPAL_BN_CODE;
-        return isset($codes[$context]) ? $codes[$context] : $bn_code;
+        return isset($codes[$context]) ? $codes[$context] : $this->partner_attribution->get_bn_code();
     }
     /**
      * BN Codes to use.
@@ -998,14 +1011,13 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
      */
     private function bn_codes(): array
     {
-        $bn_code = PPCP_PAYPAL_BN_CODE;
+        $bn_code = $this->partner_attribution->get_bn_code();
         return array('checkout' => $bn_code, 'cart' => $bn_code, 'mini-cart' => $bn_code, 'product' => $bn_code);
     }
     /**
      * The JS SKD components we need to load.
      *
      * @return array
-     * @throws NotFoundException If a setting was not found.
      */
     private function components(): array
     {
@@ -1017,7 +1029,8 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
         if ($this->should_load_messages()) {
             $components[] = 'messages';
         }
-        if ($this->dcc_is_enabled()) {
+        // Card payments are only available on a checkout page.
+        if (is_checkout() && $this->dcc_configuration->is_bcdc_enabled()) {
             $components[] = 'hosted-fields';
         }
         /**
@@ -1029,27 +1042,6 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
          * @param string $context    The SmartButton context.
          */
         return array_unique((array) apply_filters('woocommerce_paypal_payments_sdk_components_hook', $components, $this->context()));
-    }
-    /**
-     * Whether DCC is enabled or not.
-     *
-     * @return bool
-     */
-    private function dcc_is_enabled(): bool
-    {
-        if (!is_checkout()) {
-            return \false;
-        }
-        if (!$this->dcc_applies->for_country_currency()) {
-            return \false;
-        }
-        $keys = array('client_id', 'client_secret', 'dcc_enabled');
-        foreach ($keys as $key) {
-            if (!$this->settings->has($key) || !$this->settings->get($key)) {
-                return \false;
-            }
-        }
-        return \true;
     }
     /**
      * Determines the style for a given property in a given context.

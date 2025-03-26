@@ -21,15 +21,9 @@ return array('blocks.url' => static function (ContainerInterface $container): st
      */
     return plugins_url('/modules/ppcp-blocks/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
 }, 'blocks.method' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Blocks\PayPalPaymentMethod {
-    /**
-     * Cart instance; might be null, esp. in customizer or in Block Editor.
-     *
-     * @var null|WC_Cart $cart
-     */
-    $cart = WC()->cart;
     return new \WooCommerce\PayPalCommerce\Blocks\PayPalPaymentMethod($container->get('blocks.url'), $container->get('ppcp.asset-version'), function () use ($container): SmartButtonInterface {
         return $container->get('button.smart-button');
-    }, $container->get('wcgateway.settings'), $container->get('wcgateway.settings.status'), $container->get('wcgateway.paypal-gateway'), $container->get('blocks.settings.final_review_enabled'), $container->get('session.cancellation.view'), $container->get('session.handler'), $container->get('wc-subscriptions.helper'), $container->get('blocks.add-place-order-method'), $container->get('wcgateway.use-place-order-button'), $container->get('wcgateway.place-order-button-text'), $container->get('wcgateway.place-order-button-description'), $container->get('wcgateway.all-funding-sources'), $cart && $cart->needs_shipping());
+    }, $container->get('wcgateway.settings'), $container->get('wcgateway.settings.status'), $container->get('wcgateway.paypal-gateway'), $container->get('blocks.settings.final_review_enabled'), $container->get('session.cancellation.view'), $container->get('session.handler'), $container->get('wc-subscriptions.helper'), $container->get('blocks.add-place-order-method'), $container->get('wcgateway.use-place-order-button'), $container->get('wcgateway.place-order-button-text'), $container->get('wcgateway.place-order-button-description'), $container->get('wcgateway.all-funding-sources'));
 }, 'blocks.advanced-card-method' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Blocks\AdvancedCardPaymentMethod {
     return new \WooCommerce\PayPalCommerce\Blocks\AdvancedCardPaymentMethod($container->get('blocks.url'), $container->get('ppcp.asset-version'), $container->get('wcgateway.credit-card-gateway'), function () use ($container): SmartButtonInterface {
         return $container->get('button.smart-button');

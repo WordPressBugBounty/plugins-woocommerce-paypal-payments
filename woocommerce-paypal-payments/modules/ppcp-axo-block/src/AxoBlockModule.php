@@ -13,15 +13,11 @@ use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\SdkClientToken;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
-use WooCommerce\PayPalCommerce\Blocks\Endpoint\UpdateShippingEndpoint;
-use WooCommerce\PayPalCommerce\Button\Assets\SmartButtonInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCGatewayConfiguration;
 /**
  * Class AxoBlockModule
  */
@@ -54,6 +50,9 @@ class AxoBlockModule implements ServiceModule, ExtendingModule, ExecutableModule
         }
         add_action('wp_loaded', function () use ($c) {
             add_filter('woocommerce_paypal_payments_localized_script_data', function (array $localized_script_data) use ($c) {
+                if (!$c->has('axo.available') || !$c->get('axo.available')) {
+                    return $localized_script_data;
+                }
                 $module = $this;
                 $api = $c->get('api.sdk-client-token');
                 assert($api instanceof SdkClientToken);
@@ -130,7 +129,7 @@ class AxoBlockModule implements ServiceModule, ExtendingModule, ExecutableModule
         if (!has_block('woocommerce/checkout') || WC()->cart->is_empty()) {
             return;
         }
-        $dcc_configuration = $c->get('wcgateway.configuration.dcc');
+        $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
         if (!$dcc_configuration->use_fastlane()) {
             return;
         }

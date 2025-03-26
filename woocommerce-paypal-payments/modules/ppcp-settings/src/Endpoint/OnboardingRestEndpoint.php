@@ -37,7 +37,7 @@ class OnboardingRestEndpoint extends \WooCommerce\PayPalCommerce\Settings\Endpoi
      *
      * @var array
      */
-    private array $field_map = array('completed' => array('js_name' => 'completed', 'sanitize' => 'to_boolean'), 'step' => array('js_name' => 'step', 'sanitize' => 'to_number'), 'is_casual_seller' => array('js_name' => 'isCasualSeller', 'sanitize' => 'to_boolean'), 'accept_card_payments' => array('js_name' => 'areOptionalPaymentMethodsEnabled', 'sanitize' => 'to_boolean'), 'products' => array('js_name' => 'products'));
+    private array $field_map = array('completed' => array('js_name' => 'completed', 'sanitize' => 'to_boolean'), 'step' => array('js_name' => 'step', 'sanitize' => 'to_number'), 'is_casual_seller' => array('js_name' => 'isCasualSeller', 'sanitize' => 'to_boolean'), 'accept_card_payments' => array('js_name' => 'areOptionalPaymentMethodsEnabled', 'sanitize' => 'to_boolean'), 'products' => array('js_name' => 'products'), 'gateways_synced' => array('js_name' => 'gatewaysSynced', 'sanitize' => 'to_boolean'), 'gateways_refreshed' => array('js_name' => 'gatewaysRefreshed', 'sanitize' => 'to_boolean'));
     /**
      * Map the internal flags to JS names.
      *

@@ -31,7 +31,7 @@ class ProductChoicesEnum
     /**
      * Get all valid seller types.
      *
-     * @return array List of all valid seller_types.
+     * @return array List of all valid products.
      */
     public static function get_valid_values(): array
     {
@@ -41,7 +41,7 @@ class ProductChoicesEnum
      * Check if a given type is valid.
      *
      * @param string $type The value to validate.
-     * @return bool True, if the value is a valid seller_type.
+     * @return bool True, if the value is a valid product.
      */
     public static function is_valid(string $type): bool
     {

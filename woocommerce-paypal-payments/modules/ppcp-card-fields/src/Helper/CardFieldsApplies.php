@@ -45,4 +45,14 @@ class CardFieldsApplies
     {
         return in_array($this->country, $this->allowed_country_matrix, \true);
     }
+    /**
+     * Indicates, whether the current merchant is eligible for Card Fields. Always true,
+     * but the filter allows other modules to disable Card Fields site-wide.
+     *
+     * @return bool
+     */
+    public function for_merchant(): bool
+    {
+        return apply_filters('woocommerce_paypal_payments_is_eligible_for_card_fields', \true);
+    }
 }

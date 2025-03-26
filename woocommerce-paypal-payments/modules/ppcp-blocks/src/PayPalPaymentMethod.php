@@ -115,12 +115,6 @@ class PayPalPaymentMethod extends AbstractPaymentMethodType
      */
     private $all_funding_sources;
     /**
-     * Whether shipping details must be collected during checkout; i.e. paying for physical goods?
-     *
-     * @var bool
-     */
-    private $need_shipping;
-    /**
      * Assets constructor.
      *
      * @param string                        $module_url The url of this module.
@@ -138,9 +132,8 @@ class PayPalPaymentMethod extends AbstractPaymentMethodType
      * @param string                        $place_order_button_text The text for the standard "Place order" button.
      * @param string                        $place_order_button_description The text for additional "Place order" description.
      * @param array                         $all_funding_sources All existing funding sources for PayPal buttons.
-     * @param bool                          $need_shipping Whether shipping details are required for the purchase.
      */
-    public function __construct(string $module_url, string $version, $smart_button, Settings $plugin_settings, SettingsStatus $settings_status, PayPalGateway $gateway, bool $final_review_enabled, CancelView $cancellation_view, SessionHandler $session_handler, SubscriptionHelper $subscription_helper, bool $add_place_order_method, bool $use_place_order, string $place_order_button_text, string $place_order_button_description, array $all_funding_sources, bool $need_shipping)
+    public function __construct(string $module_url, string $version, $smart_button, Settings $plugin_settings, SettingsStatus $settings_status, PayPalGateway $gateway, bool $final_review_enabled, CancelView $cancellation_view, SessionHandler $session_handler, SubscriptionHelper $subscription_helper, bool $add_place_order_method, bool $use_place_order, string $place_order_button_text, string $place_order_button_description, array $all_funding_sources)
     {
         $this->name = PayPalGateway::ID;
         $this->module_url = $module_url;
@@ -158,7 +151,6 @@ class PayPalPaymentMethod extends AbstractPaymentMethodType
         $this->place_order_button_text = $place_order_button_text;
         $this->place_order_button_description = $place_order_button_description;
         $this->all_funding_sources = $all_funding_sources;
-        $this->need_shipping = $need_shipping;
     }
     /**
      * {@inheritDoc}
@@ -205,7 +197,8 @@ class PayPalPaymentMethod extends AbstractPaymentMethodType
         }
         $smart_buttons_enabled = !$this->use_place_order && $this->settings_status->is_smart_button_enabled_for_location($script_data['context'] ?? 'block-checkout');
         $place_order_enabled = ($this->use_place_order || $this->add_place_order_method) && !$this->subscription_helper->cart_contains_subscription();
-        return array('id' => $this->gateway->id, 'title' => $this->gateway->title, 'icon' => array(array('id' => 'paypal', 'alt' => 'PayPal', 'src' => $this->gateway->icon)), 'description' => $this->gateway->description, 'smartButtonsEnabled' => $smart_buttons_enabled, 'placeOrderEnabled' => $place_order_enabled, 'fundingSource' => $this->session_handler->funding_source(), 'finalReviewEnabled' => $this->final_review_enabled, 'placeOrderButtonText' => $this->place_order_button_text, 'placeOrderButtonDescription' => $this->place_order_button_description, 'enabledFundingSources' => $funding_sources, 'ajax' => array('update_shipping' => array('endpoint' => WC_AJAX::get_endpoint(UpdateShippingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(UpdateShippingEndpoint::nonce()))), 'scriptData' => $script_data, 'needShipping' => $this->need_shipping);
+        $cart = WC()->cart;
+        return array('id' => $this->gateway->id, 'title' => $this->gateway->title, 'icon' => array(array('id' => 'paypal', 'alt' => 'PayPal', 'src' => $this->gateway->icon)), 'description' => $this->gateway->description, 'smartButtonsEnabled' => $smart_buttons_enabled, 'placeOrderEnabled' => $place_order_enabled, 'fundingSource' => $this->session_handler->funding_source(), 'finalReviewEnabled' => $this->final_review_enabled, 'placeOrderButtonText' => $this->place_order_button_text, 'placeOrderButtonDescription' => $this->place_order_button_description, 'enabledFundingSources' => $funding_sources, 'ajax' => array('update_shipping' => array('endpoint' => WC_AJAX::get_endpoint(UpdateShippingEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(UpdateShippingEndpoint::nonce()))), 'scriptData' => $script_data, 'needShipping' => $cart && $cart->needs_shipping());
     }
     /**
      * Checks if it is the block editing mode.

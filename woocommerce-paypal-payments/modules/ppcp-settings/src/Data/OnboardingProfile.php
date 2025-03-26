@@ -63,7 +63,7 @@ class OnboardingProfile extends \WooCommerce\PayPalCommerce\Settings\Data\Abstra
      */
     protected function get_defaults(): array
     {
-        return array('completed' => \false, 'step' => 0, 'is_casual_seller' => null, 'accept_card_payments' => null, 'products' => array(), 'setup_done' => \false);
+        return array('completed' => \false, 'step' => 0, 'is_casual_seller' => null, 'accept_card_payments' => null, 'products' => array(), 'setup_done' => \false, 'gateways_synced' => \false, 'gateways_refreshed' => \false);
     }
     // -----
     /**
@@ -182,5 +182,45 @@ class OnboardingProfile extends \WooCommerce\PayPalCommerce\Settings\Data\Abstra
     public function set_setup_done(bool $done): void
     {
         $this->data['setup_done'] = $done;
+    }
+    /**
+     * Get whether gateways have been synced.
+     *
+     * @return bool
+     */
+    public function is_gateways_synced(): bool
+    {
+        return $this->data['gateways_synced'] ?? \false;
+    }
+    /**
+     * Set whether gateways have been synced.
+     *
+     * @param bool $synced Whether gateways have been synced.
+     */
+    public function set_gateways_synced(bool $synced): void
+    {
+        $this->data['gateways_synced'] = $synced;
+        // If enabling the flag, trigger the action.
+        if ($synced) {
+            do_action('woocommerce_paypal_payments_sync_gateways');
+        }
+    }
+    /**
+     * Get whether gateways have been refreshed.
+     *
+     * @return bool
+     */
+    public function is_gateways_refreshed(): bool
+    {
+        return $this->data['gateways_refreshed'] ?? \false;
+    }
+    /**
+     * Set whether gateways have been refreshed.
+     *
+     * @param bool $refreshed Whether gateways have been refreshed.
+     */
+    public function set_gateways_refreshed(bool $refreshed): void
+    {
+        $this->data['gateways_refreshed'] = $refreshed;
     }
 }

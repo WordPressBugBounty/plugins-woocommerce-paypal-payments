@@ -20,7 +20,7 @@ class PartnerReferralsData
      * @deprecated Deprecates with the new UI. In this class, the products are
      *             always explicit, and should not be deducted from the
      *             DccApplies state at this point.
-     *             Remove this with the legacy UI code.
+     *             Remove this with the #legacy-ui code.
      * @var DccApplies
      */
     private DccApplies $dcc_applies;
@@ -70,10 +70,12 @@ class PartnerReferralsData
         $capabilities = array();
         $first_party_features = array('PAYMENT', 'REFUND', 'ADVANCED_TRANSACTIONS_SEARCH', 'TRACKING_SHIPMENT_READWRITE');
         if (\true === $use_subscriptions) {
-            $capabilities[] = 'PAYPAL_WALLET_VAULTING_ADVANCED';
+            if ($this->dcc_applies->for_country_currency()) {
+                $capabilities[] = 'PAYPAL_WALLET_VAULTING_ADVANCED';
+            }
             $first_party_features[] = 'BILLING_AGREEMENT';
         }
-        // Backwards compatibility. Keep those features in the legacy UI (null-value).
+        // Backwards compatibility. Keep those features in the #legacy-ui (null-value).
         // Move this into the previous condition, once legacy code is removed.
         if (\false !== $use_subscriptions) {
             $first_party_features[] = 'FUTURE_PAYMENT';

@@ -8,6 +8,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\PayLaterConfigurator;
 
+use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\PayLaterConfigurator\Endpoint\GetConfig;
 use WooCommerce\PayPalCommerce\PayLaterConfigurator\Endpoint\SaveConfig;
 use WooCommerce\PayPalCommerce\PayLaterConfigurator\Factory\ConfigFactory;
@@ -84,8 +85,9 @@ class PayLaterConfiguratorModule implements ServiceModule, ExtendingModule, Exec
             wp_enqueue_style('ppcp-paylater-configurator-style', $c->get('paylater-configurator.url') . '/assets/css/paylater-configurator.css', array(), $c->get('ppcp.asset-version'));
             $config_factory = $c->get('paylater-configurator.factory.config');
             assert($config_factory instanceof ConfigFactory);
-            $bn_code = PPCP_PAYPAL_BN_CODE;
-            wp_localize_script('ppcp-paylater-configurator', 'PcpPayLaterConfigurator', array('ajax' => array('save_config' => array('endpoint' => \WC_AJAX::get_endpoint(SaveConfig::ENDPOINT), 'nonce' => wp_create_nonce(SaveConfig::nonce())), 'get_config' => array('endpoint' => \WC_AJAX::get_endpoint(GetConfig::ENDPOINT), 'nonce' => wp_create_nonce(GetConfig::nonce()))), 'config' => $config_factory->from_settings($settings), 'merchantClientId' => $settings->get('client_id'), 'partnerClientId' => $c->get('api.partner_merchant_id'), 'bnCode' => $bn_code, 'publishButtonClassName' => 'ppcp-paylater-configurator-publishButton', 'headerClassName' => 'ppcp-paylater-configurator-header', 'subheaderClassName' => 'ppcp-paylater-configurator-subheader'));
+            $partner_attribution = $c->get('api.helper.partner-attribution');
+            assert($partner_attribution instanceof PartnerAttribution);
+            wp_localize_script('ppcp-paylater-configurator', 'PcpPayLaterConfigurator', array('ajax' => array('save_config' => array('endpoint' => \WC_AJAX::get_endpoint(SaveConfig::ENDPOINT), 'nonce' => wp_create_nonce(SaveConfig::nonce())), 'get_config' => array('endpoint' => \WC_AJAX::get_endpoint(GetConfig::ENDPOINT), 'nonce' => wp_create_nonce(GetConfig::nonce()))), 'config' => $config_factory->from_settings($settings), 'merchantClientId' => $settings->get('client_id'), 'partnerClientId' => $c->get('api.partner_merchant_id'), 'bnCode' => $partner_attribution->get_bn_code(), 'publishButtonClassName' => 'ppcp-paylater-configurator-publishButton', 'headerClassName' => 'ppcp-paylater-configurator-header', 'subheaderClassName' => 'ppcp-paylater-configurator-subheader'));
         });
         return \true;
     }

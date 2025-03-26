@@ -49,7 +49,7 @@ class SubscriptionStatus
      */
     public function update_status(string $subscription_status, string $subscription_id): void
     {
-        if ($subscription_status === 'pending-cancel' || $subscription_status === 'cancelled') {
+        if ($subscription_status === 'cancelled') {
             try {
                 $current_subscription = $this->subscriptions_endpoint->subscription($subscription_id);
                 if ($current_subscription->status === 'CANCELLED') {
@@ -61,7 +61,7 @@ class SubscriptionStatus
                 $this->logger->error(sprintf('Could not cancel PayPal subscription #%s. %s', $subscription_id, $this->get_error($exception)));
             }
         }
-        if ($subscription_status === 'on-hold') {
+        if ($subscription_status === 'on-hold' || $subscription_status === 'pending-cancel') {
             try {
                 $this->logger->info(sprintf('Suspending PayPal subscription #%s.', $subscription_id));
                 $this->subscriptions_endpoint->suspend($subscription_id);

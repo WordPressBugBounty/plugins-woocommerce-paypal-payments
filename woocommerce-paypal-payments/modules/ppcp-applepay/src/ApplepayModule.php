@@ -295,8 +295,8 @@ class ApplepayModule implements ServiceModule, ExtendingModule, ExecutableModule
         }
         $env = $c->get('settings.environment');
         assert($env instanceof Environment);
-        $is_sandobx = $env->current_environment_is(Environment::SANDBOX);
-        $this->load_domain_association_file($is_sandobx);
+        $is_sandbox = $env->current_environment_is(Environment::SANDBOX);
+        $this->load_domain_association_file($is_sandbox);
     }
     /**
      * Returns the validation string, depending on the environment.

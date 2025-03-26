@@ -168,13 +168,14 @@ class WooCommerceOrderCreator
         if ($payer) {
             $address = $payer->address();
             $payer_name = $payer->name();
+            $payer_phone = $payer->phone();
             $wc_email = null;
             $wc_customer = WC()->customer;
             if ($wc_customer instanceof WC_Customer) {
                 $wc_email = $wc_customer->get_email();
             }
             $email = $wc_email ?: $payer->email_address();
-            $billing_address = array('email' => $email ?: '', 'first_name' => $payer_name ? $payer_name->given_name() : '', 'last_name' => $payer_name ? $payer_name->surname() : '', 'address_1' => $address ? $address->address_line_1() : '', 'address_2' => $address ? $address->address_line_2() : '', 'city' => $address ? $address->admin_area_2() : '', 'state' => $address ? $address->admin_area_1() : '', 'postcode' => $address ? $address->postal_code() : '', 'country' => $address ? $address->country_code() : '');
+            $billing_address = array('email' => $email ?: '', 'first_name' => $payer_name ? $payer_name->given_name() : '', 'last_name' => $payer_name ? $payer_name->surname() : '', 'address_1' => $address ? $address->address_line_1() : '', 'address_2' => $address ? $address->address_line_2() : '', 'city' => $address ? $address->admin_area_2() : '', 'state' => $address ? $address->admin_area_1() : '', 'postcode' => $address ? $address->postal_code() : '', 'country' => $address ? $address->country_code() : '', 'phone' => $payer_phone ? $payer_phone->phone()->national_number() : '');
         }
         if ($shipping) {
             $address = $shipping->address();

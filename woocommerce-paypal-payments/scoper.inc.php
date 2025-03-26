@@ -14,7 +14,7 @@ return array(
     'prefix' => 'WooCommerce\PayPalCommerce\Vendor',
     'finders' => $finders,
     'patchers' => array(),
-    'exclude-files' => array(),
+    'exclude-files' => array('vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php'),
     // list<string>.
     'exclude-namespaces' => array('/^(?!Psr).*/'),
     // list<string|regex>.

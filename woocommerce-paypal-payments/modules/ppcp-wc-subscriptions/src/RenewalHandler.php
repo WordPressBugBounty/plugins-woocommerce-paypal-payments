@@ -262,6 +262,7 @@ class RenewalHandler
             $last_token = end($wc_tokens);
             if ($last_token) {
                 $payment_source = $this->card_payment_source($last_token->get_token(), $wc_order);
+                $wc_order->add_payment_token($last_token);
             }
         }
         if ($payment_source) {
@@ -400,13 +401,13 @@ class RenewalHandler
      */
     private function card_payment_source(string $token, WC_Order $wc_order): PaymentSource
     {
-        $properties = array('vault_id' => $token);
+        $properties = array('vault_id' => $token, 'stored_credential' => array('payment_initiator' => 'MERCHANT', 'payment_type' => 'RECURRING', 'usage' => 'SUBSEQUENT'));
         $subscriptions = wcs_get_subscriptions_for_renewal_order($wc_order);
         $subscription = end($subscriptions);
         if ($subscription) {
-            $transaction = $this->subscription_helper->previous_transaction($subscription);
+            $transaction = $this->subscription_helper->previous_transaction($subscription, $token);
             if ($transaction) {
-                $properties['stored_credential'] = array('payment_initiator' => 'MERCHANT', 'payment_type' => 'RECURRING', 'usage' => 'SUBSEQUENT', 'previous_transaction_reference' => $transaction);
+                $properties['stored_credential']['previous_transaction_reference'] = $transaction;
             }
         }
         return new PaymentSource('card', (object) $properties);

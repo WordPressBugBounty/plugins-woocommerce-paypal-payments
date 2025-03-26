@@ -50,7 +50,12 @@ class CommonRestEndpoint extends \WooCommerce\PayPalCommerce\Settings\Endpoint\R
      *
      * @var array
      */
-    private array $field_map = array('use_sandbox' => array('js_name' => 'useSandbox', 'sanitize' => 'to_boolean'), 'use_manual_connection' => array('js_name' => 'useManualConnection', 'sanitize' => 'to_boolean'), 'webhooks' => array('js_name' => 'webhooks'));
+    private array $field_map = array(
+        'use_sandbox' => array('js_name' => 'useSandbox', 'sanitize' => 'to_boolean'),
+        'use_manual_connection' => array('js_name' => 'useManualConnection', 'sanitize' => 'to_boolean'),
+        // TODO: Is this really a "read-and-write" field? If no, it should not be listed in this map!
+        'webhooks' => array('js_name' => 'webhooks'),
+    );
     /**
      * Map merchant details to JS names.
      *
@@ -62,7 +67,7 @@ class CommonRestEndpoint extends \WooCommerce\PayPalCommerce\Settings\Endpoint\R
      *
      * @var array
      */
-    private array $woo_settings_map = array('country' => array('js_name' => 'storeCountry'), 'currency' => array('js_name' => 'storeCurrency'));
+    private array $woo_settings_map = array('country' => array('js_name' => 'storeCountry'), 'currency' => array('js_name' => 'storeCurrency'), 'own_brand_only' => array('js_name' => 'ownBrandOnly'));
     /**
      * Constructor.
      *

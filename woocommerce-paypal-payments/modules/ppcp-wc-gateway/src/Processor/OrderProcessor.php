@@ -313,7 +313,7 @@ class OrderProcessor
         if ($payment_source->name() !== 'card') {
             return \false;
         }
-        return in_array($this->threed_secure->proceed_with_order($order), array(ThreeDSecure::NO_DECISION, ThreeDSecure::PROCCEED), \true);
+        return in_array($this->threed_secure->proceed_with_order($order), array(ThreeDSecure::NO_DECISION, ThreeDSecure::PROCEED), \true);
     }
     /**
      * Applies filters to the WC_Order, so they are reflected only on PayPal Order.

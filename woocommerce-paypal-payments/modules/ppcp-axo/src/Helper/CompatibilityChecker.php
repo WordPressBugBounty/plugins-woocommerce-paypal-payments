@@ -12,8 +12,11 @@ namespace WooCommerce\PayPalCommerce\Axo\Helper;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\CartCheckoutDetector;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Class CompatibilityChecker
+ *
+ * DI service: 'axo.helpers.compatibility-checker'
  */
 class CompatibilityChecker
 {
@@ -30,19 +33,22 @@ class CompatibilityChecker
      */
     protected array $checkout_compatibility;
     /**
-     * Stores whether DCC is enabled.
+     * Provides details about the DCC configuration.
      *
-     * @var bool|null
+     * @var CardPaymentsConfiguration
      */
-    protected ?bool $is_dcc_enabled = null;
+    private CardPaymentsConfiguration $dcc_configuration;
     /**
      * CompatibilityChecker constructor.
      *
-     * @param string[] $incompatible_plugin_names The list of Fastlane incompatible plugin names.
+     * @param string[]                  $incompatible_plugin_names The list of Fastlane incompatible
+     *                                                             plugin names.
+     * @param CardPaymentsConfiguration $dcc_configuration         DCC gateway configuration.
      */
-    public function __construct(array $incompatible_plugin_names)
+    public function __construct(array $incompatible_plugin_names, CardPaymentsConfiguration $dcc_configuration)
     {
         $this->incompatible_plugin_names = $incompatible_plugin_names;
+        $this->dcc_configuration = $dcc_configuration;
         $this->checkout_compatibility = array('has_elementor_checkout' => null, 'has_classic_checkout' => null, 'has_block_checkout' => null);
     }
     /**
@@ -82,27 +88,11 @@ class CompatibilityChecker
         return $this->checkout_compatibility['has_block_checkout'];
     }
     /**
-     * Checks if DCC is enabled.
-     *
-     * @param Settings $settings The plugin settings container.
-     * @return bool Whether DCC is enabled.
-     */
-    protected function is_dcc_enabled(Settings $settings): bool
-    {
-        if ($this->is_dcc_enabled === null) {
-            try {
-                $this->is_dcc_enabled = $settings->has('dcc_enabled') && $settings->get('dcc_enabled');
-            } catch (NotFoundException $ignored) {
-                $this->is_dcc_enabled = \false;
-            }
-        }
-        return $this->is_dcc_enabled;
-    }
-    /**
      * Generates the full HTML of the notification.
      *
-     * @param string $message    HTML of the inner message contents.
-     * @param bool   $is_error   Whether the provided message is an error. Affects the notice color.
+     * @param string $message     HTML of the inner message contents.
+     * @param bool   $is_error    Whether the provided message is an error. Affects the notice
+     *                            color.
      * @param bool   $raw_message Whether to return raw message without HTML wrappers.
      *
      * @return string The full HTML code of the notification, or an empty string, or raw message.
@@ -118,7 +108,8 @@ class CompatibilityChecker
         return sprintf('<div class="ppcp-notice %1$s"><p>%2$s</p></div>', $is_error ? 'ppcp-notice-error' : '', $message);
     }
     /**
-     * Check if there aren't any incompatibilities that would prevent Fastlane from working properly.
+     * Check if there aren't any incompatibilities that would prevent Fastlane from working
+     * properly.
      *
      * @return bool Whether the setup is compatible.
      */
@@ -194,13 +185,12 @@ class CompatibilityChecker
     /**
      * Generates a warning notice with instructions on conflicting plugin-internal settings.
      *
-     * @param Settings $settings The plugin settings container, which is checked for conflicting values.
-     * @param bool     $raw_message Whether to return raw message without HTML wrappers.
+     * @param bool $raw_message Whether to return raw message without HTML wrappers.
      * @return string
      */
-    public function generate_settings_conflict_notice(Settings $settings, bool $raw_message = \false): string
+    public function generate_settings_conflict_notice(bool $raw_message = \false): string
     {
-        if ($this->is_dcc_enabled($settings)) {
+        if ($this->dcc_configuration->is_enabled()) {
             return '';
         }
         $notice_content = __('<span class="highlight">Warning:</span> To enable Fastlane and accelerate payments, the <strong>Advanced Card Processing</strong> payment method must also be enabled.', 'woocommerce-paypal-payments');

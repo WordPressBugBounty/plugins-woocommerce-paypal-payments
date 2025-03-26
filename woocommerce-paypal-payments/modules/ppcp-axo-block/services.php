@@ -24,6 +24,6 @@ return array(
         return plugins_url('/modules/ppcp-axo-block/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
     },
     'axoblock.method' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\AxoBlock\AxoBlockPaymentMethod {
-        return new \WooCommerce\PayPalCommerce\AxoBlock\AxoBlockPaymentMethod($container->get('axoblock.url'), $container->get('ppcp.asset-version'), $container->get('axo.gateway'), fn(): SmartButtonInterface => $container->get('button.smart-button'), $container->get('wcgateway.settings'), $container->get('wcgateway.configuration.dcc'), $container->get('settings.environment'), $container->get('wcgateway.url'), $container->get('axo.payment_method_selected_map'), $container->get('axo.supported-country-card-type-matrix'));
+        return new \WooCommerce\PayPalCommerce\AxoBlock\AxoBlockPaymentMethod($container->get('axoblock.url'), $container->get('ppcp.asset-version'), $container->get('axo.gateway'), fn(): SmartButtonInterface => $container->get('button.smart-button'), $container->get('wcgateway.settings'), $container->get('wcgateway.configuration.card-configuration'), $container->get('settings.environment'), $container->get('wcgateway.url'), $container->get('axo.payment_method_selected_map'), $container->get('axo.supported-country-card-type-matrix'));
     },
 );
