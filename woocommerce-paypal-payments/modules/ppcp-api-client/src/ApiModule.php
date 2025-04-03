@@ -22,6 +22,7 @@ use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\Order;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\PayPalBearer;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\SdkClientToken;
+use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 /**
  * Class ApiModule
  */
@@ -81,15 +82,14 @@ class ApiModule implements ServiceModule, ExtendingModule, ExecutableModule
          * Flushes the API client caches.
          */
         add_action('woocommerce_paypal_payments_flush_api_cache', static function () use ($c) {
-            $caches = array('api.paypal-bearer-cache' => array(PayPalBearer::CACHE_KEY), 'api.client-credentials-cache' => array(SdkClientToken::CACHE_KEY));
-            foreach ($caches as $cache_id => $keys) {
+            $caches = array('api.paypal-bearer-cache', 'api.client-credentials-cache', 'settings.service.signup-link-cache');
+            $logger = $c->get('woocommerce.logger.woocommerce');
+            assert($logger instanceof LoggerInterface);
+            $logger->info('Flushing API caches...');
+            foreach ($caches as $cache_id) {
                 $cache = $c->get($cache_id);
                 assert($cache instanceof Cache);
-                foreach ($keys as $key) {
-                    if ($cache->has($key)) {
-                        $cache->delete($key);
-                    }
-                }
+                $cache->flush();
             }
         });
         /**

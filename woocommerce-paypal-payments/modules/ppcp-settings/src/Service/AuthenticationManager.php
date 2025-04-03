@@ -171,7 +171,6 @@ class AuthenticationManager
      */
     public function authenticate_via_direct_api(bool $use_sandbox, string $client_id, string $client_secret): void
     {
-        $this->disconnect();
         $this->logger->info('Attempting manual connection to PayPal...', array('sandbox' => $use_sandbox, 'client_id' => $client_id));
         $payee = $this->request_payee($client_id, $client_secret, $use_sandbox);
         $connection = new MerchantConnectionDTO($use_sandbox, $client_id, $client_secret, $payee['merchant_id'], $payee['email_address'], '', SellerTypeEnum::BUSINESS);
@@ -214,7 +213,6 @@ class AuthenticationManager
      */
     public function authenticate_via_oauth(bool $use_sandbox, string $shared_id, string $auth_code): void
     {
-        $this->disconnect();
         $this->logger->info('Attempting OAuth login to PayPal...', array('sandbox' => $use_sandbox, 'shared_id' => $shared_id));
         $credentials = $this->get_credentials($shared_id, $auth_code, $use_sandbox);
         /**

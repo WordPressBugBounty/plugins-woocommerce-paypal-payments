@@ -61,9 +61,17 @@ class ConnectionListener
     /**
      * ID of the current user, set by the process() method.
      *
+     * Default value is 0 (guest), until the real ID is provided to process().
+     *
      * @var int
      */
-    private int $user_id;
+    private int $user_id = 0;
+    /**
+     * The request details (usually the GET data) which were provided.
+     *
+     * @var array
+     */
+    private array $request_data = array();
     /**
      * Prepare the instance.
      *
@@ -80,8 +88,6 @@ class ConnectionListener
         $this->authentication_manager = $authentication_manager;
         $this->redirector = $redirector;
         $this->logger = $logger ?: new NullLogger();
-        // Initialize as "guest", the real ID is provided via process().
-        $this->user_id = 0;
     }
     /**
      * Process the request data, and extract connection details, if present.
@@ -94,34 +100,52 @@ class ConnectionListener
     public function process(int $user_id, array $request): void
     {
         $this->user_id = $user_id;
-        if (!$this->is_valid_request($request)) {
+        $this->request_data = $request;
+        if (!$this->is_valid_request()) {
             return;
         }
-        $token = $this->get_token_from_request($request);
+        $token = $this->get_token_from_request();
+        $this->process_oauth_token($token);
+        $this->redirect_after_authentication();
+    }
+    /**
+     * Processes the OAuth token from the request.
+     *
+     * @param string $token The OAuth token extracted from the request.
+     * @return void
+     */
+    private function process_oauth_token(string $token): void
+    {
+        // The request contains OAuth details: To avoid abuse we'll slow down the processing.
+        sleep(2);
+        if (!$token) {
+            return;
+        }
+        if ($this->was_token_processed($token)) {
+            return;
+        }
         if (!$this->url_manager->validate_token_and_delete($token, $this->user_id)) {
             return;
         }
-        $data = $this->extract_data($request);
+        $data = $this->extract_data();
         if (!$data) {
             return;
         }
         $this->logger->info('Found OAuth merchant data in request', $data);
         try {
             $this->authentication_manager->finish_oauth_authentication($data);
+            $this->mark_token_as_processed($token);
         } catch (\Exception $e) {
             $this->logger->error('Failed to complete authentication: ' . $e->getMessage());
         }
-        $this->redirect_after_authentication();
     }
     /**
      * Determine, if the request details contain connection data that should be
      * extracted and stored.
      *
-     * @param array $request Request details to verify.
-     *
      * @return bool True, if the request contains valid connection details.
      */
-    private function is_valid_request(array $request): bool
+    private function is_valid_request(): bool
     {
         if ($this->user_id < 1 || !$this->settings_page_id) {
             return \false;
@@ -131,26 +155,49 @@ class ConnectionListener
         }
         $required_params = array('merchantIdInPayPal', 'merchantId', 'ppcpToken');
         foreach ($required_params as $param) {
-            if (empty($request[$param])) {
+            if (empty($this->request_data[$param])) {
                 return \false;
             }
         }
         return \true;
     }
     /**
-     * Extract the merchant details (ID & email) from the request details.
+     * Checks if the provided authentication token is new or has been used before.
      *
-     * @param array $request The full request details.
+     * This check catches an issue where we receive the same authentication token twice,
+     * which does not impact the login flow but creates noise in the logs.
+     *
+     * @param string $token The authentication token to check.
+     * @return bool True if the token was already processed.
+     */
+    private function was_token_processed(string $token): bool
+    {
+        $prev_token = get_transient('ppcp_previous_auth_token');
+        return $prev_token && $prev_token === $token;
+    }
+    /**
+     * Stores the processed authentication token so we can prevent double-processing
+     * of already verified token.
+     *
+     * @param string $token The processed authentication token.
+     * @return void
+     */
+    private function mark_token_as_processed(string $token): void
+    {
+        set_transient('ppcp_previous_auth_token', $token, 60);
+    }
+    /**
+     * Extract the merchant details (ID & email) from the request details.
      *
      * @return array Structured array with 'is_sandbox', 'merchant_id', and 'merchant_email' keys,
      *               or an empty array on failure.
      */
-    private function extract_data(array $request): array
+    private function extract_data(): array
     {
         $this->logger->info('Extracting connection data from request...');
-        $merchant_id = $this->get_merchant_id_from_request($request);
-        $merchant_email = $this->get_merchant_email_from_request($request);
-        $seller_type = $this->get_seller_type_from_request($request);
+        $merchant_id = $this->get_merchant_id_from_request($this->request_data);
+        $merchant_email = $this->get_merchant_email_from_request($this->request_data);
+        $seller_type = $this->get_seller_type_from_request($this->request_data);
         if (!$merchant_id || !$merchant_email) {
             return array();
         }
@@ -165,17 +212,16 @@ class ConnectionListener
     {
         $redirect_url = $this->get_onboarding_redirect_url();
         $this->redirector->redirect($redirect_url);
+        exit;
     }
     /**
      * Returns the sanitized connection token from the incoming request.
      *
-     * @param array $request Full request details.
-     *
      * @return string The sanitized token, or an empty string.
      */
-    private function get_token_from_request(array $request): string
+    private function get_token_from_request(): string
     {
-        return $this->sanitize_string($request['ppcpToken'] ?? '');
+        return $this->sanitize_string($this->request_data['ppcpToken'] ?? '');
     }
     /**
      * Returns the sanitized merchant ID from the incoming request.

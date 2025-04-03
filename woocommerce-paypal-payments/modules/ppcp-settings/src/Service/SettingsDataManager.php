@@ -213,6 +213,8 @@ class SettingsDataManager
         $methods_cards = $this->methods_definition->group_card_methods();
         $methods_apm = $this->methods_definition->group_apms();
         $all_methods = array_merge($methods_paypal, $methods_cards, $methods_apm);
+        // Enable the Fastlane watermark by default.
+        $this->payment_methods->set_fastlane_display_watermark(\true);
         foreach ($all_methods as $method) {
             $this->payment_methods->toggle_method_state($method['id'], \false);
         }
@@ -283,7 +285,7 @@ class SettingsDataManager
          * - Mini Cart: Display PayPal, Venmo, Pay Later, Google Pay, Apple Pay.
          * - Product Page: Display PayPal, Venmo, Pay Later.
          */
-        $location_styles = array('cart' => new LocationStylingDTO('cart', \true, $methods_full), 'classic_checkout' => new LocationStylingDTO('classic_checkout', \true, $methods_full), 'express_checkout' => new LocationStylingDTO('express_checkout', \true, $methods_full), 'mini_cart' => new LocationStylingDTO('mini_cart', \true, $methods_full), 'product' => new LocationStylingDTO('product', \true, $methods_own));
+        $location_styles = array('cart' => new LocationStylingDTO('cart', \true, $methods_full), 'classic_checkout' => new LocationStylingDTO('classic_checkout', \true, $methods_full), 'express_checkout' => new LocationStylingDTO('express_checkout', \true, $methods_full), 'mini_cart' => new LocationStylingDTO('mini_cart', \false, $methods_full), 'product' => new LocationStylingDTO('product', \true, $methods_own));
         // Apply the settings and persist them to the DB. All merchants use the same options.
         $this->styling_settings->from_array($location_styles);
         $this->styling_settings->save();

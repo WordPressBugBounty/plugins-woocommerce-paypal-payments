@@ -9,6 +9,7 @@ declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Settings;
 
 use WC_Payment_Gateway;
+use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Applepay\Assets\AppleProductStatus;
@@ -24,6 +25,7 @@ use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\P24Gateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\TrustlyGateway;
 use WooCommerce\PayPalCommerce\Settings\Ajax\SwitchSettingsUiEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Data\OnboardingProfile;
+use WooCommerce\PayPalCommerce\Settings\Data\SettingsModel;
 use WooCommerce\PayPalCommerce\Settings\Data\TodosModel;
 use WooCommerce\PayPalCommerce\Settings\Endpoint\RestEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Handler\ConnectionListener;
@@ -90,7 +92,7 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 $script_asset_file = require dirname(realpath(__FILE__) ?: '', 2) . '/assets/switchSettingsUi.asset.php';
                 wp_register_script('ppcp-switch-settings-ui', untrailingslashit($module_url) . '/assets/switchSettingsUi.js', $script_asset_file['dependencies'], $script_asset_file['version'], \true);
                 wp_localize_script('ppcp-switch-settings-ui', 'ppcpSwitchSettingsUi', array('endpoint' => \WC_AJAX::get_endpoint(SwitchSettingsUiEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SwitchSettingsUiEndpoint::nonce())));
-                wp_enqueue_script('ppcp-switch-settings-ui', '', array('wp-i18n'), $script_asset_file['version']);
+                wp_enqueue_script('ppcp-switch-settings-ui', '', array('wp-i18n'), $script_asset_file['version'], \false);
                 wp_set_script_translations('ppcp-switch-settings-ui', 'woocommerce-paypal-payments');
             });
             $endpoint = $container->get('settings.ajax.switch_ui') ? $container->get('settings.ajax.switch_ui') : null;
@@ -105,14 +107,11 @@ class SettingsModule implements ServiceModule, ExecutableModule
         /**
          * This hook is fired when the plugin is installed or updated.
          */
-        add_action('woocommerce_paypal_payments_gateway_migrate', function () use ($container) {
-            $path_repository = $container->get('settings.service.branded-experience.path-repository');
-            assert($path_repository instanceof PathRepository);
+        add_action('woocommerce_paypal_payments_gateway_migrate', static function () use ($container) {
             $partner_attribution = $container->get('api.helper.partner-attribution');
             assert($partner_attribution instanceof PartnerAttribution);
             $general_settings = $container->get('settings.data.general');
             assert($general_settings instanceof GeneralSettings);
-            $path_repository->persist();
             $partner_attribution->initialize_bn_code($general_settings->get_installation_path());
         });
         $this->apply_branded_only_limitations($container);
@@ -135,7 +134,7 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 $script_asset_file = require dirname(realpath(__FILE__) ?: '', 2) . '/assets/index.asset.php';
                 $module_url = $container->get('settings.url');
                 wp_register_script('ppcp-admin-settings', $module_url . '/assets/index.js', $script_asset_file['dependencies'], $script_asset_file['version'], \true);
-                wp_enqueue_script('ppcp-admin-settings', '', array('wp-i18n'), $script_asset_file['version']);
+                wp_enqueue_script('ppcp-admin-settings', '', array('wp-i18n'), $script_asset_file['version'], \false);
                 wp_set_script_translations('ppcp-admin-settings', 'woocommerce-paypal-payments');
                 /**
                  * Require resolves.
@@ -162,9 +161,10 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 wp_dequeue_script('ppcp-paypal-subscription');
             }
         );
-        add_action('woocommerce_paypal_payments_gateway_admin_options_wrapper', function (): void {
+        add_action('woocommerce_paypal_payments_gateway_admin_options_wrapper', function () use ($container): void {
             global $hide_save_button;
             $hide_save_button = \true;
+            $this->initialize_branded_only($container);
             $this->render_header();
             $this->render_content();
         });
@@ -182,6 +182,9 @@ class SettingsModule implements ServiceModule, ExecutableModule
             $connection_handler->process(get_current_user_id(), $_GET);
         });
         add_action('woocommerce_paypal_payments_merchant_disconnected', static function () use ($container): void {
+            $logger = $container->get('woocommerce.logger.woocommerce');
+            assert($logger instanceof LoggerInterface);
+            $logger->info('Merchant disconnected, reset onboarding');
             // Reset onboarding profile.
             $onboarding_profile = $container->get('settings.data.onboarding');
             assert($onboarding_profile instanceof OnboardingProfile);
@@ -197,6 +200,9 @@ class SettingsModule implements ServiceModule, ExecutableModule
             $todos->reset_completed_onclick_todos();
         });
         add_action('woocommerce_paypal_payments_authenticated_merchant', static function () use ($container): void {
+            $logger = $container->get('woocommerce.logger.woocommerce');
+            assert($logger instanceof LoggerInterface);
+            $logger->info('Merchant connected, complete onboarding and set defaults.');
             $onboarding_profile = $container->get('settings.data.onboarding');
             assert($onboarding_profile instanceof OnboardingProfile);
             $onboarding_profile->set_completed(\true);
@@ -383,6 +389,12 @@ class SettingsModule implements ServiceModule, ExecutableModule
         $gateway_redirect_service = $container->get('settings.service.gateway-redirect');
         assert($gateway_redirect_service instanceof GatewayRedirectService);
         $gateway_redirect_service->register();
+        // Do not render Pay Later messaging if the "Save PayPal and Venmo" setting is enabled.
+        add_filter('woocommerce_paypal_payments_should_render_pay_later_messaging', static function () use ($container): bool {
+            $settings_model = $container->get('settings.data.settings');
+            assert($settings_model instanceof SettingsModel);
+            return !$settings_model->get_save_paypal_and_venmo();
+        });
         return \true;
     }
     /**
@@ -406,6 +418,27 @@ class SettingsModule implements ServiceModule, ExecutableModule
         add_filter('woocommerce_paypal_payments_is_eligible_for_axo', '__return_false');
         add_filter('woocommerce_paypal_payments_is_eligible_for_save_payment_methods', '__return_false');
         add_filter('woocommerce_paypal_payments_is_eligible_for_card_fields', '__return_false');
+    }
+    /**
+     * Initializes the branded-only flags if they are not set.
+     *
+     * This method can be called multiple times:
+     * The flags are only initialized once but does not change afterward.
+     *
+     * Also, this check has no impact on performance for two reasons:
+     * 1. The GeneralSettings class is already initialized and will short-circuit
+     *    the check if the settings are already initialized.
+     * 2. The settings UI is a React app, this method only runs when the React app
+     *    is injected to the DOM, and not while the UI is used.
+     *
+     * @param ContainerInterface $container The DI container provider.
+     * @return void
+     */
+    protected function initialize_branded_only(ContainerInterface $container): void
+    {
+        $path_repository = $container->get('settings.service.branded-experience.path-repository');
+        assert($path_repository instanceof PathRepository);
+        $path_repository->persist();
     }
     /**
      * Outputs the settings page header (title and back-link).

@@ -359,6 +359,9 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
      */
     private function render_message_wrapper_registrar(): bool
     {
+        if (!apply_filters('woocommerce_paypal_payments_should_render_pay_later_messaging', \true)) {
+            return \false;
+        }
         if (!$this->settings_status->is_pay_later_messaging_enabled() || !$this->settings_status->has_pay_later_messaging_locations()) {
             return \false;
         }

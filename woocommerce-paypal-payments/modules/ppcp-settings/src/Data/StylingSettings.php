@@ -48,7 +48,7 @@ class StylingSettings extends \WooCommerce\PayPalCommerce\Settings\Data\Abstract
      */
     protected function get_defaults(): array
     {
-        return array('cart' => new LocationStylingDTO('cart'), 'classic_checkout' => new LocationStylingDTO('classic_checkout'), 'express_checkout' => new LocationStylingDTO('express_checkout'), 'mini_cart' => new LocationStylingDTO('mini_cart'), 'product' => new LocationStylingDTO('product'));
+        return array('cart' => new LocationStylingDTO('cart'), 'classic_checkout' => new LocationStylingDTO('classic_checkout'), 'express_checkout' => new LocationStylingDTO('express_checkout'), 'mini_cart' => new LocationStylingDTO('mini_cart', \false), 'product' => new LocationStylingDTO('product'));
     }
     /**
      * Get styling details for Cart and Block Cart.
