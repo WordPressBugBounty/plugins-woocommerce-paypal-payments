@@ -4,7 +4,7 @@ Tags: woocommerce, paypal, payments, ecommerce, credit card
 Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 3.0.2
+Stable tag: 3.0.3
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -155,6 +155,11 @@ If you encounter issues with the PayPal buttons not appearing after an update, p
 6. Main settings screen.
 
 == Changelog ==
+
+= 3.0.3 - 2025-04-08 =
+* Fix - BN code was set before the installation path was initialized #3309
+* Fix - Things to do next referenced Apple Pay while in branded-only mode #3308
+* Fix - Disabled payment methods were not hidden in reactified WooCommerce Payments settings tab #3290
 
 = 3.0.2 - 2025-04-03 =
 * Enhancement - Check the branded-only flag when settings-UI is loaded the first time #3278

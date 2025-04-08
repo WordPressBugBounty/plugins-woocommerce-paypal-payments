@@ -257,8 +257,18 @@ return array(
         return array('apple_pay' => $settings['data']['ppcp-applepay']['enabled'] ?? \false, 'google_pay' => $settings['data']['ppcp-googlepay']['enabled'] ?? \false, 'axo' => $settings['data']['ppcp-axo-gateway']['enabled'] ?? \false, 'card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false);
     },
     'settings.service.merchant_capabilities' => static function (ContainerInterface $container): array {
+        /**
+         * Use the REST API filter to collect eligibility flags.
+         *
+         * TODO: We should switch to using the new `*.eligibility.check` services, which return a callback instead of a boolean.
+         *       Problem with booleans is, that they are evaluated during DI service creation (plugin_loaded), and some relevant filters are not registered at that point.
+         *       Overthink the capability system, it's difficult to reuse across the plugin.
+         */
         $features = apply_filters('woocommerce_paypal_payments_rest_common_merchant_features', array());
-        return array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false);
+        // TODO: This condition included in the `*.eligibility.check` services; it can be removed when we switch to those services.
+        $general_settings = $container->get('settings.data.general');
+        assert($general_settings instanceof GeneralSettings);
+        return array('apple_pay' => ($features['apple_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'google_pay' => ($features['google_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'acdc' => ($features['advanced_credit_and_debit_cards']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false);
     },
     'settings.service.todos_eligibilities' => static function (ContainerInterface $container): TodosEligibilityService {
         $pay_later_service = $container->get('settings.service.pay_later_status');
@@ -266,6 +276,7 @@ return array(
         $is_pay_later_messaging_enabled_for_any_location = $pay_later_service['is_enabled_for_any_location'];
         $button_locations = $container->get('settings.service.button_locations');
         $gateways = $container->get('settings.service.gateways_status');
+        // TODO: This "merchant_capabilities" service is only used here. Could it be merged to make the code cleaner and less segmented?
         $capabilities = $container->get('settings.service.merchant_capabilities');
         /**
          * Initializes TodosEligibilityService with eligibility conditions for various PayPal features.
@@ -311,7 +322,7 @@ return array(
             // Add PayPal buttons to block checkout.
             !$button_locations['product_enabled'],
             // Add PayPal buttons to product.
-            $capabilities['apple_pay'],
+            $container->get('applepay.eligible') && $capabilities['apple_pay'],
             // Register Domain for Apple Pay.
             $capabilities['acdc'] && !($capabilities['apple_pay'] && $capabilities['google_pay']),
             // Add digital wallets to your account.
