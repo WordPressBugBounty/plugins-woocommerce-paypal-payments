@@ -9,6 +9,7 @@ declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\CardFields;
 
 use WooCommerce\PayPalCommerce\CardFields\Helper\CardFieldsApplies;
+use WooCommerce\PayPalCommerce\CardFields\Service\CardCaptureValidator;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 return array(
     // @deprecated - use `card-fields.eligibility.check` instead.
@@ -27,6 +28,9 @@ return array(
         return new CardFieldsApplies($container->get('card-fields.supported-country-matrix'), $container->get('api.shop.country'));
     },
     'card-fields.supported-country-matrix' => static function (ContainerInterface $container): array {
-        return apply_filters('woocommerce_paypal_payments_card_fields_supported_country_matrix', array('AU', 'AT', 'BE', 'BG', 'CA', 'CN', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HK', 'HU', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SG', 'SI', 'ES', 'SE', 'GB', 'US', 'NO'));
+        return apply_filters('woocommerce_paypal_payments_card_fields_supported_country_matrix', array('AU', 'AT', 'BE', 'BG', 'CA', 'CN', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HK', 'HU', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'MX', 'NL', 'PL', 'PT', 'RO', 'SK', 'SG', 'SI', 'ES', 'SE', 'GB', 'US', 'NO'));
+    },
+    'card-fields.service.card-capture-validator' => static function (ContainerInterface $container): CardCaptureValidator {
+        return new CardCaptureValidator();
     },
 );

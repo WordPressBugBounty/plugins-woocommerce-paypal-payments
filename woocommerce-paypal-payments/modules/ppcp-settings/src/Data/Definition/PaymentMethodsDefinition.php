@@ -108,7 +108,8 @@ class PaymentMethodsDefinition
         $gateway = $this->wc_gateways[$gateway_id] ?? null;
         $gateway_title = $gateway ? $gateway->get_title() : $title;
         $gateway_description = $gateway ? $gateway->get_description() : $description;
-        $config = array('id' => $gateway_id, 'enabled' => $this->settings->is_method_enabled($gateway_id), 'title' => str_replace('&amp;', '&', $gateway_title), 'description' => $gateway_description, 'icon' => $icon, 'itemTitle' => $title, 'itemDescription' => $description, 'warningMessages' => $warning_messages);
+        $enabled = $this->settings->is_method_enabled($gateway_id);
+        $config = array('id' => $gateway_id, 'enabled' => $enabled, 'title' => str_replace('&amp;', '&', $gateway_title), 'description' => $gateway_description, 'icon' => $icon, 'itemTitle' => $title, 'itemDescription' => $description, 'warningMessages' => $warning_messages);
         if (is_array($fields)) {
             $config['fields'] = array_merge(array('checkoutPageTitle' => array('type' => 'text', 'default' => $gateway_title, 'label' => __('Checkout page title', 'woocommerce-paypal-payments')), 'checkoutPageDescription' => array('type' => 'text', 'default' => $gateway ? $gateway->get_description() : '', 'label' => __('Checkout page description', 'woocommerce-paypal-payments'))), $fields);
         }

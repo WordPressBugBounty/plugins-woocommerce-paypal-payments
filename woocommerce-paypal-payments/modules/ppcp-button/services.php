@@ -222,7 +222,7 @@ return array(
         return new MessagesApply($container->get('api.paylater-countries'), $container->get('api.shop.country'));
     },
     'button.helper.disabled-funding-sources' => static function (ContainerInterface $container): DisabledFundingSources {
-        return new DisabledFundingSources($container->get('wcgateway.settings'), $container->get('wcgateway.all-funding-sources'), $container->get('wcgateway.configuration.card-configuration'));
+        return new DisabledFundingSources($container->get('wcgateway.settings'), $container->get('wcgateway.all-funding-sources'), $container->get('wcgateway.configuration.card-configuration'), $container->get('api.shop.country'));
     },
     'button.is-logged-in' => static function (ContainerInterface $container): bool {
         return is_user_logged_in();

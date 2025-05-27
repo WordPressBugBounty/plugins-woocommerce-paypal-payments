@@ -12,6 +12,7 @@ namespace WooCommerce\PayPalCommerce\Button\Endpoint;
 use Exception;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\OrderEndpoint;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\Order;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
@@ -23,7 +24,6 @@ use WooCommerce\PayPalCommerce\Button\Helper\WooCommerceOrderCreator;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
-use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 /**
  * Class ApproveOrderEndpoint
  */
@@ -100,17 +100,17 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
     /**
      * ApproveOrderEndpoint constructor.
      *
-     * @param RequestData             $request_data The request data helper.
-     * @param OrderEndpoint           $order_endpoint The order endpoint.
-     * @param SessionHandler          $session_handler The session handler.
-     * @param ThreeDSecure            $three_d_secure The 3d secure helper object.
-     * @param Settings                $settings The settings.
-     * @param DccApplies              $dcc_applies The DCC applies object.
-     * @param OrderHelper             $order_helper The order helper.
+     * @param RequestData             $request_data         The request data helper.
+     * @param OrderEndpoint           $order_endpoint       The order endpoint.
+     * @param SessionHandler          $session_handler      The session handler.
+     * @param ThreeDSecure            $three_d_secure       The 3d secure helper object.
+     * @param Settings                $settings             The settings.
+     * @param DccApplies              $dcc_applies          The DCC applies object.
+     * @param OrderHelper             $order_helper         The order helper.
      * @param bool                    $final_review_enabled Whether the final review is enabled.
-     * @param PayPalGateway           $gateway The WC gateway.
-     * @param WooCommerceOrderCreator $wc_order_creator The WooCommerce order creator.
-     * @param LoggerInterface         $logger The logger.
+     * @param PayPalGateway           $gateway              The WC gateway.
+     * @param WooCommerceOrderCreator $wc_order_creator     The WooCommerce order creator.
+     * @param LoggerInterface         $logger               The logger.
      */
     public function __construct(\WooCommerce\PayPalCommerce\Button\Endpoint\RequestData $request_data, OrderEndpoint $order_endpoint, SessionHandler $session_handler, ThreeDSecure $three_d_secure, Settings $settings, DccApplies $dcc_applies, OrderHelper $order_helper, bool $final_review_enabled, PayPalGateway $gateway, WooCommerceOrderCreator $wc_order_creator, LoggerInterface $logger)
     {
@@ -144,7 +144,7 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
     public function handle_request(): bool
     {
         try {
-            $data = $this->request_data->read_request($this->nonce());
+            $data = $this->request_data->read_request(self::nonce());
             if (!isset($data['order_id'])) {
                 throw new RuntimeException(__('No order id given', 'woocommerce-paypal-payments'));
             }
@@ -161,17 +161,16 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
                         throw new RuntimeException(__('Unfortunately, we do not accept this card.', 'woocommerce-paypal-payments'), 100);
                     }
                 }
-                $proceed = $this->threed_secure->proceed_with_order($order);
-                if (ThreeDSecure::RETRY === $proceed) {
-                    throw new RuntimeException(__('Something went wrong. Please try again.', 'woocommerce-paypal-payments'));
-                }
-                if (ThreeDSecure::REJECT === $proceed) {
-                    throw new RuntimeException(__('Unfortunately, we can\'t accept your card. Please choose a different payment method.', 'woocommerce-paypal-payments'));
-                }
+                // This check will either pass, or throw an exception.
+                $this->verify_three_d_secure($order);
                 $this->session_handler->replace_order($order);
+                // Exit the request early.
                 wp_send_json_success();
             }
-            if ($this->order_helper->contains_physical_goods($order) && !$order->status()->is(OrderStatus::APPROVED) && !$order->status()->is(OrderStatus::CREATED)) {
+            // Verify 3DS details. Throws an error when security check fails.
+            $this->verify_three_d_secure($order);
+            $is_ready = $order->status()->is(OrderStatus::APPROVED) || $order->status()->is(OrderStatus::CREATED);
+            if (!$is_ready && $this->order_helper->contains_physical_goods($order)) {
                 $message = sprintf(
                     // translators: %s is the id of the order.
                     __('Order %s is not ready for processing yet.', 'woocommerce-paypal-payments'),
@@ -212,5 +211,57 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
         $final_review_enabled_setting = $this->settings->has('blocks_final_review_enabled') && $this->settings->get('blocks_final_review_enabled');
         $this->settings->set('blocks_final_review_enabled', !$final_review_enabled_setting);
         $this->settings->persist();
+    }
+    /**
+     * Performs a 3DS check to verify the payment is not rejected from PayPal side.
+     *
+     * This method only checks, if the payment was rejected:
+     *
+     * - No 3DS details are present: The payment can proceed.
+     * - 3DS details present but no rejected: Payment can proceed.
+     * - 3DS details with a clear rejected: Payment fails.
+     *
+     * @param Order $order The PayPal order to inspect.
+     * @throws RuntimeException When the 3DS check was rejected.
+     */
+    protected function verify_three_d_secure(Order $order): void
+    {
+        $payment_source = $order->payment_source();
+        if (!$payment_source) {
+            // Missing 3DS details.
+            return;
+        }
+        $proceed = ThreeDSecure::NO_DECISION;
+        $order_status = $order->status();
+        $source_name = $payment_source->name();
+        /**
+         * For GooglePay (and possibly other payment sources) we check the order
+         * status, as it will clearly indicate if verification is needed.
+         *
+         * Note: PayPal is currently investigating this case.
+         * Maybe the order status is wrong and should be ACCEPTED, in that case,
+         * we could drop the condition and always run proceed_with_order().
+         */
+        if ($order_status->is(OrderStatus::PAYER_ACTION_REQUIRED)) {
+            $proceed = $this->threed_secure->proceed_with_order($order);
+        } elseif ('card' === $source_name) {
+            // For credit cards, we also check the 3DS response.
+            $proceed = $this->threed_secure->proceed_with_order($order);
+        }
+        // Handle the verification result based on the proceed value.
+        switch ($proceed) {
+            case ThreeDSecure::PROCEED:
+                // Check was successful.
+                return;
+            case ThreeDSecure::NO_DECISION:
+                // No rejection. Let's proceed with the payment.
+                return;
+            case ThreeDSecure::RETRY:
+                // Rejection case 1, verification can be retried.
+                throw new RuntimeException(__('Something went wrong. Please try again.', 'woocommerce-paypal-payments'));
+            case ThreeDSecure::REJECT:
+                // Rejection case 2, payment was rejected.
+                throw new RuntimeException(__('Unfortunately, we can\'t accept your card. Please choose a different payment method.', 'woocommerce-paypal-payments'));
+        }
     }
 }

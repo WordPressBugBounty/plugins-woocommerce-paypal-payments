@@ -222,6 +222,7 @@ class OrderEndpoint
      */
     public function capture(Order $order): Order
     {
+        do_action('woocommerce_paypal_payments_before_capture_order', $order);
         if ($order->status()->is(OrderStatus::COMPLETED)) {
             return $order;
         }

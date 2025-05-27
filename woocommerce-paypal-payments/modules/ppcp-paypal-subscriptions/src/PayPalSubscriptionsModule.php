@@ -58,42 +58,6 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
         if (!$subscriptions_helper->plugin_is_active()) {
             return \true;
         }
-        add_filter('woocommerce_available_payment_gateways', function (array $gateways) use ($c) {
-            if (is_account_page() || is_admin() || !WC()->cart || WC()->cart->is_empty() || wcs_is_manual_renewal_enabled()) {
-                return $gateways;
-            }
-            $settings = $c->get('wcgateway.settings');
-            assert($settings instanceof Settings);
-            $subscriptions_mode = $settings->has('subscriptions_mode') ? $settings->get('subscriptions_mode') : '';
-            if ($subscriptions_mode !== 'subscriptions_api') {
-                return $gateways;
-            }
-            $pp_subscriptions_product = \false;
-            foreach (WC()->cart->get_cart() as $cart_item) {
-                $cart_product = wc_get_product($cart_item['product_id']);
-                if (isset($cart_item['subscription_renewal']['subscription_id'])) {
-                    $subscription_renewal = wcs_get_subscription($cart_item['subscription_renewal']['subscription_id']);
-                    if ($subscription_renewal && $subscription_renewal->get_meta('ppcp_subscription')) {
-                        $pp_subscriptions_product = \true;
-                        break;
-                    }
-                } elseif ($cart_product instanceof \WC_Product_Subscription || $cart_product instanceof \WC_Product_Variable_Subscription) {
-                    if ($cart_product->get_meta('_ppcp_enable_subscription_product') === 'yes') {
-                        $pp_subscriptions_product = \true;
-                        break;
-                    }
-                }
-            }
-            if ($pp_subscriptions_product) {
-                foreach ($gateways as $id => $gateway) {
-                    if ($gateway->id !== PayPalGateway::ID) {
-                        unset($gateways[$id]);
-                    }
-                }
-                return $gateways;
-            }
-            return $gateways;
-        });
         add_filter('woocommerce_subscription_payment_gateway_supports', function (bool $payment_gateway_supports, string $payment_gateway_feature, \WC_Subscription $wc_order): bool {
             if (!in_array($payment_gateway_feature, array('gateway_scheduled_payments', 'subscription_date_changes', 'subscription_amount_changes', 'subscription_payment_method_change', 'subscription_payment_method_change_customer', 'subscription_payment_method_change_admin'), \true)) {
                 return $payment_gateway_supports;
@@ -455,7 +419,7 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
                 if (!$product) {
                     return;
                 }
-                wp_localize_script('ppcp-paypal-subscription', 'PayPalCommerceGatewayPayPalSubscriptionProducts', array('ajax' => array('deactivate_plan' => array('endpoint' => \WC_AJAX::get_endpoint(\WooCommerce\PayPalCommerce\PayPalSubscriptions\DeactivatePlanEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(\WooCommerce\PayPalCommerce\PayPalSubscriptions\DeactivatePlanEndpoint::ENDPOINT))), 'product_id' => $product->get_id()));
+                wp_localize_script('ppcp-paypal-subscription', 'PayPalCommerceGatewayPayPalSubscriptionProducts', array('ajax' => array('deactivate_plan' => array('endpoint' => \WC_AJAX::get_endpoint(\WooCommerce\PayPalCommerce\PayPalSubscriptions\DeactivatePlanEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(\WooCommerce\PayPalCommerce\PayPalSubscriptions\DeactivatePlanEndpoint::ENDPOINT))), 'product_id' => $product->get_id(), 'i18n' => array('prices_must_be_above_zero' => __('Prices must be above zero for PayPal Subscriptions!', 'woocommerce-paypal-payments'), 'not_allowed_period_interval' => __('Not allowed period interval combination for PayPal Subscriptions!', 'woocommerce-paypal-payments'))));
             }
         );
         add_action('wc_ajax_' . \WooCommerce\PayPalCommerce\PayPalSubscriptions\DeactivatePlanEndpoint::ENDPOINT, function () use ($c) {

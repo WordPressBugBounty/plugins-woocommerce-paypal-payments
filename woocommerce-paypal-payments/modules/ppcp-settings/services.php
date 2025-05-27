@@ -50,7 +50,9 @@ use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\PathRepository
 use WooCommerce\PayPalCommerce\Settings\Service\ConnectionUrlGenerator;
 use WooCommerce\PayPalCommerce\Settings\Service\FeaturesEligibilityService;
 use WooCommerce\PayPalCommerce\Settings\Service\GatewayRedirectService;
+use WooCommerce\PayPalCommerce\Settings\Service\LoadingScreenService;
 use WooCommerce\PayPalCommerce\Settings\Service\OnboardingUrlManager;
+use WooCommerce\PayPalCommerce\Settings\Service\ScriptDataHandler;
 use WooCommerce\PayPalCommerce\Settings\Service\TodosEligibilityService;
 use WooCommerce\PayPalCommerce\Settings\Service\TodosSortingAndFilteringService;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
@@ -217,6 +219,16 @@ return array(
     'settings.service.data-manager' => static function (ContainerInterface $container): SettingsDataManager {
         return new SettingsDataManager($container->get('settings.data.definition.methods'), $container->get('settings.data.onboarding'), $container->get('settings.data.general'), $container->get('settings.data.settings'), $container->get('settings.data.styling'), $container->get('settings.data.payment'), $container->get('settings.data.paylater-messaging'), $container->get('settings.data.todos'));
     },
+    'settings.service.script-data-handler' => static function (ContainerInterface $container): ScriptDataHandler {
+        $settings = $container->get('wcgateway.settings');
+        $settings_url = $container->get('settings.url');
+        $paylater_is_available = $container->get('paylater-configurator.is-available');
+        $store_country = $container->get('wcgateway.store-country');
+        $merchant_id = $container->get('api.partner_merchant_id');
+        $button_language_choices = $container->get('wcgateway.wp-paypal-locales-map');
+        $partner_attribution = $container->get('api.helper.partner-attribution');
+        return new ScriptDataHandler($settings, $settings_url, $paylater_is_available, $store_country, $merchant_id, $button_language_choices, $partner_attribution);
+    },
     'settings.ajax.switch_ui' => static function (ContainerInterface $container): SwitchSettingsUiEndpoint {
         return new SwitchSettingsUiEndpoint($container->get('woocommerce.logger.woocommerce'), $container->get('button.request-data'), $container->get('settings.data.onboarding'), $container->get('api.merchant_id') !== '');
     },
@@ -268,7 +280,7 @@ return array(
         // TODO: This condition included in the `*.eligibility.check` services; it can be removed when we switch to those services.
         $general_settings = $container->get('settings.data.general');
         assert($general_settings instanceof GeneralSettings);
-        return array('apple_pay' => ($features['apple_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'google_pay' => ($features['google_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'acdc' => ($features['advanced_credit_and_debit_cards']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false);
+        return array('apple_pay' => ($features['apple_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'google_pay' => ($features['google_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'acdc' => ($features['advanced_credit_and_debit_cards']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false);
     },
     'settings.service.todos_eligibilities' => static function (ContainerInterface $container): TodosEligibilityService {
         $pay_later_service = $container->get('settings.service.pay_later_status');
@@ -332,7 +344,8 @@ return array(
             // Add Google Pay to your account.
             $container->get('applepay.eligible') && $capabilities['apple_pay'] && !$gateways['apple_pay'],
             // Enable Apple Pay.
-            $container->get('googlepay.eligible') && $capabilities['google_pay'] && !$gateways['google_pay']
+            $container->get('googlepay.eligible') && $capabilities['google_pay'] && !$gateways['google_pay'],
+            !$capabilities['installments'] && 'MX' === $container->get('settings.data.general')->get_merchant_country()
         );
     },
     'settings.rest.features' => static function (ContainerInterface $container): FeaturesRestEndpoint {
@@ -345,19 +358,21 @@ return array(
         // Settings status.
         $gateways = array('card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false);
         // Merchant capabilities, serve to show active or inactive badge and buttons.
-        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false);
+        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'alternative_payment_methods' => $features['alternative_payment_methods']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false);
         $merchant_capabilities = array(
             'save_paypal' => $capabilities['save_paypal'],
             // Save PayPal and Venmo eligibility.
-            'acdc' => $capabilities['acdc'] && !$gateways['card-button'],
+            'acdc' => $capabilities['acdc'],
             // Advanced credit and debit cards eligibility.
-            'apm' => $capabilities['acdc'] && !$gateways['card-button'],
+            'apm' => $capabilities['alternative_payment_methods'],
             // Alternative payment methods eligibility.
             'google_pay' => $capabilities['acdc'] && $capabilities['google_pay'],
             // Google Pay eligibility.
             'apple_pay' => $capabilities['acdc'] && $capabilities['apple_pay'],
             // Apple Pay eligibility.
             'pay_later' => $capabilities['acdc'] && !$gateways['card-button'],
+            // Pay Later eligibility.
+            'installments' => $capabilities['installments'],
         );
         return new FeaturesDefinition($container->get('settings.service.features_eligibilities'), $container->get('settings.data.general'), $merchant_capabilities, $container->get('settings.data.settings'));
     },
@@ -379,7 +394,9 @@ return array(
             // Google Pay eligibility.
             $container->get('applepay.eligibility.check'),
             // Apple Pay eligibility.
-            $pay_later_eligible
+            $pay_later_eligible,
+            // Pay Later eligibility.
+            'MX' === $container->get('settings.data.general')->get_merchant_country()
         );
     },
     'settings.service.todos_sorting' => static function (ContainerInterface $container): TodosSortingAndFilteringService {
@@ -387,6 +404,9 @@ return array(
     },
     'settings.service.gateway-redirect' => static function (): GatewayRedirectService {
         return new GatewayRedirectService();
+    },
+    'settings.services.loading-screen-service' => static function (ContainerInterface $container): LoadingScreenService {
+        return new LoadingScreenService();
     },
     /**
      * Returns a list of all payment gateway IDs created by this plugin.

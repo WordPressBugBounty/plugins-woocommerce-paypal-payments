@@ -12,6 +12,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\WcGateway\Helper;
 
+use WooCommerce\PayPalCommerce\Settings\Data\GeneralSettings;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
 use WooCommerce\PayPalCommerce\Axo\Helper\PropertiesDictionary;
@@ -58,6 +59,18 @@ class CardPaymentsConfiguration
      * @var DccApplies
      */
     private DccApplies $dcc_applies;
+    /**
+     * Manages the Seller status.
+     *
+     * @var DCCProductStatus
+     */
+    private \WooCommerce\PayPalCommerce\WcGateway\Helper\DCCProductStatus $dcc_status;
+    /**
+     * Store country.
+     *
+     * @var string
+     */
+    private string $store_country;
     /**
      * This classes lazily resolves settings on first access. This flag indicates
      * whether the setting values were resolved, or still need to be evaluated.
@@ -110,15 +123,19 @@ class CardPaymentsConfiguration
     /**
      * Initializes the gateway details based on the provided Settings instance.
      *
-     * @param ConnectionState $connection_state Connection state instance.
-     * @param Settings        $settings         Plugin settings instance.
-     * @param DccApplies      $dcc_applies      DCC eligibility helper.
+     * @param ConnectionState  $connection_state Connection state instance.
+     * @param Settings         $settings         Plugin settings instance.
+     * @param DccApplies       $dcc_applies      DCC eligibility helper.
+     * @param DCCProductStatus $dcc_status        Manages the Seller status.
+     * @param string           $store_country The shop's country code.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\WcGateway\Helper\ConnectionState $connection_state, Settings $settings, DccApplies $dcc_applies)
+    public function __construct(\WooCommerce\PayPalCommerce\WcGateway\Helper\ConnectionState $connection_state, Settings $settings, DccApplies $dcc_applies, \WooCommerce\PayPalCommerce\WcGateway\Helper\DCCProductStatus $dcc_status, string $store_country)
     {
         $this->connection_state = $connection_state;
         $this->settings = $settings;
         $this->dcc_applies = $dcc_applies;
+        $this->dcc_status = $dcc_status;
+        $this->store_country = $store_country;
         $this->is_resolved = \false;
     }
     /**
@@ -207,7 +224,7 @@ class CardPaymentsConfiguration
          * Filters the "ACDC" state. When a filter callback sets this to false
          * the plugin assumes to be in BCDC mode.
          */
-        $this->use_acdc = (bool) apply_filters('woocommerce_paypal_payments_is_acdc_active', $this->dcc_applies->for_country_currency());
+        $this->use_acdc = (bool) apply_filters('woocommerce_paypal_payments_is_acdc_active', $this->dcc_applies->for_country_currency() && $this->dcc_status->is_active());
         /**
          * Changing this to true (and hiding the watermark) has potential legal
          * consequences, and therefore is generally discouraged.
@@ -265,6 +282,10 @@ class CardPaymentsConfiguration
      */
     public function is_bcdc_enabled(): bool
     {
+        if ('MX' === $this->store_country) {
+            $bcdc_setting = get_option('woocommerce_ppcp-card-button-gateway_settings');
+            return 'yes' === $bcdc_setting['enabled'];
+        }
         return $this->is_enabled() && !$this->use_acdc();
     }
     /**

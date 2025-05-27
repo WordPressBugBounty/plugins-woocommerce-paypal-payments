@@ -147,7 +147,6 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
             });
         });
         add_action('wp_loaded', function () use ($c) {
-            $module = $this;
             $this->session_handler = $c->get('session.handler');
             $settings = $c->get('wcgateway.settings');
             assert($settings instanceof Settings);
@@ -161,16 +160,16 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
             $manager = $c->get('axo.manager');
             assert($manager instanceof AxoManager);
             // Enqueue frontend scripts.
-            add_action('wp_enqueue_scripts', static function () use ($c, $manager, $module) {
+            add_action('wp_enqueue_scripts', function () use ($c, $manager) {
                 $smart_button = $c->get('button.smart-button');
                 assert($smart_button instanceof SmartButtonInterface);
-                if ($module->should_render_fastlane($c) && $smart_button->should_load_ppcp_script()) {
+                if ($this->should_render_fastlane($c) && $smart_button->should_load_ppcp_script()) {
                     $manager->enqueue();
                 }
             });
             // Render submit button.
-            add_action($manager->checkout_button_renderer_hook(), static function () use ($c, $manager, $module) {
-                if ($module->should_render_fastlane($c)) {
+            add_action($manager->checkout_button_renderer_hook(), function () use ($c, $manager) {
+                if ($this->should_render_fastlane($c)) {
                     $manager->render_checkout_button();
                 }
             });
@@ -206,12 +205,12 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
                     $this->add_feature_detection_tag(\false);
                 }
             });
-            add_filter('woocommerce_paypal_payments_localized_script_data', function (array $localized_script_data) use ($c, $module) {
+            add_filter('woocommerce_paypal_payments_localized_script_data', function (array $localized_script_data) use ($c) {
                 $api = $c->get('api.sdk-client-token');
                 assert($api instanceof SdkClientToken);
                 $logger = $c->get('woocommerce.logger.woocommerce');
                 assert($logger instanceof LoggerInterface);
-                return $module->add_sdk_client_token_to_script_data($api, $logger, $localized_script_data);
+                return $this->add_sdk_client_token_to_script_data($api, $logger, $localized_script_data);
             });
             add_filter(
                 'ppcp_onboarding_dcc_table_rows',
@@ -250,6 +249,23 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
         add_action('wp_enqueue_scripts', function () use ($c) {
             $this->enqueue_paypal_insights_script_on_order_received($c);
         });
+        // Remove Fastlane on the Pay for Order page.
+        add_filter(
+            'woocommerce_available_payment_gateways',
+            /**
+             * Param types removed to avoid third-party issues.
+             *
+             * @psalm-suppress MissingClosureParamType
+             */
+            static function ($methods) {
+                if (!is_array($methods) || !is_wc_endpoint_url('order-pay')) {
+                    return $methods;
+                }
+                // Remove Fastlane if present.
+                unset($methods[AxoGateway::ID]);
+                return $methods;
+            }
+        );
         return \true;
     }
     /**

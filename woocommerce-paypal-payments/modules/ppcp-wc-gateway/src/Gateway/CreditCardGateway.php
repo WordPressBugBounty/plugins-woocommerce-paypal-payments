@@ -8,6 +8,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\WcGateway\Gateway;
 
+use DomainException;
 use Exception;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WC_Order;

@@ -184,6 +184,12 @@ class OrderProcessor
                 throw new PayPalOrderMissingException(esc_attr__('There was an error processing your order. Please check for any charges in your payment method and review your order history before placing the order again.', 'woocommerce-paypal-payments'));
             }
         }
+        // Do not continue if PayPal order status is completed.
+        $order = $this->order_endpoint->order($order->id());
+        if ($order->status()->is(OrderStatus::COMPLETED)) {
+            $this->logger->warning('Could not process PayPal completed order #' . $order->id() . ', Status: ' . $order->status()->name());
+            return;
+        }
         $this->add_paypal_meta($wc_order, $order, $this->environment);
         if ($this->order_helper->contains_physical_goods($order) && !$this->order_is_ready_for_process($order)) {
             throw new Exception(__('The payment is not ready for processing yet.', 'woocommerce-paypal-payments'));

@@ -23,6 +23,7 @@ use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
 use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\InstallmentsProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Processor\CreditCardOrderInfoHandlingTrait;
 use WC_Order;
@@ -392,11 +393,14 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             assert($dcc_product_status instanceof DCCProductStatus);
             $apms_product_status = $c->get('ppcp-local-apms.product-status');
             assert($apms_product_status instanceof LocalApmProductStatus);
+            $installments_product_status = $c->get('wcgateway.installments-product-status');
+            assert($installments_product_status instanceof InstallmentsProductStatus);
             $features['save_paypal_and_venmo'] = array('enabled' => $billing_agreements_endpoint->reference_transaction_enabled());
             $features['advanced_credit_and_debit_cards'] = array('enabled' => $dcc_product_status->is_active());
             $features['alternative_payment_methods'] = array('enabled' => $apms_product_status->is_active());
             // When local APMs are available, then PayLater messaging is also available.
             $features['pay_later_messaging'] = $features['alternative_payment_methods'];
+            $features['installments'] = array('enabled' => $installments_product_status->is_active());
             return $features;
         });
         return \true;
