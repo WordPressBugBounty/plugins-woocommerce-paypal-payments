@@ -12,11 +12,12 @@ use Exception;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WC_Order;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\OrderEndpoint;
-use WooCommerce\PayPalCommerce\ApiClient\Entity\ApplicationContext;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\ExperienceContext;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\Order;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
+use WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\OrderFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PayerFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PurchaseUnitFactory;
@@ -127,6 +128,10 @@ class OrderProcessor
      */
     private $restore_order_data = array();
     /**
+     * The ExperienceContextBuilder.
+     */
+    private ExperienceContextBuilder $experience_context_builder;
+    /**
      * OrderProcessor constructor.
      *
      * @param SessionHandler              $session_handler The Session Handler.
@@ -142,8 +147,9 @@ class OrderProcessor
      * @param PurchaseUnitFactory         $purchase_unit_factory The PurchaseUnit factory.
      * @param PayerFactory                $payer_factory The payer factory.
      * @param ShippingPreferenceFactory   $shipping_preference_factory The shipping_preference factory.
+     * @param ExperienceContextBuilder    $experience_context_builder The ExperienceContextBuilder.
      */
-    public function __construct(SessionHandler $session_handler, OrderEndpoint $order_endpoint, OrderFactory $order_factory, ThreeDSecure $three_d_secure, \WooCommerce\PayPalCommerce\WcGateway\Processor\AuthorizedPaymentsProcessor $authorized_payments_processor, Settings $settings, LoggerInterface $logger, Environment $environment, SubscriptionHelper $subscription_helper, OrderHelper $order_helper, PurchaseUnitFactory $purchase_unit_factory, PayerFactory $payer_factory, ShippingPreferenceFactory $shipping_preference_factory)
+    public function __construct(SessionHandler $session_handler, OrderEndpoint $order_endpoint, OrderFactory $order_factory, ThreeDSecure $three_d_secure, \WooCommerce\PayPalCommerce\WcGateway\Processor\AuthorizedPaymentsProcessor $authorized_payments_processor, Settings $settings, LoggerInterface $logger, Environment $environment, SubscriptionHelper $subscription_helper, OrderHelper $order_helper, PurchaseUnitFactory $purchase_unit_factory, PayerFactory $payer_factory, ShippingPreferenceFactory $shipping_preference_factory, ExperienceContextBuilder $experience_context_builder)
     {
         $this->session_handler = $session_handler;
         $this->order_endpoint = $order_endpoint;
@@ -158,6 +164,7 @@ class OrderProcessor
         $this->purchase_unit_factory = $purchase_unit_factory;
         $this->payer_factory = $payer_factory;
         $this->shipping_preference_factory = $shipping_preference_factory;
+        $this->experience_context_builder = $experience_context_builder;
     }
     /**
      * Processes a given WooCommerce order and captured/authorizes the connected PayPal orders.
@@ -253,7 +260,7 @@ class OrderProcessor
     {
         $pu = $this->purchase_unit_factory->from_wc_order($wc_order);
         $shipping_preference = $this->shipping_preference_factory->from_state($pu, 'checkout');
-        $order = $this->order_endpoint->create(array($pu), $shipping_preference, $this->payer_factory->from_wc_order($wc_order), null, '', ApplicationContext::USER_ACTION_PAY_NOW);
+        $order = $this->order_endpoint->create(array($pu), $shipping_preference, $this->payer_factory->from_wc_order($wc_order), '', array(), new PaymentSource('paypal', (object) array('experience_context' => $this->experience_context_builder->with_default_paypal_config($shipping_preference, ExperienceContext::USER_ACTION_PAY_NOW)->build()->to_array())));
         return $order;
     }
     /**

@@ -12,8 +12,10 @@ use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WC_Order;
 use WC_Payment_Gateway;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\OrderEndpoint;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
+use WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PurchaseUnitFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\ShippingPreferenceFactory;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
@@ -69,17 +71,22 @@ class OXXOGateway extends WC_Payment_Gateway
      */
     protected $logger;
     /**
+     * The ExperienceContextBuilder.
+     */
+    protected ExperienceContextBuilder $experience_context_builder;
+    /**
      * OXXOGateway constructor.
      *
      * @param OrderEndpoint             $order_endpoint The order endpoint.
      * @param PurchaseUnitFactory       $purchase_unit_factory The purchase unit factory.
      * @param ShippingPreferenceFactory $shipping_preference_factory The shipping preference factory.
+     * @param ExperienceContextBuilder  $experience_context_builder The ExperienceContextBuilder.
      * @param string                    $module_url The URL to the module.
      * @param TransactionUrlProvider    $transaction_url_provider The transaction url provider.
      * @param Environment               $environment The environment.
      * @param LoggerInterface           $logger The logger.
      */
-    public function __construct(OrderEndpoint $order_endpoint, PurchaseUnitFactory $purchase_unit_factory, ShippingPreferenceFactory $shipping_preference_factory, string $module_url, TransactionUrlProvider $transaction_url_provider, Environment $environment, LoggerInterface $logger)
+    public function __construct(OrderEndpoint $order_endpoint, PurchaseUnitFactory $purchase_unit_factory, ShippingPreferenceFactory $shipping_preference_factory, ExperienceContextBuilder $experience_context_builder, string $module_url, TransactionUrlProvider $transaction_url_provider, Environment $environment, LoggerInterface $logger)
     {
         $this->id = self::ID;
         $this->method_title = __('OXXO', 'woocommerce-paypal-payments');
@@ -92,6 +99,7 @@ class OXXOGateway extends WC_Payment_Gateway
         $this->order_endpoint = $order_endpoint;
         $this->purchase_unit_factory = $purchase_unit_factory;
         $this->shipping_preference_factory = $shipping_preference_factory;
+        $this->experience_context_builder = $experience_context_builder;
         $this->module_url = $module_url;
         $this->logger = $logger;
         $this->icon = esc_url($this->module_url) . 'assets/images/oxxo.svg';
@@ -118,10 +126,10 @@ class OXXOGateway extends WC_Payment_Gateway
         $payer_action = '';
         try {
             $shipping_preference = $this->shipping_preference_factory->from_state($purchase_unit, 'checkout');
-            $order = $this->order_endpoint->create(array($purchase_unit), $shipping_preference);
+            $payment_source_data = array('name' => $wc_order->get_billing_first_name() . ' ' . $wc_order->get_billing_last_name(), 'email' => $wc_order->get_billing_email(), 'country_code' => $wc_order->get_billing_country(), 'experience_context' => $this->experience_context_builder->with_default_paypal_config($shipping_preference)->build()->with_locale('en-MX')->to_array());
+            $order = $this->order_endpoint->create(array($purchase_unit), $shipping_preference, null, self::ID, array('processing_instruction' => 'ORDER_COMPLETE_ON_PAYMENT_APPROVAL'), new PaymentSource('oxxo', (object) $payment_source_data));
             $this->add_paypal_meta($wc_order, $order, $this->environment);
-            $payment_source = array('oxxo' => array('name' => $wc_order->get_billing_first_name() . ' ' . $wc_order->get_billing_last_name(), 'email' => $wc_order->get_billing_email(), 'country_code' => $wc_order->get_billing_country()));
-            $payment_method = $this->order_endpoint->confirm_payment_source($order->id(), $payment_source);
+            $payment_method = $this->order_endpoint->confirm_payment_source($order->id(), array('oxxo' => $payment_source_data));
             foreach ($payment_method->links as $link) {
                 if ($link->rel === 'payer-action') {
                     $payer_action = $link->href;

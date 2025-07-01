@@ -526,7 +526,7 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
             '<label for="ppcp_enable_subscription_product-' . esc_attr((string) $product->get_id()) . '" style="' . esc_attr($style) . '">',
             '</label>'
         );
-        $plan_id = isset($subscription_plan['id']) ?? '';
+        $plan_id = $subscription_plan['id'] ?? '';
         echo '<input type="checkbox" id="ppcp_enable_subscription_product-' . esc_attr((string) $product->get_id()) . '" data-subs-plan="' . esc_attr((string) $plan_id) . '" name="_ppcp_enable_subscription_product" value="yes" ' . checked($enable_subscription_product, 'yes', \false) . '/>';
         echo sprintf(
             // translators: %1$s and %2$s are label open and close tags.

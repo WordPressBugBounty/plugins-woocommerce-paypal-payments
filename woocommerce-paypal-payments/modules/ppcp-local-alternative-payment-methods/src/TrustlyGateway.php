@@ -10,6 +10,7 @@ namespace WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods;
 
 use WC_Payment_Gateway;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\Orders;
+use WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PurchaseUnitFactory;
 use WooCommerce\PayPalCommerce\Button\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
@@ -46,14 +47,19 @@ class TrustlyGateway extends WC_Payment_Gateway
      */
     protected $transaction_url_provider;
     /**
+     * The ExperienceContextBuilder.
+     */
+    protected ExperienceContextBuilder $experience_context_builder;
+    /**
      * TrustlyGateway constructor.
      *
-     * @param Orders                 $orders_endpoint PayPal Orders endpoint.
-     * @param PurchaseUnitFactory    $purchase_unit_factory Purchase unit factory.
-     * @param RefundProcessor        $refund_processor The Refund Processor.
-     * @param TransactionUrlProvider $transaction_url_provider Service providing transaction view URL based on order.
+     * @param Orders                   $orders_endpoint PayPal Orders endpoint.
+     * @param PurchaseUnitFactory      $purchase_unit_factory Purchase unit factory.
+     * @param RefundProcessor          $refund_processor The Refund Processor.
+     * @param TransactionUrlProvider   $transaction_url_provider Service providing transaction view URL based on order.
+     * @param ExperienceContextBuilder $experience_context_builder The ExperienceContextBuilder.
      */
-    public function __construct(Orders $orders_endpoint, PurchaseUnitFactory $purchase_unit_factory, RefundProcessor $refund_processor, TransactionUrlProvider $transaction_url_provider)
+    public function __construct(Orders $orders_endpoint, PurchaseUnitFactory $purchase_unit_factory, RefundProcessor $refund_processor, TransactionUrlProvider $transaction_url_provider, ExperienceContextBuilder $experience_context_builder)
     {
         $this->id = self::ID;
         $this->supports = array('refunds', 'products');
@@ -69,6 +75,7 @@ class TrustlyGateway extends WC_Payment_Gateway
         $this->purchase_unit_factory = $purchase_unit_factory;
         $this->refund_processor = $refund_processor;
         $this->transaction_url_provider = $transaction_url_provider;
+        $this->experience_context_builder = $experience_context_builder;
     }
     /**
      * Initialize the form fields.
@@ -89,7 +96,7 @@ class TrustlyGateway extends WC_Payment_Gateway
         $wc_order->update_status('on-hold', __('Awaiting Trustly to confirm the payment.', 'woocommerce-paypal-payments'));
         $purchase_unit = $this->purchase_unit_factory->from_wc_order($wc_order);
         $amount = $purchase_unit->amount()->to_array();
-        $request_body = array('intent' => 'CAPTURE', 'payment_source' => array('trustly' => array('country_code' => $wc_order->get_billing_country(), 'name' => $wc_order->get_billing_first_name() . ' ' . $wc_order->get_billing_last_name(), 'email' => $wc_order->get_billing_email())), 'processing_instruction' => 'ORDER_COMPLETE_ON_PAYMENT_APPROVAL', 'purchase_units' => array(array('reference_id' => $purchase_unit->reference_id(), 'amount' => array('currency_code' => $amount['currency_code'], 'value' => $amount['value']), 'custom_id' => $purchase_unit->custom_id(), 'invoice_id' => $purchase_unit->invoice_id())), 'application_context' => array('locale' => $this->valid_bcp47_code(), 'return_url' => $this->get_return_url($wc_order), 'cancel_url' => add_query_arg('cancelled', 'true', $this->get_return_url($wc_order))));
+        $request_body = array('intent' => 'CAPTURE', 'payment_source' => array('trustly' => array('country_code' => $wc_order->get_billing_country(), 'name' => $wc_order->get_billing_first_name() . ' ' . $wc_order->get_billing_last_name(), 'email' => $wc_order->get_billing_email(), 'experience_context' => $this->experience_context_builder->with_order_return_urls($wc_order)->with_current_locale()->build()->to_array())), 'processing_instruction' => 'ORDER_COMPLETE_ON_PAYMENT_APPROVAL', 'purchase_units' => array(array('reference_id' => $purchase_unit->reference_id(), 'amount' => array('currency_code' => $amount['currency_code'], 'value' => $amount['value']), 'custom_id' => $purchase_unit->custom_id(), 'invoice_id' => $purchase_unit->invoice_id())));
         try {
             $response = $this->orders_endpoint->create($request_body);
         } catch (RuntimeException $exception) {
@@ -138,25 +145,5 @@ class TrustlyGateway extends WC_Payment_Gateway
     {
         $this->view_transaction_url = $this->transaction_url_provider->get_transaction_url_base($order);
         return parent::get_transaction_url($order);
-    }
-    /**
-     * Returns a PayPal-supported BCP-47 code, for example de-DE-formal becomes de-DE.
-     *
-     * @return string
-     */
-    private function valid_bcp47_code()
-    {
-        $locale = str_replace('_', '-', get_user_locale());
-        if (preg_match('/^[a-z]{2}(?:-[A-Z][a-z]{3})?(?:-(?:[A-Z]{2}))?$/', $locale)) {
-            return $locale;
-        }
-        $parts = explode('-', $locale);
-        if (count($parts) === 3) {
-            $ret = substr($locale, 0, strrpos($locale, '-'));
-            if (\false !== $ret) {
-                return $ret;
-            }
-        }
-        return 'en';
     }
 }

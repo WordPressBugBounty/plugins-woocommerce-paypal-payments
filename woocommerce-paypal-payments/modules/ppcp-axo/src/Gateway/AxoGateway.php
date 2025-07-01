@@ -13,7 +13,6 @@ use Exception;
 use WC_Order;
 use WC_Payment_Gateway;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\OrderEndpoint;
-use WooCommerce\PayPalCommerce\ApiClient\Entity\ApplicationContext;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\PurchaseUnitFactory;
 use WooCommerce\PayPalCommerce\ApiClient\Factory\ShippingPreferenceFactory;
@@ -223,7 +222,7 @@ class AxoGateway extends WC_Payment_Gateway
         $shipping_preference = $this->shipping_preference_factory->from_state($purchase_unit, 'checkout');
         $payment_source_properties = (object) array('single_use_token' => $payment_token);
         $payment_source = new PaymentSource('card', $payment_source_properties);
-        return $this->order_endpoint->create(array($purchase_unit), $shipping_preference, null, null, '', ApplicationContext::USER_ACTION_CONTINUE, '', array(), $payment_source);
+        return $this->order_endpoint->create(array($purchase_unit), $shipping_preference, null, '', array(), $payment_source);
     }
     /**
      * Returns the icons of the gateway.

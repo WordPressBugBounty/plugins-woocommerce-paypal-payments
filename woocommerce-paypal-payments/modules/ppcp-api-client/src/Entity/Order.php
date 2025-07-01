@@ -56,12 +56,6 @@ class Order
      */
     private $update_time;
     /**
-     * The application context.
-     *
-     * @var ApplicationContext|null
-     */
-    private $application_context;
-    /**
      * The payment source.
      *
      * @var PaymentSource|null
@@ -72,20 +66,18 @@ class Order
      *
      * @see https://developer.paypal.com/docs/api/orders/v2/#orders-create-response
      *
-     * @param string                  $id The ID.
-     * @param PurchaseUnit[]          $purchase_units The purchase units.
-     * @param OrderStatus             $order_status The order status.
-     * @param ApplicationContext|null $application_context The application context.
-     * @param PaymentSource|null      $payment_source The payment source.
-     * @param Payer|null              $payer The payer.
-     * @param string                  $intent The intent.
-     * @param \DateTime|null          $create_time The create time.
-     * @param \DateTime|null          $update_time The update time.
+     * @param string             $id The ID.
+     * @param PurchaseUnit[]     $purchase_units The purchase units.
+     * @param OrderStatus        $order_status The order status.
+     * @param PaymentSource|null $payment_source The payment source.
+     * @param Payer|null         $payer The payer.
+     * @param string             $intent The intent.
+     * @param \DateTime|null     $create_time The create time.
+     * @param \DateTime|null     $update_time The update time.
      */
-    public function __construct(string $id, array $purchase_units, \WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus $order_status, \WooCommerce\PayPalCommerce\ApiClient\Entity\ApplicationContext $application_context = null, \WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource $payment_source = null, \WooCommerce\PayPalCommerce\ApiClient\Entity\Payer $payer = null, string $intent = 'CAPTURE', \DateTime $create_time = null, \DateTime $update_time = null)
+    public function __construct(string $id, array $purchase_units, \WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus $order_status, \WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource $payment_source = null, \WooCommerce\PayPalCommerce\ApiClient\Entity\Payer $payer = null, string $intent = 'CAPTURE', \DateTime $create_time = null, \DateTime $update_time = null)
     {
         $this->id = $id;
-        $this->application_context = $application_context;
         $this->payer = $payer;
         $this->order_status = $order_status;
         $this->intent = 'CAPTURE' === $intent ? 'CAPTURE' : 'AUTHORIZE';
@@ -158,15 +150,6 @@ class Order
         return $this->order_status;
     }
     /**
-     * Returns the application context.
-     *
-     * @return ApplicationContext|null
-     */
-    public function application_context()
-    {
-        return $this->application_context;
-    }
-    /**
      * Returns the payment source.
      *
      * @return PaymentSource|null
@@ -193,9 +176,6 @@ class Order
         }
         if ($this->update_time()) {
             $order['update_time'] = $this->update_time()->format('Y-m-d\TH:i:sO');
-        }
-        if ($this->application_context()) {
-            $order['application_context'] = $this->application_context()->to_array();
         }
         return $order;
     }

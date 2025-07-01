@@ -27,7 +27,7 @@ return array('wc-subscriptions.helper' => static function (ContainerInterface $c
     $settings = $container->get('wcgateway.settings');
     $authorized_payments_processor = $container->get('wcgateway.processor.authorized-payments');
     $funding_source_renderer = $container->get('wcgateway.funding-source.renderer');
-    return new \WooCommerce\PayPalCommerce\WcSubscriptions\RenewalHandler($logger, $repository, $endpoint, $purchase_unit_factory, $container->get('api.factory.shipping-preference'), $payer_factory, $environment, $settings, $authorized_payments_processor, $funding_source_renderer, $container->get('wc-subscriptions.helpers.real-time-account-updater'), $container->get('wc-subscriptions.helper'), $container->get('api.endpoint.payment-tokens'), $container->get('vaulting.wc-payment-tokens'));
+    return new \WooCommerce\PayPalCommerce\WcSubscriptions\RenewalHandler($logger, $repository, $endpoint, $purchase_unit_factory, $container->get('api.factory.shipping-preference'), $payer_factory, $environment, $settings, $authorized_payments_processor, $funding_source_renderer, $container->get('wc-subscriptions.helpers.real-time-account-updater'), $container->get('wc-subscriptions.helper'), $container->get('api.endpoint.payment-tokens'), $container->get('vaulting.wc-payment-tokens'), $container->get('wcgateway.builder.experience-context'));
 }, 'wc-subscriptions.repository.payment-token' => static function (ContainerInterface $container): PaymentTokenRepository {
     $factory = $container->get('api.factory.payment-token');
     $endpoint = $container->get('api.endpoint.payment-token');

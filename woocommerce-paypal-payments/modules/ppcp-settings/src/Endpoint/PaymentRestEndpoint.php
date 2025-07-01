@@ -67,7 +67,7 @@ class PaymentRestEndpoint extends \WooCommerce\PayPalCommerce\Settings\Endpoint\
      *
      * @var array
      */
-    private array $field_map = array('paypal_show_logo' => array('js_name' => 'paypalShowLogo', 'sanitize' => 'to_boolean'), 'three_d_secure' => array('js_name' => 'threeDSecure', 'sanitize' => 'sanitize_text_field'), 'fastlane_cardholder_name' => array('js_name' => 'fastlaneCardholderName', 'sanitize' => 'to_boolean'), 'fastlane_display_watermark' => array('js_name' => 'fastlaneDisplayWatermark', 'sanitize' => 'to_boolean'));
+    private array $field_map = array('paypal_show_logo' => array('js_name' => 'paypalShowLogo', 'sanitize' => 'to_boolean'), 'fastlane_cardholder_name' => array('js_name' => 'fastlaneCardholderName', 'sanitize' => 'to_boolean'), 'fastlane_display_watermark' => array('js_name' => 'fastlaneDisplayWatermark', 'sanitize' => 'to_boolean'));
     /**
      * Constructor.
      *
@@ -146,7 +146,6 @@ class PaymentRestEndpoint extends \WooCommerce\PayPalCommerce\Settings\Endpoint\
             }
         }
         $gateway_settings['paypalShowLogo'] = $this->payment_settings->get_paypal_show_logo();
-        $gateway_settings['threeDSecure'] = $this->payment_settings->get_three_d_secure();
         $gateway_settings['fastlaneCardholderName'] = $this->payment_settings->get_fastlane_cardholder_name();
         $gateway_settings['fastlaneDisplayWatermark'] = $this->payment_settings->get_fastlane_display_watermark();
         return $this->return_success(apply_filters('woocommerce_paypal_payments_payment_methods', $gateway_settings));

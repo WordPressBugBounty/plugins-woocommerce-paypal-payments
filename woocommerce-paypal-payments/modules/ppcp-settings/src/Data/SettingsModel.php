@@ -14,6 +14,8 @@ use WooCommerce\PayPalCommerce\Settings\Service\DataSanitizer;
  * Class SettingsModel
  *
  * Handles the storage and retrieval of PayPal Commerce settings in WordPress options table.
+ *
+ * DI Service: 'settings.data.settings'
  */
 class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDataModel
 {
@@ -36,20 +38,34 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
      */
     public const LANDING_PAGE_OPTIONS = array('any', 'login', 'guest_checkout');
     /**
+     * Valid options for 3D Secure.
+     *
+     * @var array
+     */
+    public const THREE_D_SECURE_OPTIONS = array('no-3d-secure', 'only-required-3d-secure', 'always-3d-secure');
+    /**
      * Data sanitizer service.
      *
      * @var DataSanitizer
      */
     protected DataSanitizer $sanitizer;
     /**
+     * Invoice prefix.
+     *
+     * @var string
+     */
+    private string $invoice_prefix;
+    /**
      * Constructor.
      *
      * @param DataSanitizer $sanitizer Data sanitizer service.
+     * @param string        $invoice_prefix Invoice prefix.
      * @throws RuntimeException If the OPTION_KEY is not defined in the child class.
      */
-    public function __construct(DataSanitizer $sanitizer)
+    public function __construct(DataSanitizer $sanitizer, string $invoice_prefix)
     {
         $this->sanitizer = $sanitizer;
+        $this->invoice_prefix = $invoice_prefix;
         parent::__construct();
     }
     /**
@@ -61,7 +77,7 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
     {
         return array(
             // Free-form string values.
-            'invoice_prefix' => '',
+            'invoice_prefix' => $this->invoice_prefix,
             'brand_name' => '',
             'soft_descriptor' => '',
             // Enum-type string values.
@@ -71,13 +87,17 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
             // Options: [any|login|guest_checkout].
             'button_language' => '',
             // empty or a language locale code.
+            'three_d_secure' => 'no-3d-secure',
+            // Options: [no-3d-secure|only-required-3d-secure|always-3d-secure].
             // Boolean flags.
             'authorize_only' => \false,
             'capture_virtual_orders' => \false,
             'save_paypal_and_venmo' => \false,
+            'enable_contact_module' => \true,
             'save_card_details' => \false,
             'enable_pay_now' => \false,
             'enable_logging' => \false,
+            'stay_updated' => \true,
             // Array of string values.
             'disabled_cards' => array(),
         );
@@ -193,6 +213,24 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
         $this->data['button_language'] = $this->sanitizer->sanitize_text($language);
     }
     /**
+     * Gets the 3D Secure setting.
+     *
+     * @return string The 3D Secure setting.
+     */
+    public function get_three_d_secure(): string
+    {
+        return $this->data['three_d_secure'];
+    }
+    /**
+     * Sets the 3D Secure setting.
+     *
+     * @param string $setting The 3D Secure setting to set.
+     */
+    public function set_three_d_secure(string $setting): void
+    {
+        $this->data['three_d_secure'] = $this->sanitizer->sanitize_enum($setting, self::THREE_D_SECURE_OPTIONS);
+    }
+    /**
      * Gets the authorize only setting.
      *
      * @return bool True if authorize only is enabled, false otherwise.
@@ -245,6 +283,24 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
     public function set_save_paypal_and_venmo(bool $save): void
     {
         $this->data['save_paypal_and_venmo'] = $this->sanitizer->sanitize_bool($save);
+    }
+    /**
+     * Gets the custom-shipping-contact flag ("Contact Module").
+     *
+     * @return bool True if the contact module feature is enabled, false otherwise.
+     */
+    public function get_enable_contact_module(): bool
+    {
+        return $this->data['enable_contact_module'];
+    }
+    /**
+     * Sets the custom-shipping-contact flag ("Contact Module").
+     *
+     * @param bool $save Whether to use the contact module feature.
+     */
+    public function set_enable_contact_module(bool $save): void
+    {
+        $this->data['enable_contact_module'] = $this->sanitizer->sanitize_bool($save);
     }
     /**
      * Gets the save card details setting.

@@ -369,7 +369,11 @@ class CreditCardGateway extends \WC_Payment_Gateway_CC
                 if ($token->get_id() === (int) $card_payment_token_id) {
                     $custom_id = (string) $wc_order->get_id();
                     $invoice_id = $this->prefix . $wc_order->get_order_number();
-                    $create_order = $this->capture_card_payment->create_order($token->get_token(), $custom_id, $invoice_id, $wc_order);
+                    try {
+                        $create_order = $this->capture_card_payment->create_order($token->get_token(), $custom_id, $invoice_id, $wc_order);
+                    } catch (RuntimeException $exception) {
+                        $this->logger->error($exception->getMessage());
+                    }
                     $order = $this->order_endpoint->order($create_order->id);
                     $wc_order->update_meta_data(\WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway::INTENT_META_KEY, $order->intent());
                     $wc_order->add_payment_token($token);

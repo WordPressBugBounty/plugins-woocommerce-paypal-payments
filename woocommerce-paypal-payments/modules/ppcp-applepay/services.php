@@ -200,6 +200,16 @@ return array(
                 'US',
                 // United States
                 'GB',
+                // United Kingdom
+                'YT',
+                // Mayotte
+                'RE',
+                // Reunion
+                'GP',
+                // Guadelope
+                'GF',
+                // French Guiana
+                'MQ',
             )
         );
     },

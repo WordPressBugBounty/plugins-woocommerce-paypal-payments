@@ -129,7 +129,7 @@ class CaptureCardPayment
             $items = array($this->purchase_unit_factory->from_wc_order($wc_order));
         }
         $data = array('intent' => $intent, 'purchase_units' => array_map(static function (PurchaseUnit $item): array {
-            return $item->to_array(\true, \false);
+            return $item->to_array();
         }, $items), 'payment_source' => array('card' => array('vault_id' => $vault_id, 'stored_credential' => array('payment_initiator' => 'CUSTOMER', 'payment_type' => 'UNSCHEDULED', 'usage' => 'SUBSEQUENT'))), 'custom_id' => $custom_id, 'invoice_id' => $invoice_id);
         $bearer = $this->bearer->bearer();
         $url = trailingslashit($this->host) . 'v2/checkout/orders';

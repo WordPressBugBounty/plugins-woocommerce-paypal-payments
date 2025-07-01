@@ -284,7 +284,8 @@ class CardPaymentsConfiguration
     {
         if ('MX' === $this->store_country) {
             $bcdc_setting = get_option('woocommerce_ppcp-card-button-gateway_settings');
-            return 'yes' === $bcdc_setting['enabled'];
+            $enabled = $bcdc_setting['enabled'] ?? '';
+            return 'yes' === $enabled;
         }
         return $this->is_enabled() && !$this->use_acdc();
     }

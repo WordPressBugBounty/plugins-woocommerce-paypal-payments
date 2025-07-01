@@ -10,6 +10,7 @@ namespace WooCommerce\PayPalCommerce\Applepay;
 
 use WC_Payment_Gateway;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
+use WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder;
 use WooCommerce\PayPalCommerce\Applepay\Assets\ApplePayButton;
 use WooCommerce\PayPalCommerce\Applepay\Assets\AppleProductStatus;
 use WooCommerce\PayPalCommerce\Applepay\Assets\PropertiesDictionary;
@@ -150,6 +151,15 @@ class ApplepayModule implements ServiceModule, ExtendingModule, ExecutableModule
             $features['apple_pay'] = array('enabled' => $apple_pay_enabled);
             return $features;
         });
+        add_filter('ppcp_create_order_request_body_data', static function (array $data, string $payment_method, array $request) use ($c): array {
+            if ($payment_method !== \WooCommerce\PayPalCommerce\Applepay\ApplePayGateway::ID) {
+                return $data;
+            }
+            $experience_context_builder = $c->get('wcgateway.builder.experience-context');
+            assert($experience_context_builder instanceof ExperienceContextBuilder);
+            $data['payment_source'] = array('apple_pay' => array('experience_context' => $experience_context_builder->with_endpoint_return_urls()->build()->to_array()));
+            return $data;
+        }, 10, 3);
         return \true;
     }
     /**

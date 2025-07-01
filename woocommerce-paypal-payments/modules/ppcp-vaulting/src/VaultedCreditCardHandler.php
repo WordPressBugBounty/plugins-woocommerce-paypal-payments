@@ -134,7 +134,7 @@ class VaultedCreditCardHandler
         $payer = $this->payer_factory->from_wc_order($wc_order);
         $shipping_preference = $this->shipping_preference_factory->from_state($purchase_unit, '');
         try {
-            $order = $this->order_endpoint->create(array($purchase_unit), $shipping_preference, $payer, $selected_token);
+            $order = $this->order_endpoint->create(array($purchase_unit), $shipping_preference, $payer, '', array(), $selected_token->to_payment_source());
             $this->add_paypal_meta($wc_order, $order, $this->environment);
             if (!$order->status()->is(OrderStatus::COMPLETED)) {
                 throw new RuntimeException("Unexpected status for order {$order->id()} using a saved card: {$order->status()->name()}.");

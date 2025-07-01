@@ -224,6 +224,10 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
      */
     protected PartnerAttribution $partner_attribution;
     /**
+     * Whether the server-side shipping callback is enabled (feature flag).
+     */
+    private bool $server_side_shipping_callback_enabled;
+    /**
      * SmartButton constructor.
      *
      * @param string                    $module_url                        The URL to the module.
@@ -249,11 +253,12 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
      * @param PaymentTokensEndpoint     $payment_tokens_endpoint           Payment tokens endpoint.
      * @param LoggerInterface           $logger                            The logger.
      * @param bool                      $should_handle_shipping_in_paypal  Whether the shipping should be handled in PayPal.
+     * @param bool                      $server_side_shipping_callback_enabled Whether the server-side shipping callback is enabled (feature flag).
      * @param DisabledFundingSources    $disabled_funding_sources          List of funding sources to be disabled.
      * @param CardPaymentsConfiguration $dcc_configuration                 The DCC Gateway Configuration.
      * @param PartnerAttribution        $partner_attribution The PayPal Partner Attribution Helper.
      */
-    public function __construct(string $module_url, string $version, SessionHandler $session_handler, Settings $settings, PayerFactory $payer_factory, string $client_id, RequestData $request_data, DccApplies $dcc_applies, SubscriptionHelper $subscription_helper, MessagesApply $messages_apply, Environment $environment, PaymentTokenRepository $payment_token_repository, SettingsStatus $settings_status, CurrencyGetter $currency, array $all_funding_sources, bool $basic_checkout_validation_enabled, bool $early_validation_enabled, array $pay_now_contexts, array $funding_sources_without_redirect, bool $vault_v3_enabled, PaymentTokensEndpoint $payment_tokens_endpoint, LoggerInterface $logger, bool $should_handle_shipping_in_paypal, DisabledFundingSources $disabled_funding_sources, CardPaymentsConfiguration $dcc_configuration, PartnerAttribution $partner_attribution)
+    public function __construct(string $module_url, string $version, SessionHandler $session_handler, Settings $settings, PayerFactory $payer_factory, string $client_id, RequestData $request_data, DccApplies $dcc_applies, SubscriptionHelper $subscription_helper, MessagesApply $messages_apply, Environment $environment, PaymentTokenRepository $payment_token_repository, SettingsStatus $settings_status, CurrencyGetter $currency, array $all_funding_sources, bool $basic_checkout_validation_enabled, bool $early_validation_enabled, array $pay_now_contexts, array $funding_sources_without_redirect, bool $vault_v3_enabled, PaymentTokensEndpoint $payment_tokens_endpoint, LoggerInterface $logger, bool $should_handle_shipping_in_paypal, bool $server_side_shipping_callback_enabled, DisabledFundingSources $disabled_funding_sources, CardPaymentsConfiguration $dcc_configuration, PartnerAttribution $partner_attribution)
     {
         $this->module_url = $module_url;
         $this->version = $version;
@@ -278,6 +283,7 @@ class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButt
         $this->logger = $logger;
         $this->payment_tokens_endpoint = $payment_tokens_endpoint;
         $this->should_handle_shipping_in_paypal = $should_handle_shipping_in_paypal;
+        $this->server_side_shipping_callback_enabled = $server_side_shipping_callback_enabled;
         $this->disabled_funding_sources = $disabled_funding_sources;
         $this->dcc_configuration = $dcc_configuration;
         $this->partner_attribution = $partner_attribution;
@@ -848,7 +854,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
             'billing_field' => _x('Billing %s', 'checkout-validation', 'woocommerce'),
             // phpcs:ignore WordPress.WP.I18n
             'shipping_field' => _x('Shipping %s', 'checkout-validation', 'woocommerce'),
-        ), 'simulate_cart' => array('enabled' => apply_filters('woocommerce_paypal_payments_simulate_cart_enabled', \true), 'throttling' => apply_filters('woocommerce_paypal_payments_simulate_cart_throttling', 5000)), 'order_id' => 'pay-now' === $this->context() ? $this->get_order_pay_id() : 0, 'single_product_buttons_enabled' => $this->settings_status->is_smart_button_enabled_for_location('product'), 'mini_cart_buttons_enabled' => $this->settings_status->is_smart_button_enabled_for_location('mini-cart'), 'basic_checkout_validation_enabled' => $this->basic_checkout_validation_enabled, 'early_checkout_validation_enabled' => $this->early_validation_enabled, 'funding_sources_without_redirect' => $this->funding_sources_without_redirect, 'user' => array('is_logged' => is_user_logged_in(), 'has_wc_card_payment_tokens' => $this->user_has_wc_card_payment_tokens(get_current_user_id())), 'should_handle_shipping_in_paypal' => $this->should_handle_shipping_in_paypal && !$this->is_checkout(), 'needShipping' => $this->need_shipping(), 'vaultingEnabled' => $this->settings->has('vault_enabled') && $this->settings->get('vault_enabled'), 'productType' => null, 'manualRenewalEnabled' => $this->subscription_helper->accept_manual_renewals());
+        ), 'simulate_cart' => array('enabled' => apply_filters('woocommerce_paypal_payments_simulate_cart_enabled', \true), 'throttling' => apply_filters('woocommerce_paypal_payments_simulate_cart_throttling', 5000)), 'order_id' => 'pay-now' === $this->context() ? $this->get_order_pay_id() : 0, 'single_product_buttons_enabled' => $this->settings_status->is_smart_button_enabled_for_location('product'), 'mini_cart_buttons_enabled' => $this->settings_status->is_smart_button_enabled_for_location('mini-cart'), 'basic_checkout_validation_enabled' => $this->basic_checkout_validation_enabled, 'early_checkout_validation_enabled' => $this->early_validation_enabled, 'funding_sources_without_redirect' => $this->funding_sources_without_redirect, 'user' => array('is_logged' => is_user_logged_in(), 'has_wc_card_payment_tokens' => $this->user_has_wc_card_payment_tokens(get_current_user_id())), 'should_handle_shipping_in_paypal' => $this->should_handle_shipping_in_paypal && !$this->is_checkout(), 'server_side_shipping_callback' => array('enabled' => $this->server_side_shipping_callback_enabled), 'needShipping' => $this->need_shipping(), 'vaultingEnabled' => $this->settings->has('vault_enabled') && $this->settings->get('vault_enabled'), 'productType' => null, 'manualRenewalEnabled' => $this->subscription_helper->accept_manual_renewals());
         if (is_product()) {
             $product = wc_get_product(get_the_ID());
             if (is_a($product, \WC_Product::class)) {
