@@ -146,7 +146,7 @@ class ApplePayDataObjectHttp
      */
     public function validation_data(): void
     {
-        $data = filter_input(\INPUT_POST, 'validation', \FILTER_VALIDATE_BOOL);
+        $data = filter_input(\INPUT_POST, 'validation', \FILTER_VALIDATE_BOOLEAN);
         if (!$data) {
             return;
         }

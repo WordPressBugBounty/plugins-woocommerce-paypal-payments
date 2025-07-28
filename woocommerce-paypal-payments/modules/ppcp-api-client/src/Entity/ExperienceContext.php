@@ -155,6 +155,9 @@ class ExperienceContext
      */
     public function with_landing_page(?string $new_value): \WooCommerce\PayPalCommerce\ApiClient\Entity\ExperienceContext
     {
+        if ($new_value && strtoupper($new_value) === 'BILLING') {
+            $new_value = self::LANDING_PAGE_GUEST_CHECKOUT;
+        }
         $obj = clone $this;
         $obj->landing_page = $new_value;
         return $obj;

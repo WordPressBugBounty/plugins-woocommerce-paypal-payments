@@ -23,8 +23,8 @@ trait TrackingAvailabilityTrait
      */
     protected function is_tracking_enabled(Bearer $bearer): bool
     {
+        // phpcs:ignore WordPress.Security.NonceVerification
         $post_id = (int) wc_clean(wp_unslash($_GET['id'] ?? $_GET['post'] ?? ''));
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if (!$post_id) {
             return \false;
         }

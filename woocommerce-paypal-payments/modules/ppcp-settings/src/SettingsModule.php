@@ -10,6 +10,8 @@ namespace WooCommerce\PayPalCommerce\Settings;
 
 use WC_Payment_Gateway;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
+use WooCommerce\PayPalCommerce\AdminNotices\Entity\Message;
+use WooCommerce\PayPalCommerce\AdminNotices\Repository\Repository;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Applepay\ApplePayGateway;
@@ -35,6 +37,7 @@ use WooCommerce\PayPalCommerce\Settings\Handler\ConnectionListener;
 use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\PathRepository;
 use WooCommerce\PayPalCommerce\Settings\Service\GatewayRedirectService;
 use WooCommerce\PayPalCommerce\Settings\Service\LoadingScreenService;
+use WooCommerce\PayPalCommerce\Settings\Service\Migration\MigrationManager;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
@@ -62,14 +65,26 @@ class SettingsModule implements ServiceModule, ExecutableModule
      */
     public static function should_use_the_old_ui(): bool
     {
-        // New merchants should never see the #legacy-ui.
-        $show_new_ux = '1' === get_option('woocommerce-ppcp-is-new-merchant');
-        if ($show_new_ux) {
+        /**
+         * Determine if the new Settings UI is disabled via feature flag.
+         *
+         * This is the highest-priority check: if the `woocommerce.feature-flags.woocommerce_paypal_payments.settings_enabled` filter
+         * is used to disable the new UI, it will override all other conditions.
+         */
+        if (!apply_filters(
+            // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
+            'woocommerce.feature-flags.woocommerce_paypal_payments.settings_enabled',
+            getenv('PCP_SETTINGS_ENABLED') !== '1'
+        )) {
+            return \true;
+        }
+        // New merchants always see the new UI if the filter above is not used.
+        if ('1' === get_option('woocommerce-ppcp-is-new-merchant')) {
             return \false;
         }
-        // Existing merchants can opt-in to see the new UI.
-        $opt_out_choice = 'yes' === get_option(SwitchSettingsUiEndpoint::OPTION_NAME_SHOULD_USE_OLD_UI);
-        return apply_filters('woocommerce_paypal_payments_should_use_the_old_ui', $opt_out_choice);
+        // Existing merchants can opt out via DB option.
+        $opt_out = 'yes' === get_option(SwitchSettingsUiEndpoint::OPTION_NAME_SHOULD_USE_OLD_UI);
+        return apply_filters('woocommerce_paypal_payments_should_use_the_old_ui', $opt_out);
     }
     /**
      * {@inheritDoc}
@@ -84,7 +99,25 @@ class SettingsModule implements ServiceModule, ExecutableModule
     public function run(ContainerInterface $container): bool
     {
         if (self::should_use_the_old_ui()) {
-            add_filter('woocommerce_paypal_payments_inside_settings_page_header', static fn(): string => sprintf('<a href="#" class="button button-settings-switch-ui">%s</a>', esc_html__('Switch to new settings UI', 'woocommerce-paypal-payments')));
+            add_filter('woocommerce_paypal_payments_inside_settings_page_header', static fn(): string => sprintf('<button type="button" class="button button-settings-switch-ui" aria-describedby="switch-ui-desc">%s</button><span id="switch-ui-desc" class="screen-reader-text">%s</span>', esc_html__('Switch to new settings UI', 'woocommerce-paypal-payments'), esc_html__('This action will permanently switch to the new settings interface and cannot be undone', 'woocommerce-paypal-payments')));
+            /**
+             * Adds new settings discovery notice.
+             *
+             * @param Message[] $notices
+             * @return Message[]
+             */
+            add_filter(Repository::NOTICES_FILTER, static function (array $notices) use ($container): array {
+                if (!$container->get('wcgateway.is-ppcp-settings-page')) {
+                    return $notices;
+                }
+                $message = sprintf(
+                    // translators: %1$s is the URL for the startup guide.
+                    __('🎉 <strong>Discover the new PayPal Payments settings!</strong> Enjoy a cleaner, faster interface. Check out the <a href="%1$s" target="_blank">Startup Guide</a>, then click <a href="#" class="settings-switch-ui" role="button" aria-describedby="switch-ui-desc"><strong>Switch to New Settings</strong></a> to activate it.', 'woocommerce-paypal-payments'),
+                    'https://woocommerce.com/document/woocommerce-paypal-payments/paypal-payments-startup-guide/'
+                );
+                $notices[] = new Message($message, 'info', \false, 'ppcp-notice-wrapper');
+                return $notices;
+            });
             add_action('admin_enqueue_scripts', static function () use ($container) {
                 $module_url = $container->get('settings.url');
                 /**
@@ -94,13 +127,15 @@ class SettingsModule implements ServiceModule, ExecutableModule
                  */
                 $script_asset_file = require dirname(realpath(__FILE__) ?: '', 2) . '/assets/switchSettingsUi.asset.php';
                 wp_register_script('ppcp-switch-settings-ui', untrailingslashit($module_url) . '/assets/switchSettingsUi.js', $script_asset_file['dependencies'], $script_asset_file['version'], \true);
-                wp_localize_script('ppcp-switch-settings-ui', 'ppcpSwitchSettingsUi', array('endpoint' => \WC_AJAX::get_endpoint(SwitchSettingsUiEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SwitchSettingsUiEndpoint::nonce())));
+                wp_localize_script('ppcp-switch-settings-ui', 'ppcpSwitchSettingsUi', array('endpoint' => \WC_AJAX::get_endpoint(SwitchSettingsUiEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(SwitchSettingsUiEndpoint::nonce()), 'confirmMessage' => __('Are you sure you want to switch to the new settings interface?This action cannot be undone.', 'woocommerce-paypal-payments')));
                 wp_enqueue_script('ppcp-switch-settings-ui', '', array('wp-i18n'), $script_asset_file['version'], \false);
                 wp_set_script_translations('ppcp-switch-settings-ui', 'woocommerce-paypal-payments');
             });
-            $endpoint = $container->get('settings.ajax.switch_ui') ? $container->get('settings.ajax.switch_ui') : null;
-            assert($endpoint instanceof SwitchSettingsUiEndpoint);
-            add_action('wc_ajax_' . SwitchSettingsUiEndpoint::ENDPOINT, array($endpoint, 'handle_request'));
+            add_action('wc_ajax_' . SwitchSettingsUiEndpoint::ENDPOINT, static function () use ($container): void {
+                $endpoint = $container->get('settings.ajax.switch_ui') ? $container->get('settings.ajax.switch_ui') : null;
+                assert($endpoint instanceof SwitchSettingsUiEndpoint);
+                $endpoint->handle_request();
+            });
             return \true;
         }
         /**

@@ -93,7 +93,7 @@ class PurchaseUnit
      * @param string        $soft_descriptor The soft descriptor.
      * @param Payments|null $payments The Payments.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Entity\Amount $amount, array $items = array(), \WooCommerce\PayPalCommerce\ApiClient\Entity\Shipping $shipping = null, string $reference_id = 'default', string $description = '', string $custom_id = '', string $invoice_id = '', string $soft_descriptor = '', \WooCommerce\PayPalCommerce\ApiClient\Entity\Payments $payments = null)
+    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Entity\Amount $amount, array $items = array(), ?\WooCommerce\PayPalCommerce\ApiClient\Entity\Shipping $shipping = null, string $reference_id = 'default', string $description = '', string $custom_id = '', string $invoice_id = '', string $soft_descriptor = '', ?\WooCommerce\PayPalCommerce\ApiClient\Entity\Payments $payments = null)
     {
         $this->amount = $amount;
         $this->shipping = $shipping;

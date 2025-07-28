@@ -39,10 +39,10 @@ class WebhookEventFactory
     public function from_paypal_response($data): WebhookEvent
     {
         if (!isset($data->id)) {
-            throw new RuntimeException(__('ID for webhook event not found.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('ID for webhook event not found.');
         }
         if (!isset($data->event_type)) {
-            throw new RuntimeException(__('Event type for webhook event not found.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('Event type for webhook event not found.');
         }
         $create_time = isset($data->create_time) ? DateTime::createFromFormat('Y-m-d\TH:i:sO', $data->create_time) : null;
         // Sometimes the time may be in weird format 2018-12-19T22:20:32.000Z (at least in simulation),

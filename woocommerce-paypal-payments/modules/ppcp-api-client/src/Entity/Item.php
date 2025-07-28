@@ -96,7 +96,7 @@ class Item
      * @param float      $tax_rate The tax rate.
      * @param ?string    $cart_item_key The cart key for this item.
      */
-    public function __construct(string $name, \WooCommerce\PayPalCommerce\ApiClient\Entity\Money $unit_amount, int $quantity, string $description = '', \WooCommerce\PayPalCommerce\ApiClient\Entity\Money $tax = null, string $sku = '', string $category = 'PHYSICAL_GOODS', string $url = '', string $image_url = '', float $tax_rate = 0, string $cart_item_key = null)
+    public function __construct(string $name, \WooCommerce\PayPalCommerce\ApiClient\Entity\Money $unit_amount, int $quantity, string $description = '', ?\WooCommerce\PayPalCommerce\ApiClient\Entity\Money $tax = null, string $sku = '', string $category = 'PHYSICAL_GOODS', string $url = '', string $image_url = '', float $tax_rate = 0, ?string $cart_item_key = null)
     {
         $this->name = $name;
         $this->unit_amount = $unit_amount;

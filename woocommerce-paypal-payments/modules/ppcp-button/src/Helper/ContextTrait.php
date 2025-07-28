@@ -266,10 +266,9 @@ trait ContextTrait
      */
     private function is_subscription_change_payment_method_page(): bool
     {
+        // phpcs:disable WordPress.Security.NonceVerification
         if (isset($_GET['change_payment_method'])) {
-            // phpcs:ignore WordPress.Security.NonceVerification
             return wcs_is_subscription(wc_clean(wp_unslash($_GET['change_payment_method'])));
-            // phpcs:ignore WordPress.Security.NonceVerification
         }
         return \false;
     }
@@ -291,14 +290,13 @@ trait ContextTrait
      */
     protected function is_wc_settings_payments_tab(): bool
     {
+        // phpcs:disable WordPress.Security.NonceVerification
         if (!is_admin() || isset($_GET['section'])) {
-            // phpcs:ignore WordPress.Security.NonceVerification
             return \false;
         }
         $page = wc_clean(wp_unslash($_GET['page'] ?? ''));
-        // phpcs:ignore WordPress.Security.NonceVerification
         $tab = wc_clean(wp_unslash($_GET['tab'] ?? ''));
-        // phpcs:ignore WordPress.Security.NonceVerification
+        // phpcs:enable WordPress.Security.NonceVerification
         return $page === 'wc-settings' && $tab === 'checkout';
     }
 }

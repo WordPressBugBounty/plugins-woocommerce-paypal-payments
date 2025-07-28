@@ -8,6 +8,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\ApiClient\Entity;
 
+use DateTime;
 /**
  * Class Payer
  * The customer who sends the money.
@@ -35,7 +36,7 @@ class Payer
     /**
      * The birth date.
      *
-     * @var \DateTime|null
+     * @var DateTime|null
      */
     private $birthdate;
     /**
@@ -63,11 +64,11 @@ class Payer
      * @param string             $email_address The email.
      * @param string             $payer_id The payer id.
      * @param Address|null       $address The address.
-     * @param \DateTime|null     $birthdate The birth date.
+     * @param DateTime|null      $birthdate The birth date.
      * @param PhoneWithType|null $phone The phone.
      * @param PayerTaxInfo|null  $tax_info The tax info.
      */
-    public function __construct(?\WooCommerce\PayPalCommerce\ApiClient\Entity\PayerName $name, string $email_address, string $payer_id, \WooCommerce\PayPalCommerce\ApiClient\Entity\Address $address = null, \DateTime $birthdate = null, \WooCommerce\PayPalCommerce\ApiClient\Entity\PhoneWithType $phone = null, \WooCommerce\PayPalCommerce\ApiClient\Entity\PayerTaxInfo $tax_info = null)
+    public function __construct(?\WooCommerce\PayPalCommerce\ApiClient\Entity\PayerName $name, string $email_address, string $payer_id, ?\WooCommerce\PayPalCommerce\ApiClient\Entity\Address $address = null, ?DateTime $birthdate = null, ?\WooCommerce\PayPalCommerce\ApiClient\Entity\PhoneWithType $phone = null, ?\WooCommerce\PayPalCommerce\ApiClient\Entity\PayerTaxInfo $tax_info = null)
     {
         $this->name = $name;
         $this->email_address = $email_address;
@@ -116,7 +117,7 @@ class Payer
     /**
      * Returns the birth date.
      *
-     * @return \DateTime|null
+     * @return DateTime|null
      */
     public function birthdate()
     {

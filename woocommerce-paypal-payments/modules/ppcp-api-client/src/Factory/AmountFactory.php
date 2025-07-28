@@ -142,13 +142,15 @@ class AmountFactory
     /**
      * Returns an Amount object based off a PayPal Response.
      *
-     * @param \stdClass $data The JSON object.
+     * @param mixed $data The JSON object.
      *
-     * @return Amount
-     * @throws RuntimeException When JSON object is malformed.
+     * @return Amount|null
      */
-    public function from_paypal_response(\stdClass $data): Amount
+    public function from_paypal_response($data)
     {
+        if (null === $data || !$data instanceof \stdClass) {
+            return null;
+        }
         $money = $this->money_factory->from_paypal_response($data);
         $breakdown = isset($data->breakdown) ? $this->break_down($data->breakdown) : null;
         return new Amount($money, $breakdown);
@@ -175,18 +177,10 @@ class AmountFactory
             }
             $item = $data->{$key};
             if (!isset($item->value) || !is_numeric($item->value)) {
-                throw new RuntimeException(sprintf(
-                    // translators: %s is the current breakdown key.
-                    __('No value given for breakdown %s', 'woocommerce-paypal-payments'),
-                    $key
-                ));
+                throw new RuntimeException(sprintf('No value given for breakdown %s', $key));
             }
             if (!isset($item->currency_code)) {
-                throw new RuntimeException(sprintf(
-                    // translators: %s is the current breakdown key.
-                    __('No currency given for breakdown %s', 'woocommerce-paypal-payments'),
-                    $key
-                ));
+                throw new RuntimeException(sprintf('No currency given for breakdown %s', $key));
             }
             $money[] = new Money((float) $item->value, $item->currency_code);
         }

@@ -43,7 +43,7 @@ class RequestData
         $this->enqueue_nonce_fix();
         if (!isset($json['nonce']) || !wp_verify_nonce($json['nonce'], $nonce)) {
             remove_filter('nonce_user_logged_out', array($this, 'nonce_fix'), 100);
-            throw new RuntimeException(__('Could not validate nonce.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('Could not validate nonce.');
         }
         $this->dequeue_nonce_fix();
         if (isset($json['form_encoded'])) {

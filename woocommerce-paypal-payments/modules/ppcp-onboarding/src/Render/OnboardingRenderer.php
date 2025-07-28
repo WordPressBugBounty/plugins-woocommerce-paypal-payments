@@ -67,7 +67,7 @@ class OnboardingRenderer
      * @param Cache                $cache The cache.
      * @param ?LoggerInterface     $logger The logger.
      */
-    public function __construct(Settings $settings, PartnerReferrals $production_partner_referrals, PartnerReferrals $sandbox_partner_referrals, PartnerReferralsData $partner_referrals_data, Cache $cache, LoggerInterface $logger = null)
+    public function __construct(Settings $settings, PartnerReferrals $production_partner_referrals, PartnerReferrals $sandbox_partner_referrals, PartnerReferralsData $partner_referrals_data, Cache $cache, ?LoggerInterface $logger = null)
     {
         $this->settings = $settings;
         $this->production_partner_referrals = $production_partner_referrals;

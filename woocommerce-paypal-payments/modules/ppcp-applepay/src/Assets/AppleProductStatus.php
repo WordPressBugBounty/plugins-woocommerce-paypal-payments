@@ -85,7 +85,7 @@ class AppleProductStatus extends ProductStatus
         return $has_capability;
     }
     /** {@inheritDoc} */
-    protected function clear_state(Settings $settings = null): void
+    protected function clear_state(?Settings $settings = null): void
     {
         if (null === $settings) {
             $settings = $this->settings;

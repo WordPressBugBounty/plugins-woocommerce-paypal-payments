@@ -83,10 +83,10 @@ class ShippingFactory
     public function from_paypal_response(\stdClass $data): Shipping
     {
         if (!isset($data->name->full_name)) {
-            throw new RuntimeException(__('No name was given for shipping.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('No name was given for shipping.');
         }
         if (!isset($data->address)) {
-            throw new RuntimeException(__('No address was given for shipping.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('No address was given for shipping.');
         }
         $contact_phone = null;
         $contact_email = null;

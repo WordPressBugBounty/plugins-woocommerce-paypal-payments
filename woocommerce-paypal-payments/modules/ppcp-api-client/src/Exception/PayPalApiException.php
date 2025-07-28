@@ -32,10 +32,10 @@ class PayPalApiException extends \WooCommerce\PayPalCommerce\ApiClient\Exception
      * @param stdClass|null $response The JSON object.
      * @param int           $status_code The HTTP status code.
      */
-    public function __construct(stdClass $response = null, int $status_code = 0)
+    public function __construct(?stdClass $response = null, int $status_code = 0)
     {
         if (is_null($response)) {
-            $response = new \stdClass();
+            $response = new stdClass();
         }
         if (!isset($response->message)) {
             $response->message = sprintf(
@@ -56,7 +56,7 @@ class PayPalApiException extends \WooCommerce\PayPalCommerce\ApiClient\Exception
         /**
          * The JSON response object.
          *
-         * @var \stdClass $response
+         * @var stdClass $response
          */
         $this->response = $response;
         $this->status_code = $status_code;

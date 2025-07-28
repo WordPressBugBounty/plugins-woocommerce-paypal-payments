@@ -11,57 +11,57 @@ namespace WooCommerce\PayPalCommerce\WcGateway;
 use Exception;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use Throwable;
+use WC_Order;
 use WooCommerce\PayPalCommerce\AdminNotices\Entity\Message;
-use WooCommerce\PayPalCommerce\ApiClient\Endpoint\BillingAgreementsEndpoint;
+use WooCommerce\PayPalCommerce\AdminNotices\Repository\Repository;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\Authorization;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\Capture;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\ReferenceTransactionStatus;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\Cache;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
+use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\LocalApmProductStatus;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
-use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ShippingCallbackEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Gateway\OXXO\OXXOGateway;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\InstallmentsProductStatus;
-use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
-use WooCommerce\PayPalCommerce\WcGateway\Processor\CreditCardOrderInfoHandlingTrait;
-use WC_Order;
-use WooCommerce\PayPalCommerce\AdminNotices\Repository\Repository;
-use WooCommerce\PayPalCommerce\ApiClient\Entity\Capture;
-use WooCommerce\PayPalCommerce\ApiClient\Entity\OrderStatus;
-use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
+use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\FeesRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\OrderTablePaymentStatusColumn;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\PaymentStatusOrderDetail;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderAuthorizeAction;
 use WooCommerce\PayPalCommerce\WcGateway\Assets\FraudNetAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Assets\SettingsPageAssets;
+use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Checkout\CheckoutPayPalAddressPreset;
 use WooCommerce\PayPalCommerce\WcGateway\Checkout\DisableGateways;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ReturnUrlEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ShippingCallbackEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\GatewayRepository;
+use WooCommerce\PayPalCommerce\WcGateway\Gateway\OXXO\OXXOGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCProductStatus;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\InstallmentsProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\PayUponInvoiceProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\ConnectAdminNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\GatewayWithoutPayPalAdminNotice;
+use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\UnsupportedCurrencyAdminNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Processor\AuthorizedPaymentsProcessor;
+use WooCommerce\PayPalCommerce\WcGateway\Processor\CreditCardOrderInfoHandlingTrait;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\HeaderRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SectionsRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsListener;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsRenderer;
-use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrarInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
-use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\LocalApmProductStatus;
 /**
  * Class WcGatewayModule
  */
@@ -164,7 +164,7 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             assert($settings instanceof Settings);
             $dcc_configuration = $c->get('wcgateway.configuration.card-configuration');
             assert($dcc_configuration instanceof CardPaymentsConfiguration);
-            $assets = new SettingsPageAssets($c->get('wcgateway.url'), $c->get('ppcp.asset-version'), $c->get('wc-subscriptions.helper'), $c->get('button.client_id_for_admin'), $c->get('api.shop.currency.getter'), $c->get('api.shop.country'), $c->get('settings.environment'), $settings_status->is_pay_later_button_enabled(), $settings->has('disable_funding') ? $settings->get('disable_funding') : array(), $c->get('wcgateway.settings.funding-sources'), $c->get('wcgateway.is-ppcp-settings-page'), $dcc_configuration->is_enabled(), $c->get('api.endpoint.billing-agreements'), $c->get('wcgateway.is-ppcp-settings-payment-methods-page'));
+            $assets = new SettingsPageAssets($c->get('wcgateway.url'), $c->get('ppcp.asset-version'), $c->get('wc-subscriptions.helper'), $c->get('button.client_id_for_admin'), $c->get('api.shop.currency.getter'), $c->get('api.shop.country'), $c->get('settings.environment'), $settings_status->is_pay_later_button_enabled(), $settings->has('disable_funding') ? $settings->get('disable_funding') : array(), $c->get('wcgateway.settings.funding-sources'), $c->get('wcgateway.is-ppcp-settings-page'), $dcc_configuration->is_enabled(), $c->get('api.reference-transaction-status'), $c->get('wcgateway.is-ppcp-settings-payment-methods-page'));
             $assets->register_assets();
         });
         add_filter(Repository::NOTICES_FILTER, static function ($notices) use ($c): array {
@@ -333,7 +333,7 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             });
         }
         // Clears product status when appropriate.
-        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (Settings $settings = null) use ($c): void {
+        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (?Settings $settings = null) use ($c): void {
             // Clear DCC Product status.
             $dcc_product_status = $c->get('wcgateway.helper.dcc-product-status');
             if ($dcc_product_status instanceof DCCProductStatus) {
@@ -344,8 +344,12 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             if ($pui_product_status instanceof PayUponInvoiceProductStatus) {
                 $pui_product_status->clear($settings);
             }
+            $reference_transaction_status_cache = $c->get('api.reference-transaction-status-cache');
+            assert($reference_transaction_status_cache instanceof Cache);
             // Clear Reference Transaction status.
-            delete_transient('ppcp_reference_transaction_enabled');
+            if ($reference_transaction_status_cache->has(ReferenceTransactionStatus::CACHE_KEY)) {
+                $reference_transaction_status_cache->delete(ReferenceTransactionStatus::CACHE_KEY);
+            }
         });
         /**
          * Param types removed to avoid third-party issues.
@@ -372,8 +376,8 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             if (!$is_connected) {
                 return $features;
             }
-            $billing_agreements_endpoint = $c->get('api.endpoint.billing-agreements');
-            assert($billing_agreements_endpoint instanceof BillingAgreementsEndpoint);
+            $reference_transaction_status = $c->get('api.reference-transaction-status');
+            assert($reference_transaction_status instanceof ReferenceTransactionStatus);
             $dcc_product_status = $c->get('wcgateway.helper.dcc-product-status');
             assert($dcc_product_status instanceof DCCProductStatus);
             $apms_product_status = $c->get('ppcp-local-apms.product-status');
@@ -382,7 +386,7 @@ class WCGatewayModule implements ServiceModule, ExtendingModule, ExecutableModul
             assert($installments_product_status instanceof InstallmentsProductStatus);
             $contact_module_check = $c->get('wcgateway.contact-module.eligibility.check');
             assert(is_callable($contact_module_check));
-            $features['save_paypal_and_venmo'] = array('enabled' => $billing_agreements_endpoint->reference_transaction_enabled());
+            $features['save_paypal_and_venmo'] = array('enabled' => $reference_transaction_status->reference_transaction_enabled());
             $features['advanced_credit_and_debit_cards'] = array('enabled' => $dcc_product_status->is_active());
             $features['alternative_payment_methods'] = array('enabled' => $apms_product_status->is_active());
             // When local APMs are available, then PayLater messaging is also available.

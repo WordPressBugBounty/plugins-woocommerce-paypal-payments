@@ -49,7 +49,7 @@ class GooglepayModule implements ServiceModule, ExtendingModule, ExecutableModul
     public function run(ContainerInterface $c): bool
     {
         // Clears product status when appropriate.
-        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (Settings $settings = null) use ($c): void {
+        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (?Settings $settings = null) use ($c): void {
             $apm_status = $c->get('googlepay.helpers.apm-product-status');
             assert($apm_status instanceof ApmProductStatus);
             $apm_status->clear($settings);

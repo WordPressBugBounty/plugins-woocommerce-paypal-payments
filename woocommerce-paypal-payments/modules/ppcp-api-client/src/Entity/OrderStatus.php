@@ -38,11 +38,7 @@ class OrderStatus
     public function __construct(string $status)
     {
         if (!in_array($status, self::VALID_STATUS, \true)) {
-            throw new RuntimeException(sprintf(
-                // translators: %s is the current status.
-                __('%s is not a valid status', 'woocommerce-paypal-payments'),
-                $status
-            ));
+            throw new RuntimeException(sprintf('%s is not a valid status', $status));
         }
         $this->status = $status;
     }

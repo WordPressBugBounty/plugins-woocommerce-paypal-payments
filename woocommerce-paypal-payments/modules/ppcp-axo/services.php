@@ -54,7 +54,7 @@ return array(
         return new AxoManager($container->get('axo.url'), $container->get('ppcp.asset-version'), $container->get('session.handler'), $container->get('wcgateway.settings'), $container->get('settings.environment'), $container->get('axo.insights'), $container->get('wcgateway.settings.status'), $container->get('api.shop.currency.getter'), $container->get('woocommerce.logger.woocommerce'), $container->get('wcgateway.url'), $container->get('axo.supported-country-card-type-matrix'));
     },
     'axo.gateway' => static function (ContainerInterface $container): AxoGateway {
-        return new AxoGateway($container->get('wcgateway.settings.render'), $container->get('wcgateway.settings'), $container->get('wcgateway.configuration.card-configuration'), $container->get('wcgateway.url'), $container->get('session.handler'), $container->get('wcgateway.order-processor'), $container->get('wcgateway.credit-card-icons'), $container->get('api.endpoint.order'), $container->get('api.factory.purchase-unit'), $container->get('api.factory.shipping-preference'), $container->get('wcgateway.transaction-url-provider'), $container->get('settings.environment'), $container->get('woocommerce.logger.woocommerce'));
+        return new AxoGateway($container->get('wcgateway.settings.render'), $container->get('wcgateway.settings'), $container->get('wcgateway.configuration.card-configuration'), $container->get('wcgateway.url'), $container->get('session.handler'), $container->get('wcgateway.order-processor'), $container->get('wcgateway.credit-card-icons'), $container->get('api.endpoint.order'), $container->get('api.factory.purchase-unit'), $container->get('api.factory.shipping-preference'), $container->get('wcgateway.transaction-url-provider'), $container->get('settings.environment'), $container->get('woocommerce.logger.woocommerce'), $container->get('wcgateway.builder.experience-context'), $container->get('settings.data.settings'));
     },
     // Data needed for the PayPal Insights.
     'axo.insights' => static function (ContainerInterface $container): array {
@@ -76,19 +76,27 @@ return array(
      * The matrix which countries and currency combinations can be used for AXO.
      */
     'axo.supported-country-currency-matrix' => static function (ContainerInterface $container): array {
+        $matrix = array('US' => array('AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD'));
+        if ($container->get('axo.uk.enabled')) {
+            $matrix['GB'] = array('GBP');
+        }
         /**
          * Returns which countries and currency combinations can be used for AXO.
          */
-        return apply_filters('woocommerce_paypal_payments_axo_supported_country_currency_matrix', array('US' => array('AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD')));
+        return apply_filters('woocommerce_paypal_payments_axo_supported_country_currency_matrix', $matrix);
     },
     /**
      * The matrix which countries and card type combinations can be used for AXO.
      */
     'axo.supported-country-card-type-matrix' => static function (ContainerInterface $container): array {
+        $matrix = array('US' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER'), 'CA' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER'));
+        if ($container->get('axo.uk.enabled')) {
+            $matrix['GB'] = array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER');
+        }
         /**
          * Returns which countries and card type combinations can be used for AXO.
          */
-        return apply_filters('woocommerce_paypal_payments_axo_supported_country_card_type_matrix', array('US' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER'), 'CA' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER')));
+        return apply_filters('woocommerce_paypal_payments_axo_supported_country_card_type_matrix', $matrix);
     },
     'axo.settings-conflict-notice' => static function (ContainerInterface $container): string {
         $compatibility_checker = $container->get('axo.helpers.compatibility-checker');
@@ -164,5 +172,15 @@ return array(
         $shipping_zones = \WC_Shipping_Zones::get_zones();
         $get_zone_locations = fn(\WC_Shipping_Zone $zone): array => !empty($zone->get_shipping_methods(\true)) ? array_map(fn(object $location): string => $location->code, $zone->get_zone_locations()) : array();
         return array_unique(array_merge(...array_map($get_zone_locations, array_map(fn($zone): \WC_Shipping_Zone => $zone instanceof \WC_Shipping_Zone ? $zone : new \WC_Shipping_Zone($zone['id']), $shipping_zones))));
+    },
+    'axo.uk.enabled' => static function (ContainerInterface $container): bool {
+        // phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
+        /**
+         * Filter to determine if Fastlane UK with 3D Secure should be enabled.
+         *
+         * @param bool $enabled Whether Fastlane UK is enabled.
+         */
+        return apply_filters('woocommerce.feature-flags.woocommerce_paypal_payments.axo_uk_enabled', getenv('PCP_AXO_UK_ENABLED') !== '0');
+        // phpcs:enable WordPress.NamingConventions.ValidHookName.UseUnderscores
     },
 );

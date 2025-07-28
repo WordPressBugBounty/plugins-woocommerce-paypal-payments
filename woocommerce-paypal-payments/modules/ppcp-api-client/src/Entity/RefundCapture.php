@@ -45,7 +45,7 @@ class RefundCapture
      * @param string      $note_to_payer The note to the payer.
      * @param Amount|null $amount The Amount.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Entity\Capture $capture, string $invoice_id, string $note_to_payer = '', \WooCommerce\PayPalCommerce\ApiClient\Entity\Amount $amount = null)
+    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Entity\Capture $capture, string $invoice_id, string $note_to_payer = '', ?\WooCommerce\PayPalCommerce\ApiClient\Entity\Amount $amount = null)
     {
         $this->capture = $capture;
         $this->invoice_id = $invoice_id;

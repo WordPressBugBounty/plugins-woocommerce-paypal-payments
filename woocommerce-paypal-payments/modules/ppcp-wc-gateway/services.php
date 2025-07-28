@@ -9,51 +9,37 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\WcGateway;
 
-use WooCommerce\PayPalCommerce\ApiClient\Endpoint\BillingAgreementsEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\PayUponInvoiceOrderEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\ExperienceContext;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\ReferenceTransactionStatus;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\Cache;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
+use WooCommerce\PayPalCommerce\Applepay\ApplePayGateway;
 use WooCommerce\PayPalCommerce\Axo\Gateway\AxoGateway;
+use WooCommerce\PayPalCommerce\Axo\Helper\PropertiesDictionary;
 use WooCommerce\PayPalCommerce\Button\Helper\MessagesDisclaimers;
 use WooCommerce\PayPalCommerce\Common\Pattern\SingletonDecorator;
 use WooCommerce\PayPalCommerce\Googlepay\GooglePayGateway;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ShippingCallbackEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
 use WooCommerce\PayPalCommerce\Onboarding\Render\OnboardingOptionsRenderer;
 use WooCommerce\PayPalCommerce\Onboarding\State;
 use WooCommerce\PayPalCommerce\Settings\SettingsModule;
-use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderReauthorizeAction;
-use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\CaptureCardPayment;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\CartCheckoutDetector;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\FeesUpdater;
-use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactory;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactoryInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrar;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrarInterface;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Tasks\SimpleRedirectTask;
-use WooCommerce\PayPalCommerce\WcGateway\Shipping\ShippingCallbackUrlFactory;
-use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Endpoint\CartEndpoint;
-use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\CartFactory;
-use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\CartTotalsFactory;
-use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\MoneyFactory;
-use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\ShippingRatesFactory;
-use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\FeesRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\OrderTablePaymentStatusColumn;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\PaymentStatusOrderDetail;
 use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderAuthorizeAction;
+use WooCommerce\PayPalCommerce\WcGateway\Admin\RenderReauthorizeAction;
 use WooCommerce\PayPalCommerce\WcGateway\Assets\FraudNetAssets;
+use WooCommerce\PayPalCommerce\WcGateway\Assets\VoidButtonAssets;
 use WooCommerce\PayPalCommerce\WcGateway\Checkout\CheckoutPayPalAddressPreset;
 use WooCommerce\PayPalCommerce\WcGateway\Checkout\DisableGateways;
 use WooCommerce\PayPalCommerce\WcGateway\Cli\SettingsCommand;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\CaptureCardPayment;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\RefreshFeatureStatusEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ReturnUrlEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\ShippingCallbackEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\Endpoint\VoidOrderEndpoint;
 use WooCommerce\PayPalCommerce\WcGateway\FraudNet\FraudNet;
 use WooCommerce\PayPalCommerce\WcGateway\FraudNet\FraudNetSourceWebsiteId;
 use WooCommerce\PayPalCommerce\WcGateway\FundingSource\FundingSourceRenderer;
@@ -67,17 +53,24 @@ use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayUponInvoice\PaymentSourceFac
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayUponInvoice\PayUponInvoice;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayUponInvoice\PayUponInvoiceGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\TransactionUrlProvider;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CartCheckoutDetector;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\CheckoutHelper;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\ConnectionState;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\DisplayManager;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\FeesUpdater;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\InstallmentsProductStatus;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\MerchantDetails;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\PayUponInvoiceHelper;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\PayUponInvoiceProductStatus;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\InstallmentsProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\RefundFeesUpdater;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\AuthorizeOrderActionNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\ConnectAdminNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\GatewayWithoutPayPalAdminNotice;
+use WooCommerce\PayPalCommerce\WcGateway\Notice\SendOnlyCountryNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Notice\UnsupportedCurrencyAdminNotice;
 use WooCommerce\PayPalCommerce\WcGateway\Processor\AuthorizedPaymentsProcessor;
 use WooCommerce\PayPalCommerce\WcGateway\Processor\OrderProcessor;
@@ -87,11 +80,18 @@ use WooCommerce\PayPalCommerce\WcGateway\Settings\SectionsRenderer;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsListener;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\SettingsRenderer;
-use WooCommerce\PayPalCommerce\Axo\Helper\PropertiesDictionary;
-use WooCommerce\PayPalCommerce\Applepay\ApplePayGateway;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\ConnectionState;
-use WooCommerce\PayPalCommerce\WcGateway\Helper\MerchantDetails;
+use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactory;
+use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Factory\SimpleRedirectTaskFactoryInterface;
+use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrar;
+use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Registrar\TaskRegistrarInterface;
+use WooCommerce\PayPalCommerce\WcGateway\Settings\WcTasks\Tasks\SimpleRedirectTask;
+use WooCommerce\PayPalCommerce\WcGateway\Shipping\ShippingCallbackUrlFactory;
+use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Endpoint\CartEndpoint;
+use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\CartFactory;
+use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\CartTotalsFactory;
+use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\MoneyFactory;
+use WooCommerce\PayPalCommerce\WcGateway\StoreApi\Factory\ShippingRatesFactory;
+use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 return array(
     'wcgateway.paypal-gateway' => static function (ContainerInterface $container): PayPalGateway {
         return new PayPalGateway($container->get('wcgateway.settings.render'), $container->get('wcgateway.funding-source.renderer'), $container->get('wcgateway.order-processor'), $container->get('wcgateway.settings'), $container->get('session.handler'), $container->get('wcgateway.processor.refunds'), $container->get('settings.flag.is-connected'), $container->get('wcgateway.transaction-url-provider'), $container->get('wc-subscriptions.helper'), $container->get('wcgateway.current-ppcp-settings-page-id'), $container->get('settings.environment'), $container->get('vaulting.repository.payment-token'), $container->get('woocommerce.logger.woocommerce'), $container->get('api.shop.country'), $container->get('api.endpoint.order'), $container->get('api.factory.paypal-checkout-url'), $container->get('wcgateway.place-order-button-text'), $container->get('api.endpoint.payment-tokens'), $container->get('vaulting.vault-v3-enabled'), $container->get('vaulting.wc-payment-tokens'), $container->get('wcgateway.url'), $container->get('wcgateway.settings.admin-settings-enabled'));
@@ -264,9 +264,10 @@ return array(
             $container->get('http.redirector'),
             $container->get('api.partner_merchant_id-production'),
             $container->get('api.partner_merchant_id-sandbox'),
-            $container->get('api.endpoint.billing-agreements'),
+            $container->get('api.reference-transaction-status'),
             $container->get('woocommerce.logger.woocommerce'),
-            new Cache('ppcp-client-credentials-cache')
+            new Cache('ppcp-client-credentials-cache'),
+            $container->get('api.reference-transaction-status-cache')
         );
     },
     'wcgateway.order-processor' => static function (ContainerInterface $container): OrderProcessor {
@@ -324,9 +325,9 @@ return array(
     },
     'wcgateway.settings.fields.subscriptions_mode' => static function (ContainerInterface $container): array {
         $subscription_mode_options = $container->get('wcgateway.settings.fields.subscriptions_mode_options');
-        $billing_agreements_endpoint = $container->get('api.endpoint.billing-agreements');
-        $reference_transaction_enabled = $billing_agreements_endpoint->reference_transaction_enabled();
-        if ($reference_transaction_enabled !== \true) {
+        $reference_transaction_status = $container->get('api.reference-transaction-status');
+        assert($reference_transaction_status instanceof ReferenceTransactionStatus);
+        if (!$reference_transaction_status->reference_transaction_enabled()) {
             unset($subscription_mode_options['vaulting_api']);
         }
         return array('title' => __('Subscriptions Mode', 'woocommerce-paypal-payments'), 'type' => 'select', 'class' => array(), 'input_class' => array('wc-enhanced-select'), 'desc_tip' => \true, 'description' => __('Utilize PayPal Vaulting for flexible subscription processing with saved payment methods, create “PayPal Subscriptions” to bill customers at regular intervals, or disable PayPal for subscription-type products.', 'woocommerce-paypal-payments'), 'default' => array_key_first($subscription_mode_options), 'options' => $subscription_mode_options, 'screens' => array(State::STATE_ONBOARDED), 'requirements' => array(), 'gateway' => 'paypal');
@@ -722,9 +723,9 @@ return array(
     'wcgateway.settings.connection.reference-transactions-status-text' => static function (ContainerInterface $container): string {
         $environment = $container->get('settings.environment');
         assert($environment instanceof Environment);
-        $billing_agreements_endpoint = $container->get('api.endpoint.billing-agreements');
-        assert($billing_agreements_endpoint instanceof BillingAgreementsEndpoint);
-        $enabled = $billing_agreements_endpoint->reference_transaction_enabled();
+        $reference_transaction_status = $container->get('api.reference-transaction-status');
+        assert($reference_transaction_status instanceof ReferenceTransactionStatus);
+        $enabled = $reference_transaction_status->reference_transaction_enabled();
         $enabled_status_text = esc_html__('Status: Available', 'woocommerce-paypal-payments');
         $disabled_status_text = esc_html__('Status: Not yet enabled', 'woocommerce-paypal-payments');
         $button_text = $enabled ? esc_html__('Settings', 'woocommerce-paypal-payments') : esc_html__('Enable saving PayPal & Venmo', 'woocommerce-paypal-payments');
@@ -987,6 +988,13 @@ return array(
             // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
             'woocommerce.feature-flags.woocommerce_paypal_payments.server_side_shipping_callback_enabled',
             getenv('PCP_SERVER_SIDE_SHIPPING_CALLBACK_ENABLED') === '1'
+        );
+    },
+    'wcgateway.appswitch-enabled' => static function (ContainerInterface $container): bool {
+        return apply_filters(
+            // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
+            'woocommerce.feature-flags.woocommerce_paypal_payments.appswitch_enabled',
+            getenv('PCP_APPSWITCH_ENABLED') === '1'
         );
     },
 );

@@ -80,7 +80,8 @@ class WooCommerceOrderCreator
         }
         try {
             $payer = $order->payer();
-            $shipping = $order->purchase_units()[0]->shipping();
+            $purchase_units = $order->purchase_units();
+            $shipping = !empty($purchase_units) ? $purchase_units[0]->shipping() : null;
             $this->configure_payment_source($wc_order);
             $this->configure_customer($wc_order);
             $this->configure_line_items($wc_order, $wc_cart, $payer, $shipping);
@@ -116,6 +117,15 @@ class WooCommerceOrderCreator
             $item = new WC_Order_Item_Product();
             $item->set_product_id($product_id);
             $item->set_quantity($quantity);
+            if (isset($cart_item['bundled_by'])) {
+                $item->add_meta_data('_bundled_by', $cart_item['bundled_by'], \true);
+            }
+            if (isset($cart_item['bundled_item_id'])) {
+                $item->add_meta_data('_bundled_item_id', $cart_item['bundled_item_id'], \true);
+            }
+            if (isset($cart_item['key'])) {
+                $item->add_meta_data('_bundle_cart_key', $cart_item['key'], \true);
+            }
             if ($variation_id) {
                 $item->set_variation_id($variation_id);
                 $item->set_variation($variation_attributes);
@@ -124,12 +134,11 @@ class WooCommerceOrderCreator
             if (!$product) {
                 return;
             }
-            $subtotal = wc_get_price_excluding_tax($product, array('qty' => $quantity));
-            $subtotal = apply_filters('woocommerce_paypal_payments_shipping_callback_cart_line_item_total', $subtotal, $cart_item);
+            $subtotal = apply_filters('woocommerce_paypal_payments_shipping_callback_cart_line_item_total', $cart_item['line_subtotal'], $cart_item);
             $item->set_name($product->get_name());
             $item->set_subtotal($subtotal);
-            $item->set_total($subtotal);
-            $this->configure_taxes($product, $item, $subtotal);
+            $item->set_total($cart_item['line_total']);
+            $this->configure_taxes($product, $item, $item->get_total());
             $product_id = $product->get_id();
             if ($this->is_subscription($product_id)) {
                 $subscription = $this->create_subscription($wc_order, $product_id);

@@ -134,6 +134,7 @@ class SubscriptionsHandler
         if (is_wc_endpoint_url('subscriptions')) {
             return \true;
         }
+        // phpcs:disable WordPress.Security.NonceVerification
         // Checks that require Subscriptions.
         if (class_exists(\WC_Subscriptions::class)) {
             // My Account > Subscriptions > (Subscription).
@@ -143,15 +144,12 @@ class SubscriptionsHandler
             }
             // Changing payment method?
             if (is_wc_endpoint_url('order-pay') && isset($_GET['change_payment_method'])) {
-                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 $subscription = wcs_get_subscription(absint(get_query_var('order-pay')));
                 return $subscription && \WooCommerce\PayPalCommerce\Compat\PPEC\PPECHelper::PPEC_GATEWAY_ID === $subscription->get_payment_method();
             }
             // Early renew (via modal).
             if (isset($_GET['process_early_renewal'], $_GET['subscription_id'])) {
-                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 $subscription = wcs_get_subscription(absint($_GET['subscription_id']));
-                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 return $subscription && \WooCommerce\PayPalCommerce\Compat\PPEC\PPECHelper::PPEC_GATEWAY_ID === $subscription->get_payment_method();
             }
         }
@@ -164,7 +162,6 @@ class SubscriptionsHandler
             return \true;
         }
         // Are we editing an order or subscription tied to PPEC?
-        // phpcs:ignore WordPress.Security.NonceVerification
         $order_id = wc_clean(wp_unslash($_GET['id'] ?? $_GET['post'] ?? $_POST['post_ID'] ?? ''));
         if ($order_id) {
             $order = wc_get_order($order_id);

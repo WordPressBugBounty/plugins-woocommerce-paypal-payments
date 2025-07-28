@@ -25,7 +25,7 @@ class SettingsTabMapHelper
      *
      * @var array<string, string>
      */
-    protected const THREE_D_SECURE_VALUES_MAP = array('no-3d-secure' => 'NO_3D_SECURE', 'only-required-3d-secure' => 'SCA_WHEN_REQUIRED', 'always-3d-secure' => 'SCA_ALWAYS');
+    public const THREE_D_SECURE_VALUES_MAP = array('no-3d-secure' => 'NO_3D_SECURE', 'only-required-3d-secure' => 'SCA_WHEN_REQUIRED', 'always-3d-secure' => 'SCA_ALWAYS');
     /**
      * Maps old setting keys to new setting keys.
      *
@@ -33,7 +33,7 @@ class SettingsTabMapHelper
      */
     public function map(): array
     {
-        return array('disable_cards' => 'disabled_cards', 'brand_name' => 'brand_name', 'soft_descriptor' => 'soft_descriptor', 'payee_preferred' => 'instant_payments_only', 'subtotal_mismatch_behavior' => 'subtotal_adjustment', 'landing_page' => 'landing_page', 'smart_button_language' => 'button_language', 'prefix' => 'invoice_prefix', 'intent' => '', 'vault_enabled_dcc' => 'save_card_details', 'blocks_final_review_enabled' => 'enable_pay_now', 'logging_enabled' => 'enable_logging', 'vault_enabled' => 'save_paypal_and_venmo', '3d_secure_contingency' => 'threeDSecure');
+        return array('disable_cards' => 'disabled_cards', 'brand_name' => 'brand_name', 'soft_descriptor' => 'soft_descriptor', 'payee_preferred' => 'instant_payments_only', 'subtotal_mismatch_behavior' => 'subtotal_adjustment', 'landing_page' => 'landing_page', 'smart_button_language' => 'button_language', 'prefix' => 'invoice_prefix', 'intent' => '', 'vault_enabled_dcc' => 'save_card_details', 'blocks_final_review_enabled' => 'enable_pay_now', 'logging_enabled' => 'enable_logging', 'vault_enabled' => 'save_paypal_and_venmo', '3d_secure_contingency' => 'three_d_secure');
     }
     /**
      * Retrieves the value of a mapped key from the new settings.
@@ -69,7 +69,7 @@ class SettingsTabMapHelper
      */
     protected function mapped_3d_secure_value(array $settings_model): ?string
     {
-        $three_d_secure = $settings_model['threeDSecure'] ?? null;
+        $three_d_secure = $settings_model['three_d_secure'] ?? null;
         if (!is_string($three_d_secure)) {
             return null;
         }

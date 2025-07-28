@@ -4,7 +4,7 @@
  * Plugin Name: WooCommerce PayPal Payments
  * Plugin URI:  https://woocommerce.com/products/woocommerce-paypal-payments/
  * Description: PayPal's latest complete payments processing solution. Accept PayPal, Pay Later, credit/debit cards, alternative digital wallets local payment types and bank accounts. Turn on only PayPal options or process a full suite of payment methods. Enable global transaction with extensive currency and country coverage.
- * Version: 3.0.7
+ * Version: 3.0.8
  * Author:      PayPal
  * Author URI:  https://paypal.com/
  * License:     GPL-2.0
@@ -12,7 +12,7 @@
  * Requires Plugins: woocommerce
  * Requires at least: 6.5
  * WC requires at least: 9.6
- * WC tested up to: 9.9
+ * WC tested up to: 10.0
  * Text Domain: woocommerce-paypal-payments
  *
  * @package WooCommerce\PayPalCommerce
@@ -25,7 +25,7 @@ define('PAYPAL_API_URL', 'https://api-m.paypal.com');
 define('PAYPAL_URL', 'https://www.paypal.com');
 define('PAYPAL_SANDBOX_API_URL', 'https://api-m.sandbox.paypal.com');
 define('PAYPAL_SANDBOX_URL', 'https://www.sandbox.paypal.com');
-define('PAYPAL_INTEGRATION_DATE', '2025-06-25');
+define('PAYPAL_INTEGRATION_DATE', '2025-07-21');
 define('PPCP_PAYPAL_BN_CODE', 'Woo_PPCP');
 !defined('CONNECT_WOO_CLIENT_ID') && define('CONNECT_WOO_CLIENT_ID', 'AcCAsWta_JTL__OfpjspNyH7c1GGHH332fLwonA5CwX4Y10mhybRZmHLA0GdRbwKwjQIhpDQy0pluX_P');
 !defined('CONNECT_WOO_SANDBOX_CLIENT_ID') && define('CONNECT_WOO_SANDBOX_CLIENT_ID', 'AYmOHbt1VHg-OZ_oihPdzKEVbU3qg0qXonBcAztuzniQRaKE0w1Hr762cSFwd4n8wxOl-TCWohEa0XM_');
@@ -39,22 +39,52 @@ define('PPCP_PAYPAL_BN_CODE', 'Woo_PPCP');
         require $autoload_filepath;
     }
     /**
+     * Displays an admin notice and optionally deactivates the current plugin.
+     *
+     * This function registers a callback to display administrative notices on both
+     * single-site and network admin areas. It's typically used to show error messages
+     * when plugin requirements are not met, followed by automatic plugin deactivation.
+     *
+     * @param callable $notice_callback The callback function that outputs the admin notice HTML.
+     *                                  Should echo/print the notice markup directly.
+     * @param bool     $auto_deactivate Optional. Whether to automatically deactivate the plugin
+     *                                  after displaying the notice. Default true.
+     *
+     * @return void
+     */
+    function show_admin_notice_and_deactivate(callable $notice_callback, bool $auto_deactivate = \true): void
+    {
+        if (!is_callable($notice_callback)) {
+            return;
+        }
+        $admin_notice_hooks = array('admin_notices', 'network_admin_notices');
+        foreach ($admin_notice_hooks as $hook) {
+            add_action($hook, static function () use ($notice_callback, $auto_deactivate) {
+                $notice_callback();
+                if ($auto_deactivate) {
+                    deactivate_plugins(plugin_basename(__FILE__));
+                    unset($_GET['activate']);
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                }
+            });
+        }
+    }
+    /**
      * Initialize the plugin and its modules.
      */
     function init(): void
     {
         $root_dir = __DIR__;
         if (!is_woocommerce_activated()) {
-            add_action('admin_notices', function () {
-                /* translators: 1. URL link. */
-                echo '<div class="error"><p><strong>' . sprintf(esc_html__('WooCommerce PayPal Payments requires WooCommerce to be installed and active. You can download %s here.', 'woocommerce-paypal-payments'), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>') . '</strong></p></div>';
-            });
+            show_admin_notice_and_deactivate(static fn() => printf('<div class="notice notice-error"><span class="notice-title">%1$s</span><p>%2$s</p></div>', esc_html__('The plugin WooCommerce PayPal Payments has been deactivated', 'woocommerce-paypal-payments'), wp_kses(sprintf(
+                // translators: %s is a link to install WooCommerce.
+                esc_html__('WooCommerce PayPal Payments requires WooCommerce to be installed and active. %s', 'woocommerce-paypal-payments'),
+                sprintf('<a href="%s">%s</a>', esc_url(network_admin_url('plugin-install.php?tab=plugin-information&plugin=woocommerce')), esc_html__('You can download WooCommerce here.', 'woocommerce-paypal-payments'))
+            ), array('a' => array('href' => array(), 'target' => array())))));
             return;
         }
         if (version_compare(\PHP_VERSION, '7.4', '<')) {
-            add_action('admin_notices', function () {
-                echo '<div class="error"><p>' . esc_html__('WooCommerce PayPal Payments requires PHP 7.4 or above.', 'woocommerce-paypal-payments'), '</p></div>';
-            });
+            show_admin_notice_and_deactivate(static fn() => printf('<div class="notice notice-error"><span class="notice-title">%1$s</span><p>%2$s</p></div>', esc_html__('The plugin WooCommerce PayPal Payments has been deactivated', 'woocommerce-paypal-payments'), esc_html__('WooCommerce PayPal Payments requires PHP 7.4 or above.', 'woocommerce-paypal-payments')));
             return;
         }
         static $initialized;
@@ -71,6 +101,9 @@ define('PPCP_PAYPAL_BN_CODE', 'Woo_PPCP');
     }
     add_action('plugins_loaded', function () {
         init();
+        if (!is_woocommerce_activated()) {
+            return;
+        }
         add_action('init', function () {
             $current_plugin_version = (string) \WooCommerce\PayPalCommerce\PPCP::container()->get('ppcp.plugin')->getVersion();
             $installed_plugin_version = get_option('woocommerce-ppcp-version');

@@ -72,7 +72,7 @@ class PurchaseUnitFactory
      * @param string                 $soft_descriptor The soft descriptor.
      * @param ?PurchaseUnitSanitizer $sanitizer The purchase unit to_array sanitizer.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Factory\AmountFactory $amount_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\ItemFactory $item_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\ShippingFactory $shipping_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\PaymentsFactory $payments_factory, string $prefix = 'WC-', string $soft_descriptor = '', PurchaseUnitSanitizer $sanitizer = null)
+    public function __construct(\WooCommerce\PayPalCommerce\ApiClient\Factory\AmountFactory $amount_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\ItemFactory $item_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\ShippingFactory $shipping_factory, \WooCommerce\PayPalCommerce\ApiClient\Factory\PaymentsFactory $payments_factory, string $prefix = 'WC-', string $soft_descriptor = '', ?PurchaseUnitSanitizer $sanitizer = null)
     {
         $this->amount_factory = $amount_factory;
         $this->item_factory = $item_factory;
@@ -157,15 +157,19 @@ class PurchaseUnitFactory
      *
      * @param \stdClass $data The JSON object.
      *
-     * @return PurchaseUnit
+     * @return ?PurchaseUnit
      * @throws RuntimeException When JSON object is malformed.
      */
-    public function from_paypal_response(\stdClass $data): PurchaseUnit
+    public function from_paypal_response(\stdClass $data): ?PurchaseUnit
     {
         if (!isset($data->reference_id) || !is_string($data->reference_id)) {
-            throw new RuntimeException(__('No reference ID given.', 'woocommerce-paypal-payments'));
+            throw new RuntimeException('No reference ID given.');
         }
-        $amount = $this->amount_factory->from_paypal_response($data->amount);
+        $amount_data = $data->amount ?? null;
+        $amount = $this->amount_factory->from_paypal_response($amount_data);
+        if (null === $amount) {
+            return null;
+        }
         $description = isset($data->description) ? $data->description : '';
         $custom_id = isset($data->custom_id) ? $data->custom_id : '';
         $invoice_id = isset($data->invoice_id) ? $data->invoice_id : '';

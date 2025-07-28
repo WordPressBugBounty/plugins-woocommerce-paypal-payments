@@ -43,7 +43,7 @@ class OnboardingUrlManager
      * @param Cache            $cache  Cache instance for onboarding token.
      * @param ?LoggerInterface $logger The logger, for debugging purposes.
      */
-    public function __construct(Cache $cache, LoggerInterface $logger = null)
+    public function __construct(Cache $cache, ?LoggerInterface $logger = null)
     {
         $this->cache = $cache;
         $this->logger = $logger ?: new NullLogger();
@@ -78,11 +78,6 @@ class OnboardingUrlManager
         $this->logger->debug('Validating onboarding ppcpToken: ' . $log_token);
         if (OnboardingUrl::validate_token_and_delete($this->cache, $token, $user_id)) {
             $this->logger->info('Validated onboarding ppcpToken: ' . $log_token);
-            return \true;
-        }
-        if (OnboardingUrl::validate_previous_token($this->cache, $token, $user_id)) {
-            // TODO: Do we need this here? Previous logic was to reload the page without doing anything in this case.
-            $this->logger->info('Validated previous token, silently redirecting: ' . $log_token);
             return \true;
         }
         $this->logger->error('Failed to validate onboarding ppcpToken: ' . $log_token);

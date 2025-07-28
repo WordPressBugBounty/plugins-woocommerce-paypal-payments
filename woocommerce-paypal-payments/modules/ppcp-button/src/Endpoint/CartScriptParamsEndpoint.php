@@ -66,8 +66,8 @@ class CartScriptParamsEndpoint implements \WooCommerce\PayPalCommerce\Button\End
             if (is_callable('wc_maybe_define_constant')) {
                 wc_maybe_define_constant('WOOCOMMERCE_CART', \true);
             }
-            $include_shipping = (bool) wc_clean(wp_unslash($_GET['shipping'] ?? ''));
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $include_shipping = (bool) wc_clean(wp_unslash($_GET['shipping'] ?? ''));
             $script_data = $this->smart_button->script_data();
             if (!$script_data) {
                 wp_send_json_error();
@@ -114,7 +114,7 @@ class CartScriptParamsEndpoint implements \WooCommerce\PayPalCommerce\Button\End
              *
              * @var \WC_Shipping_Rate $rate
              */
-            $shipping_packages[] = array('id' => $rate->get_id(), 'label' => $rate->get_label(), 'cost' => (float) $rate_cost, 'cost_str' => (new Money((float) $rate_cost, $currency_code))->value_str(), 'description' => html_entity_decode(wp_strip_all_tags(wc_price((float) $rate->get_cost(), array('currency' => get_woocommerce_currency())))));
+            $shipping_packages[] = array('id' => $rate->get_id(), 'label' => $rate->get_label(), 'cost' => (float) $rate_cost, 'cost_str' => (new Money((float) $rate_cost, $currency_code))->value_str(), 'description' => html_entity_decode(wp_strip_all_tags(wc_price((float) $rate->get_cost(), array('currency' => get_woocommerce_currency()))), \ENT_QUOTES, 'UTF-8'));
         }
         $response['chosen_shipping_methods'] = WC()->session->get('chosen_shipping_methods');
         $response['shipping_packages'] = $shipping_packages;

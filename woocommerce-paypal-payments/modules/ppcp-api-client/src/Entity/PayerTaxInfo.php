@@ -37,11 +37,7 @@ class PayerTaxInfo
     public function __construct(string $tax_id, string $type)
     {
         if (!in_array($type, self::VALID_TYPES, \true)) {
-            throw new RuntimeException(sprintf(
-                // translators: %s is the current type.
-                __('%s is not a valid tax type.', 'woocommerce-paypal-payments'),
-                $type
-            ));
+            throw new RuntimeException(sprintf('%s is not a valid tax type.', $type));
         }
         $this->tax_id = $tax_id;
         $this->type = $type;

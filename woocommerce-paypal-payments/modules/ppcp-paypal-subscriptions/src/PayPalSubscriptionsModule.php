@@ -128,6 +128,7 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
                 } catch (NotFoundException $exception) {
                     return;
                 }
+                // phpcs:ignore WordPress.Security.NonceVerification
                 $nonce = wc_clean(wp_unslash($_POST['_wcsnonce'] ?? ''));
                 if ($subscriptions_mode !== 'subscriptions_api' || wcs_is_manual_renewal_enabled() || !is_string($nonce) || !wp_verify_nonce($nonce, 'wcs_subscription_meta')) {
                     return;
@@ -192,6 +193,7 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
              * @psalm-suppress MissingClosureParamType
              */
             function ($variation_id) use ($c) {
+                // phpcs:ignore WordPress.Security.NonceVerification
                 $wcsnonce_save_variations = wc_clean(wp_unslash($_POST['_wcsnonce_save_variations'] ?? ''));
                 if (!WC_Subscriptions_Product::is_subscription($variation_id) || wcs_is_manual_renewal_enabled() || !is_string($wcsnonce_save_variations) || !wp_verify_nonce($wcsnonce_save_variations, 'wcs_subscription_variations')) {
                     return;
@@ -409,7 +411,7 @@ class PayPalSubscriptionsModule implements ServiceModule, ExtendingModule, Execu
                 }
                 $settings = $c->get('wcgateway.settings');
                 $subscription_mode = $settings->has('subscriptions_mode') ? $settings->get('subscriptions_mode') : '';
-                if ($hook !== 'post.php' && $hook !== 'post-new.php' && $subscription_mode !== 'subscriptions_api') {
+                if (!in_array($hook, array('post.php', 'post-new.php'), \true) || $subscription_mode !== 'subscriptions_api') {
                     return;
                 }
                 $module_url = $c->get('paypal-subscriptions.module.url');

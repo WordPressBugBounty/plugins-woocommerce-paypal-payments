@@ -147,7 +147,7 @@ class OrderEndpoint
      * @return Order
      * @throws RuntimeException If the request fails.
      */
-    public function create(array $items, string $shipping_preference, Payer $payer = null, string $payment_method = '', array $request_data = array(), PaymentSource $payment_source = null): Order
+    public function create(array $items, string $shipping_preference, ?Payer $payer = null, string $payment_method = '', array $request_data = array(), ?PaymentSource $payment_source = null): Order
     {
         $bearer = $this->bearer->bearer();
         $data = array('intent' => apply_filters('woocommerce_paypal_payments_order_intent', $this->intent), 'purchase_units' => array_map(static function (PurchaseUnit $item) use ($shipping_preference): array {
@@ -297,14 +297,14 @@ class OrderEndpoint
         }
         $response = $this->request($url, $args);
         if (is_wp_error($response)) {
-            $error = new RuntimeException(__('Could not retrieve order.', 'woocommerce-paypal-payments'));
+            $error = new RuntimeException('Could not retrieve order.');
             $this->logger->warning($error->getMessage());
             throw $error;
         }
         $json = json_decode($response['body']);
         $status_code = (int) wp_remote_retrieve_response_code($response);
         if (404 === $status_code || empty($response['body'])) {
-            $error = new RuntimeException(__('Could not retrieve order.', 'woocommerce-paypal-payments'), 404);
+            $error = new RuntimeException('Could not retrieve order.', 404);
             $this->logger->warning($error->getMessage(), array('args' => $args, 'response' => $response));
             throw $error;
         }

@@ -101,7 +101,7 @@ class ScriptDataHandler
         $script_asset_file = require dirname(realpath(__FILE__) ?: '', 3) . '/assets/index.asset.php';
         $module_url = $this->settings_url;
         wp_register_script('ppcp-admin-settings', $module_url . '/assets/index.js', $script_asset_file['dependencies'], $script_asset_file['version'], \true);
-        wp_enqueue_script('ppcp-admin-settings', '', array('wp-i18n'), $script_asset_file['version']);
+        wp_enqueue_script('ppcp-admin-settings', '', array('wp-i18n'), $script_asset_file['version'], \true);
         wp_set_script_translations('ppcp-admin-settings', 'woocommerce-paypal-payments');
         /**
          * Require resolves.

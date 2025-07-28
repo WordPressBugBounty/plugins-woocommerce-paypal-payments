@@ -70,6 +70,28 @@ class ExperienceContextBuilder
         return $builder;
     }
     /**
+     * Uses a custom return URL.
+     *
+     * @param  string $url The return URL.
+     */
+    public function with_custom_return_url(string $url): \WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder
+    {
+        $builder = clone $this;
+        $builder->experience_context = $builder->experience_context->with_return_url($url);
+        return $builder;
+    }
+    /**
+     * Uses a custom cancel URL.
+     *
+     * @param  string $url The cancel URL.
+     */
+    public function with_custom_cancel_url(string $url): \WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder
+    {
+        $builder = clone $this;
+        $builder->experience_context = $builder->experience_context->with_cancel_url($url);
+        return $builder;
+    }
+    /**
      * Uses the current brand name from the settings.
      */
     public function with_current_brand_name(): \WooCommerce\PayPalCommerce\ApiClient\Factory\ExperienceContextBuilder

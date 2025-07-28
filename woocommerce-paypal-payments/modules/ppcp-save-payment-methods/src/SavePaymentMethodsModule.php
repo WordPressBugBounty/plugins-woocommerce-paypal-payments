@@ -11,21 +11,21 @@ namespace WooCommerce\PayPalCommerce\SavePaymentMethods;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WC_Order;
 use WooCommerce\PayPalCommerce\ApiClient\Authentication\UserIdToken;
-use WooCommerce\PayPalCommerce\ApiClient\Endpoint\BillingAgreementsEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\PaymentTokensEndpoint;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\Order;
 use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
+use WooCommerce\PayPalCommerce\ApiClient\Helper\ReferenceTransactionStatus;
 use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentToken;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentTokenForGuest;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreateSetupToken;
+use WooCommerce\PayPalCommerce\Vaulting\WooCommercePaymentTokens;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
-use WooCommerce\PayPalCommerce\Vaulting\WooCommercePaymentTokens;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
@@ -64,10 +64,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
         add_action('woocommerce_paypal_payments_gateway_migrate_on_update', function () use ($c) {
             $settings = $c->get('wcgateway.settings');
             assert($settings instanceof Settings);
-            $billing_agreements_endpoint = $c->get('api.endpoint.billing-agreements');
-            assert($billing_agreements_endpoint instanceof BillingAgreementsEndpoint);
-            $reference_transaction_enabled = $billing_agreements_endpoint->reference_transaction_enabled();
-            if ($reference_transaction_enabled !== \true) {
+            $reference_transaction_status = $c->get('api.reference-transaction-status');
+            assert($reference_transaction_status instanceof ReferenceTransactionStatus);
+            if (!$reference_transaction_status->reference_transaction_enabled()) {
                 $settings->set('vault_enabled', \false);
                 $settings->persist();
             }
@@ -200,8 +199,8 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
                     $settings = $c->get('wcgateway.settings');
                     assert($settings instanceof Settings);
                     $verification_method = $settings->has('3d_secure_contingency') ? apply_filters('woocommerce_paypal_payments_three_d_secure_contingency', $settings->get('3d_secure_contingency')) : '';
-                    $change_payment_method = wc_clean(wp_unslash($_GET['change_payment_method'] ?? ''));
                     // phpcs:ignore WordPress.Security.NonceVerification
+                    $change_payment_method = wc_clean(wp_unslash($_GET['change_payment_method'] ?? ''));
                     wp_localize_script('ppcp-add-payment-method', 'ppcp_add_payment_method', array('client_id' => $c->get('button.client_id'), 'merchant_id' => $c->get('api.merchant_id'), 'id_token' => $id_token, 'payment_methods_page' => wc_get_account_endpoint_url('payment-methods'), 'view_subscriptions_page' => wc_get_account_endpoint_url('view-subscription'), 'is_subscription_change_payment_page' => $this->is_subscription_change_payment_method_page(), 'subscription_id_to_change_payment' => $this->is_subscription_change_payment_method_page() ? (int) $change_payment_method : 0, 'error_message' => __('Could not save payment method.', 'woocommerce-paypal-payments'), 'verification_method' => $verification_method, 'ajax' => array('create_setup_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreateSetupToken::ENDPOINT), 'nonce' => wp_create_nonce(CreateSetupToken::nonce())), 'create_payment_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentToken::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentToken::nonce())), 'subscription_change_payment_method' => array('endpoint' => \WC_AJAX::get_endpoint(SubscriptionChangePaymentMethod::ENDPOINT), 'nonce' => wp_create_nonce(SubscriptionChangePaymentMethod::nonce()))), 'labels' => array('error' => array('generic' => __('Something went wrong. Please try again or choose another payment source.', 'woocommerce-paypal-payments')))));
                 } catch (RuntimeException $exception) {
                     $logger = $c->get('woocommerce.logger.woocommerce');

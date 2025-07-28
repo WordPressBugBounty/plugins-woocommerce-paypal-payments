@@ -51,7 +51,7 @@ class ApplepayModule implements ServiceModule, ExtendingModule, ExecutableModule
     {
         $module = $this;
         // Clears product status when appropriate.
-        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (Settings $settings = null) use ($c): void {
+        add_action('woocommerce_paypal_payments_clear_apm_product_status', function (?Settings $settings = null) use ($c): void {
             $apm_status = $c->get('applepay.apple-product-status');
             assert($apm_status instanceof AppleProductStatus);
             $apm_status->clear($settings);
@@ -177,8 +177,8 @@ class ApplepayModule implements ServiceModule, ExtendingModule, ExecutableModule
             $validation_string = $this->validation_string($is_sandbox);
             nocache_headers();
             header('Content-Type: text/plain', \true, 200);
-            echo $validation_string;
             // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            echo $validation_string;
             exit;
         }
     }

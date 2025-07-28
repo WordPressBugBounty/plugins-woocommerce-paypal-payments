@@ -42,7 +42,7 @@ class DisplayManager
      * @param string|null $key The rule key.
      * @return DisplayRule
      */
-    public function rule(string $key = null): \WooCommerce\PayPalCommerce\WcGateway\Helper\DisplayRule
+    public function rule(?string $key = null): \WooCommerce\PayPalCommerce\WcGateway\Helper\DisplayRule
     {
         if (null === $key) {
             $key = '_rule_' . (string) count($this->rules);
