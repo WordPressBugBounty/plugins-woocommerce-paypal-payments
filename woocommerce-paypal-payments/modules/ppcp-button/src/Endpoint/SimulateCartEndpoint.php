@@ -128,7 +128,8 @@ class SimulateCartEndpoint extends \WooCommerce\PayPalCommerce\Button\Endpoint\A
             // Removes shutdown actions to prevent persisting session, transients and save cookies.
             remove_all_actions('shutdown');
             unset(WC()->cart);
-        } else if (null !== $this->real_cart) {
+        } elseif (null !== $this->real_cart) {
+            // Restores cart, may lead to race conditions.
             WC()->cart = $this->real_cart;
         }
         unset($this->cart);

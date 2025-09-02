@@ -20,7 +20,8 @@ use WP_REST_Response;
  */
 class PaymentCaptureCompleted implements \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandler
 {
-    use TransactionIdHandlingTrait, \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandlerTrait;
+    use TransactionIdHandlingTrait;
+    use \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandlerTrait;
     /**
      * The logger.
      *

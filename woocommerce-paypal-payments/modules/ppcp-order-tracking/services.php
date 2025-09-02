@@ -30,12 +30,7 @@ return array(
         return new OrderTrackingEndpoint($container->get('api.host'), $container->get('api.bearer'), $container->get('woocommerce.logger.woocommerce'), $container->get('button.request-data'), $container->get('order-tracking.shipment.factory'), $container->get('order-tracking.allowed-shipping-statuses'), $container->get('order-tracking.should-use-second-version-of-api'));
     },
     'order-tracking.module.url' => static function (ContainerInterface $container): string {
-        /**
-         * The path cannot be false.
-         *
-         * @psalm-suppress PossiblyFalseArgument
-         */
-        return plugins_url('/modules/ppcp-order-tracking/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-order-tracking/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'order-tracking.meta-box.renderer' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\OrderTracking\MetaBoxRenderer {
         return new \WooCommerce\PayPalCommerce\OrderTracking\MetaBoxRenderer($container->get('order-tracking.allowed-shipping-statuses'), $container->get('order-tracking.available-carriers'), $container->get('order-tracking.endpoint.controller'), $container->get('order-tracking.should-use-second-version-of-api'), $container->get('woocommerce.logger.woocommerce'));

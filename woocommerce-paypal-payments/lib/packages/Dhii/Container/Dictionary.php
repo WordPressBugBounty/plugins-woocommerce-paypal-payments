@@ -4,13 +4,13 @@ declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Dhii\Container;
 
 use ArrayIterator;
-use Traversable;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Collection\WritableContainerInterface;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Collection\WritableMapInterface;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Container\Exception\NotFoundException;
 use WooCommerce\PayPalCommerce\Vendor\Dhii\Container\Util\StringTranslatingTrait;
 use IteratorAggregate;
 use RangeException;
+use Traversable;
 /**
  * A simple mutable dictionary, i.e. an enumerable key-value map.
  */
@@ -41,6 +41,7 @@ class Dictionary implements IteratorAggregate, WritableMapInterface
      */
     public function has($key)
     {
+        $key = (string) $key;
         $isHas = array_key_exists($key, $this->data);
         return $isHas;
     }

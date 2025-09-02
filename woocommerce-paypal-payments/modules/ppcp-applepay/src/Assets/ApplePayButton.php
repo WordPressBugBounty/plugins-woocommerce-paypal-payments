@@ -25,7 +25,8 @@ use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
  */
 class ApplePayButton implements ButtonInterface
 {
-    use RequestHandlerTrait, ContextTrait;
+    use RequestHandlerTrait;
+    use ContextTrait;
     /**
      * The settings.
      *

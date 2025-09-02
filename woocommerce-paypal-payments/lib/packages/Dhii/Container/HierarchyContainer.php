@@ -79,6 +79,7 @@ class HierarchyContainer implements ContainerInterface
      */
     public function has($key)
     {
+        $key = (string) $key;
         return array_key_exists($key, $this->data);
     }
 }

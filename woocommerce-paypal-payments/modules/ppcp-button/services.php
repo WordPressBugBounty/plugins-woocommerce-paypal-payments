@@ -124,7 +124,7 @@ return array(
         return new SmartButton($container->get('button.url'), $container->get('ppcp.asset-version'), $container->get('session.handler'), $settings, $payer_factory, $client_id, $request_data, $dcc_applies, $subscription_helper, $messages_apply, $environment, $payment_token_repository, $settings_status, $container->get('api.shop.currency.getter'), $container->get('wcgateway.all-funding-sources'), $container->get('button.basic-checkout-validation-enabled'), $container->get('button.early-wc-checkout-validation-enabled'), $container->get('button.pay-now-contexts'), $container->get('wcgateway.funding-sources-without-redirect'), $container->get('vaulting.vault-v3-enabled'), $container->get('api.endpoint.payment-tokens'), $container->get('woocommerce.logger.woocommerce'), $container->get('button.handle-shipping-in-paypal'), $container->get('wcgateway.server-side-shipping-callback-enabled'), $container->get('wcgateway.appswitch-enabled'), $container->get('button.helper.disabled-funding-sources'), $container->get('wcgateway.configuration.card-configuration'), $container->get('api.helper.partner-attribution'), $container->get('blocks.settings.final_review_enabled'));
     },
     'button.url' => static function (ContainerInterface $container): string {
-        return plugins_url('/modules/ppcp-button/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-button/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'button.pay-now-contexts' => static function (ContainerInterface $container): array {
         $defaults = array('checkout', 'pay-now');

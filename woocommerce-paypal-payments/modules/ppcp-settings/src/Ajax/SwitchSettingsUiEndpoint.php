@@ -22,6 +22,7 @@ class SwitchSettingsUiEndpoint
 {
     public const ENDPOINT = 'ppcp-settings-switch-ui';
     public const OPTION_NAME_SHOULD_USE_OLD_UI = 'woocommerce_ppcp-settings-should-use-old-ui';
+    public const OPTION_NAME_MIGRATION_IS_DONE = 'woocommerce_ppcp-settings-migration-is-done';
     protected RequestData $request_data;
     protected LoggerInterface $logger;
     protected OnboardingProfile $onboarding_profile;
@@ -57,6 +58,7 @@ class SwitchSettingsUiEndpoint
             $this->onboarding_profile->set_gateways_synced(\true);
             $this->onboarding_profile->save();
             $this->settings_data_migration->migrate();
+            update_option(self::OPTION_NAME_MIGRATION_IS_DONE, \true);
             wp_send_json_success();
         } catch (Exception $error) {
             wp_send_json_error(array('message' => $error->getMessage()), 500);

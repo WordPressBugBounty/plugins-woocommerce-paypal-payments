@@ -147,7 +147,7 @@ class SessionHandler
     public function increment_insufficient_funding_tries(): void
     {
         $this->load_session();
-        $this->insufficient_funding_tries++;
+        ++$this->insufficient_funding_tries;
         $this->store_session();
     }
     /**

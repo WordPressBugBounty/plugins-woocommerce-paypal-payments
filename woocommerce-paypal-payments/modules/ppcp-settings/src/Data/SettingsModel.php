@@ -389,4 +389,22 @@ class SettingsModel extends \WooCommerce\PayPalCommerce\Settings\Data\AbstractDa
     {
         $this->data['disabled_cards'] = array_map(array($this->sanitizer, 'sanitize_text'), $cards);
     }
+    /**
+     * Gets the Stay Updated setting.
+     *
+     * @return bool True if Stay Updated is enabled, false otherwise.
+     */
+    public function get_stay_updated(): bool
+    {
+        return $this->data['stay_updated'];
+    }
+    /**
+     * Sets the Stay Updated setting.
+     *
+     * @param bool $save Whether to save the Stay Updated.
+     */
+    public function set_stay_updated(bool $save): void
+    {
+        $this->data['stay_updated'] = $this->sanitizer->sanitize_bool($save);
+    }
 }

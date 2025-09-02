@@ -51,6 +51,7 @@ class FlashContainer implements MutableContainerInterface, ClearableContainerInt
      */
     public function has($key)
     {
+        $key = (string) $key;
         return array_key_exists($key, $this->flashData);
     }
     /**

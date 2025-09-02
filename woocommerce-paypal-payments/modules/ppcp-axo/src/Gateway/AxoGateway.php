@@ -39,7 +39,9 @@ use DomainException;
  */
 class AxoGateway extends WC_Payment_Gateway
 {
-    use OrderMetaTrait, GatewaySettingsRendererTrait, ProcessPaymentTrait;
+    use OrderMetaTrait;
+    use GatewaySettingsRendererTrait;
+    use ProcessPaymentTrait;
     const ID = 'ppcp-axo-gateway';
     /**
      * The Settings Renderer.

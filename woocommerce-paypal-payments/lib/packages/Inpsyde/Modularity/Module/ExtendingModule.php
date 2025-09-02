@@ -3,6 +3,10 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module;
 
+use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
+/**
+ * @phpstan-type ExtendingService callable(mixed $service, ContainerInterface $container): mixed
+ */
 interface ExtendingModule extends \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\Module
 {
     /**
@@ -16,7 +20,7 @@ interface ExtendingModule extends \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Mod
      * That is done by using as ID (array key in the `extensions` method) the target module ID
      * and the service ID.
      *
-     * @return array<string, callable(mixed $service, \WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface $container):mixed>
+     * @return array<string, ExtendingService>
      */
     public function extensions(): array;
 }

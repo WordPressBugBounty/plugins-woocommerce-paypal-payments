@@ -24,7 +24,7 @@ return function (string $root_dir, array $additional_containers = array(), array
      */
     $modules = apply_filters('woocommerce_paypal_payments_modules', $modules);
     // Initialize plugin.
-    $properties = PluginProperties::new(__FILE__);
+    $properties = PluginProperties::new("{$root_dir}/woocommerce-paypal-payments.php");
     $bootstrap = Package::new($properties);
     foreach ($modules as $module) {
         $bootstrap->addModule($module);

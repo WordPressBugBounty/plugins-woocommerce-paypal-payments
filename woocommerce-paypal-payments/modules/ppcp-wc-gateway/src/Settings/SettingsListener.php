@@ -223,7 +223,7 @@ class SettingsListener
                 if ($this->onboarding_retry_delay > 0) {
                     sleep($this->onboarding_retry_delay);
                 }
-                $retry_count++;
+                ++$retry_count;
                 $this->logger->info('Retrying onboarding return URL, retry nr: ' . (string) $retry_count);
                 $redirect_url = add_query_arg('ppcpRetry', $retry_count);
                 $this->redirector->redirect($redirect_url);

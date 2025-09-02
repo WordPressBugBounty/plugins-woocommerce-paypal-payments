@@ -15,11 +15,7 @@ use WooCommerce\PayPalCommerce\AdminNotices\Repository\Repository;
 use WooCommerce\PayPalCommerce\AdminNotices\Repository\RepositoryInterface;
 use WooCommerce\PayPalCommerce\AdminNotices\Endpoint\MuteMessageEndpoint;
 return array('admin-notices.url' => static function (ContainerInterface $container): string {
-    $path = realpath(__FILE__);
-    if (\false === $path) {
-        return '';
-    }
-    return plugins_url('/modules/ppcp-admin-notices/', dirname($path, 3) . '/woocommerce-paypal-payments.php');
+    return plugins_url('/modules/ppcp-admin-notices/', $container->get('ppcp.path-to-plugin-main-file'));
 }, 'admin-notices.renderer' => static function (ContainerInterface $container): RendererInterface {
     return new Renderer($container->get('admin-notices.repository'), $container->get('admin-notices.url'), $container->get('ppcp.asset-version'));
 }, 'admin-notices.repository' => static function (ContainerInterface $container): RepositoryInterface {

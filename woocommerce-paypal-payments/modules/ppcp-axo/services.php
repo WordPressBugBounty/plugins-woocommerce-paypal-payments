@@ -9,8 +9,10 @@ declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Axo;
 
 use WooCommerce\PayPalCommerce\Axo\Assets\AxoManager;
+use WooCommerce\PayPalCommerce\Axo\Endpoint\AxoScriptAttributes;
+use WooCommerce\PayPalCommerce\Axo\Endpoint\FrontendLogger;
 use WooCommerce\PayPalCommerce\Axo\Gateway\AxoGateway;
-use WooCommerce\PayPalCommerce\Axo\Helper\ApmApplies;
+use WooCommerce\PayPalCommerce\Axo\Service\AxoApplies;
 use WooCommerce\PayPalCommerce\Axo\Helper\CompatibilityChecker;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
@@ -25,14 +27,14 @@ return array(
         return $eligibility_check();
     },
     'axo.eligibility.check' => static function (ContainerInterface $container): callable {
-        $apm_applies = $container->get('axo.helpers.apm-applies');
-        assert($apm_applies instanceof ApmApplies);
-        return static function () use ($apm_applies): bool {
-            return $apm_applies->for_country_currency() && $apm_applies->for_merchant();
+        $axo_applies = $container->get('axo.service.axo-applies');
+        assert($axo_applies instanceof AxoApplies);
+        return static function () use ($axo_applies): bool {
+            return $axo_applies->for_country_currency() && $axo_applies->for_merchant();
         };
     },
-    'axo.helpers.apm-applies' => static function (ContainerInterface $container): ApmApplies {
-        return new ApmApplies($container->get('axo.supported-country-currency-matrix'), $container->get('api.shop.currency.getter'), $container->get('api.shop.country'));
+    'axo.service.axo-applies' => static function (ContainerInterface $container): AxoApplies {
+        return new AxoApplies($container->get('axo.supported-country-currency-matrix'), $container->get('api.shop.currency.getter'), $container->get('api.shop.country'), $container->get('wcgateway.configuration.card-configuration'), $container->get('wc-subscriptions.helper'));
     },
     'axo.helpers.compatibility-checker' => static function (ContainerInterface $container): CompatibilityChecker {
         return new CompatibilityChecker($container->get('axo.fastlane-incompatible-plugin-names'), $container->get('wcgateway.configuration.card-configuration'));
@@ -44,11 +46,7 @@ return array(
         return $settings->has('axo_enabled') && $settings->get('axo_enabled');
     },
     'axo.url' => static function (ContainerInterface $container): string {
-        $path = realpath(__FILE__);
-        if (\false === $path) {
-            return '';
-        }
-        return plugins_url('/modules/ppcp-axo/', dirname($path, 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-axo/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'axo.manager' => static function (ContainerInterface $container): AxoManager {
         return new AxoManager($container->get('axo.url'), $container->get('ppcp.asset-version'), $container->get('session.handler'), $container->get('wcgateway.settings'), $container->get('settings.environment'), $container->get('axo.insights'), $container->get('wcgateway.settings.status'), $container->get('api.shop.currency.getter'), $container->get('woocommerce.logger.woocommerce'), $container->get('wcgateway.url'), $container->get('axo.supported-country-card-type-matrix'));
@@ -80,6 +78,9 @@ return array(
         if ($container->get('axo.uk.enabled')) {
             $matrix['GB'] = array('GBP');
         }
+        if ($container->get('axo.au.enabled')) {
+            $matrix['AU'] = array('AUD');
+        }
         /**
          * Returns which countries and currency combinations can be used for AXO.
          */
@@ -92,6 +93,9 @@ return array(
         $matrix = array('US' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER'), 'CA' => array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER'));
         if ($container->get('axo.uk.enabled')) {
             $matrix['GB'] = array('VISA', 'MASTERCARD', 'AMEX', 'DISCOVER');
+        }
+        if ($container->get('axo.au.enabled')) {
+            $matrix['AU'] = array('VISA', 'MASTERCARD', 'AMEX');
         }
         /**
          * Returns which countries and card type combinations can be used for AXO.
@@ -138,8 +142,11 @@ return array(
         }
         return '<div class="ppcp-notice ppcp-notice-warning"><p>' . $notice_content . '</p></div>';
     },
-    'axo.endpoint.frontend-logger' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Axo\FrontendLoggerEndpoint {
-        return new \WooCommerce\PayPalCommerce\Axo\FrontendLoggerEndpoint($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'));
+    'axo.endpoint.frontend-logger' => static function (ContainerInterface $container): FrontendLogger {
+        return new FrontendLogger($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'));
+    },
+    'axo.endpoint.script-attributes' => static function (ContainerInterface $container): AxoScriptAttributes {
+        return new AxoScriptAttributes($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'), $container->get('api.sdk-client-token'), $container->get('axo.eligible'));
     },
     /**
      * The list of Fastlane incompatible plugins.
@@ -181,6 +188,16 @@ return array(
          * @param bool $enabled Whether Fastlane UK is enabled.
          */
         return apply_filters('woocommerce.feature-flags.woocommerce_paypal_payments.axo_uk_enabled', getenv('PCP_AXO_UK_ENABLED') !== '0');
+        // phpcs:enable WordPress.NamingConventions.ValidHookName.UseUnderscores
+    },
+    'axo.au.enabled' => static function (ContainerInterface $container): bool {
+        // phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
+        /**
+         * Filter to determine if Fastlane AU should be enabled.
+         *
+         * @param bool $enabled Whether Fastlane AU is enabled.
+         */
+        return apply_filters('woocommerce.feature-flags.woocommerce_paypal_payments.axo_au_enabled', getenv('PCP_AXO_AU_ENABLED') !== '0');
         // phpcs:enable WordPress.NamingConventions.ValidHookName.UseUnderscores
     },
 );

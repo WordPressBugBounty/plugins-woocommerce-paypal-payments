@@ -61,7 +61,8 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
  */
 class SmartButton implements \WooCommerce\PayPalCommerce\Button\Assets\SmartButtonInterface
 {
-    use FreeTrialHandlerTrait, ContextTrait;
+    use FreeTrialHandlerTrait;
+    use ContextTrait;
     /**
      * The Settings status helper.
      *
@@ -1285,7 +1286,7 @@ document.querySelector("#payment").before(document.querySelector(".ppcp-messages
      */
     protected function is_cart_price_total_zero(): bool
     {
-        // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
+        // phpcs:ignore Universal.Operators.StrictComparisons.LooseEqual
         return WC()->cart && WC()->cart->get_total('numeric') == 0;
     }
     /**

@@ -66,6 +66,7 @@ class MaskingContainer implements ContainerInterface
      */
     public function has($key)
     {
+        $key = (string) $key;
         return $this->isExposed($key) && $this->inner->has($key);
     }
     /**

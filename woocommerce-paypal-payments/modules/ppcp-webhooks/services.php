@@ -109,5 +109,5 @@ return array('webhook.registrar' => function (ContainerInterface $container): \W
 }, 'webhook.last-webhook-storage.key' => static function (ContainerInterface $container): string {
     return 'ppcp-last-webhook';
 }, 'webhook.module-url' => static function (ContainerInterface $container): string {
-    return plugins_url('/modules/ppcp-webhooks/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+    return plugins_url('/modules/ppcp-webhooks/', $container->get('ppcp.path-to-plugin-main-file'));
 });

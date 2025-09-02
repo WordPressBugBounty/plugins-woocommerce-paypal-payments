@@ -14,12 +14,7 @@ use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\Button\Assets\SmartButtonInterface;
 use WC_Cart;
 return array('blocks.url' => static function (ContainerInterface $container): string {
-    /**
-     * The path cannot be false.
-     *
-     * @psalm-suppress PossiblyFalseArgument
-     */
-    return plugins_url('/modules/ppcp-blocks/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+    return plugins_url('/modules/ppcp-blocks/', $container->get('ppcp.path-to-plugin-main-file'));
 }, 'blocks.method' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Blocks\PayPalPaymentMethod {
     return new \WooCommerce\PayPalCommerce\Blocks\PayPalPaymentMethod($container->get('blocks.url'), $container->get('ppcp.asset-version'), function () use ($container): SmartButtonInterface {
         return $container->get('button.smart-button');

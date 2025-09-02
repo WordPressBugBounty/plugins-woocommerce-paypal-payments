@@ -29,7 +29,8 @@ use function WooCommerce\PayPalCommerce\Api\ppcp_get_paypal_order;
 class OrderTrackingModule implements ServiceModule, ExtendingModule, ExecutableModule
 {
     use ModuleClassNameIdTrait;
-    use \WooCommerce\PayPalCommerce\OrderTracking\TrackingAvailabilityTrait, TransactionIdHandlingTrait;
+    use \WooCommerce\PayPalCommerce\OrderTracking\TrackingAvailabilityTrait;
+    use TransactionIdHandlingTrait;
     public const PPCP_TRACKING_INFO_META_NAME = '_ppcp_paypal_tracking_info_meta_name';
     /**
      * {@inheritDoc}

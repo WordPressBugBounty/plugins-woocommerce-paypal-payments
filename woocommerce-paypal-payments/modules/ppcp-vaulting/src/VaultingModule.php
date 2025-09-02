@@ -31,7 +31,8 @@ use WP_User_Query;
  */
 class VaultingModule implements ServiceModule, ExtendingModule, ExecutableModule
 {
-    use ModuleClassNameIdTrait, ContextTrait;
+    use ModuleClassNameIdTrait;
+    use ContextTrait;
     /**
      * Session Handler
      *

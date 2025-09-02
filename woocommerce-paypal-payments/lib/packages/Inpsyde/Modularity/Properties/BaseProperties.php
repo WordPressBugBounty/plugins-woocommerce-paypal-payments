@@ -5,38 +5,24 @@ namespace WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties;
 
 class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Properties\Properties
 {
-    /**
-     * @var null|bool
-     */
-    protected $isDebug = null;
-    /**
-     * @var string
-     */
-    protected $baseName;
-    /**
-     * @var string
-     */
-    protected $basePath;
-    /**
-     * @var string|null
-     */
-    protected $baseUrl;
-    /**
-     * @var array
-     */
-    protected $properties;
+    protected ?bool $isDebug = null;
+    protected string $baseName;
+    protected string $basePath;
+    protected ?string $baseUrl;
+    /** @var array<string, mixed> */
+    protected array $properties;
     /**
      * @param string $baseName
      * @param string $basePath
      * @param string|null $baseUrl
-     * @param array $properties
+     * @param array<string, mixed> $properties
      */
-    protected function __construct(string $baseName, string $basePath, string $baseUrl = null, array $properties = [])
+    protected function __construct(string $baseName, string $basePath, ?string $baseUrl = null, array $properties = [])
     {
         $baseName = $this->sanitizeBaseName($baseName);
-        $basePath = (string) trailingslashit($basePath);
-        if ($baseUrl) {
-            $baseUrl = (string) trailingslashit($baseUrl);
+        $basePath = trailingslashit($basePath);
+        if ($baseUrl !== null) {
+            $baseUrl = trailingslashit($baseUrl);
         }
         $this->baseName = $baseName;
         $this->basePath = $basePath;
@@ -46,11 +32,13 @@ class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modul
     /**
      * @param string $name
      *
-     * @return string
+     * @return lowercase-string
      */
     protected function sanitizeBaseName(string $name): string
     {
-        substr_count($name, '/') and $name = dirname($name);
+        if (substr_count($name, '/')) {
+            $name = dirname($name);
+        }
         return strtolower(pathinfo($name, \PATHINFO_FILENAME));
     }
     /**
@@ -136,7 +124,7 @@ class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modul
     public function requiresWp(): ?string
     {
         $value = $this->get(self::PROP_REQUIRES_WP);
-        return $value && is_string($value) ? $value : null;
+        return $value !== '' && is_string($value) ? $value : null;
     }
     /**
      * @return string|null
@@ -144,10 +132,10 @@ class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modul
     public function requiresPhp(): ?string
     {
         $value = $this->get(self::PROP_REQUIRES_PHP);
-        return $value && is_string($value) ? $value : null;
+        return $value !== '' && is_string($value) ? $value : null;
     }
     /**
-     * @return array
+     * @return string[]
      */
     public function tags(): array
     {
@@ -155,7 +143,8 @@ class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modul
     }
     /**
      * @param string $key
-     * @param null $default
+     * @param mixed $default
+     *
      * @return mixed
      */
     public function get(string $key, $default = null)
@@ -164,6 +153,7 @@ class BaseProperties implements \WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modul
     }
     /**
      * @param string $key
+     *
      * @return bool
      */
     public function has(string $key): bool

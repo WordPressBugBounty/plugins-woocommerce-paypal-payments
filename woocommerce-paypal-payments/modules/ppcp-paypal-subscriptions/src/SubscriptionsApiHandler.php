@@ -202,7 +202,7 @@ class SubscriptionsApiHandler
         $trial_length = $product->get_meta('_subscription_trial_length') ?? '';
         if ($trial_length) {
             $billing_cycles[] = (new BillingCycle(array('interval_unit' => $product->get_meta('_subscription_trial_period'), 'interval_count' => $product->get_meta('_subscription_trial_length')), $sequence, 'TRIAL', array('fixed_price' => array('value' => '0', 'currency_code' => $this->currency->get())), 1))->to_array();
-            $sequence++;
+            ++$sequence;
         }
         $interval = $product->get_meta('_subscription_period');
         $period_interval = (int) $product->get_meta('_subscription_period_interval');

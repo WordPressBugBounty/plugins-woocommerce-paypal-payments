@@ -36,7 +36,9 @@ use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
  */
 class OrderProcessor
 {
-    use \WooCommerce\PayPalCommerce\WcGateway\Processor\OrderMetaTrait, \WooCommerce\PayPalCommerce\WcGateway\Processor\PaymentsStatusHandlingTrait, \WooCommerce\PayPalCommerce\WcGateway\Processor\TransactionIdHandlingTrait;
+    use \WooCommerce\PayPalCommerce\WcGateway\Processor\OrderMetaTrait;
+    use \WooCommerce\PayPalCommerce\WcGateway\Processor\PaymentsStatusHandlingTrait;
+    use \WooCommerce\PayPalCommerce\WcGateway\Processor\TransactionIdHandlingTrait;
     /**
      * The environment.
      *
@@ -187,7 +189,11 @@ class OrderProcessor
                     throw new Exception(__('Could not retrieve PayPal order.', 'woocommerce-paypal-payments'));
                 }
             } else {
-                $this->logger->warning(sprintf('No PayPal order ID found in order #%d meta.', $wc_order->get_id()));
+                $is_paypal_return = isset($_GET['wc-ajax']) && wc_clean(wp_unslash($_GET['wc-ajax'])) === 'ppc-return-url';
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                if ($is_paypal_return) {
+                    $this->logger->warning(sprintf('No PayPal order ID found for WooCommerce order #%d.', $wc_order->get_id()));
+                }
                 throw new PayPalOrderMissingException(esc_attr__('There was an error processing your order. Please check for any charges in your payment method and review your order history before placing the order again.', 'woocommerce-paypal-payments'));
             }
         }

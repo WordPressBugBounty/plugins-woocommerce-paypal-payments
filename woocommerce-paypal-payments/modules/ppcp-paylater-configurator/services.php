@@ -16,14 +16,7 @@ use WooCommerce\PayPalCommerce\Button\Helper\MessagesApply;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\DCCProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 return array('paylater-configurator.url' => static function (ContainerInterface $container): string {
-    /**
-     * The return value must not contain a trailing slash.
-     *
-     * Cannot return false for this path.
-     *
-     * @psalm-suppress PossiblyFalseArgument
-     */
-    return plugins_url('/modules/ppcp-paylater-configurator', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+    return plugins_url('/modules/ppcp-paylater-configurator', $container->get('ppcp.path-to-plugin-main-file'));
 }, 'paylater-configurator.factory.config' => static function (ContainerInterface $container): ConfigFactory {
     return new ConfigFactory();
 }, 'paylater-configurator.endpoint.save-config' => static function (ContainerInterface $container): SaveConfig {

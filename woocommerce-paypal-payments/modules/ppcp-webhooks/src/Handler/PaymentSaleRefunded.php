@@ -20,7 +20,9 @@ use WP_REST_Response;
  */
 class PaymentSaleRefunded implements \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandler
 {
-    use TransactionIdHandlingTrait, RefundMetaTrait, \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandlerTrait;
+    use TransactionIdHandlingTrait;
+    use RefundMetaTrait;
+    use \WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandlerTrait;
     /**
      * The logger.
      *

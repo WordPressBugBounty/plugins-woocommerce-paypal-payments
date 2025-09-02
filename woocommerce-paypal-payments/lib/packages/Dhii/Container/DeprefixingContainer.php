@@ -76,7 +76,9 @@ class DeprefixingContainer implements ContainerInterface
      */
     public function has($key)
     {
-        return $this->inner->has($this->getInnerKey($key)) || !$this->strict && $this->inner->has($key);
+        $key = (string) $key;
+        $realKey = $this->getInnerKey($key);
+        return $this->inner->has($realKey) || !$this->strict && $this->inner->has($key);
     }
     /**
      * Retrieves the key to use for the inner container.

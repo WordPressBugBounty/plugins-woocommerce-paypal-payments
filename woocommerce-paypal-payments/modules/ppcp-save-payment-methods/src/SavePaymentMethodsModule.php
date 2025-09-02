@@ -21,6 +21,7 @@ use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentToken;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentTokenForGuest;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreateSetupToken;
+use WooCommerce\PayPalCommerce\SavePaymentMethods\Service\PaymentMethodTokensChecker;
 use WooCommerce\PayPalCommerce\Vaulting\WooCommercePaymentTokens;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExtendingModule;
@@ -212,8 +213,15 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
                     $logger->error($error);
                 }
             });
-            add_action('woocommerce_add_payment_method_form_bottom', function () {
+            // Do not display PayPal button if the user already has a PayPal payment token.
+            add_action('woocommerce_add_payment_method_form_bottom', function () use ($c) {
                 if (!is_user_logged_in() || !is_add_payment_method_page()) {
+                    return;
+                }
+                $payment_method_tokens_checked = $c->get('save-payment-methods.service.payment-method-tokens-checker');
+                assert($payment_method_tokens_checked instanceof PaymentMethodTokensChecker);
+                $customer_id = get_user_meta(get_current_user_id(), '_ppcp_target_customer_id', \true);
+                if ($payment_method_tokens_checked->has_paypal_payment_token($customer_id)) {
                     return;
                 }
                 echo '<div id="ppc-button-' . esc_attr(PayPalGateway::ID) . '-save-payment-method"></div>';

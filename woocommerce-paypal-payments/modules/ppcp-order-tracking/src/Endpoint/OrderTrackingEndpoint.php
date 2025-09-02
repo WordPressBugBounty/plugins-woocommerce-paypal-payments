@@ -32,14 +32,15 @@ use function WooCommerce\PayPalCommerce\Api\ppcp_get_paypal_order;
  *     status: SupportedStatuses,
  *     tracking_number: string,
  *     carrier: string,
- *     items?: list<int>,
+ *     items?: array,
  *     carrier_name_other?: string,
  * }
  * Class OrderTrackingEndpoint
  */
 class OrderTrackingEndpoint
 {
-    use RequestTrait, TransactionIdHandlingTrait;
+    use RequestTrait;
+    use TransactionIdHandlingTrait;
     const ENDPOINT = 'ppc-tracking-info';
     /**
      * The RequestData.
@@ -299,7 +300,7 @@ class OrderTrackingEndpoint
     {
         $carrier = $data['carrier'] ?? '';
         $tracking_info = array('capture_id' => $data['capture_id'] ?? '', 'status' => $data['status'] ?? '', 'tracking_number' => $data['tracking_number'] ?? '', 'carrier' => $carrier, 'carrier_name_other' => $data['carrier_name_other'] ?? '');
-        if (!empty($data['items'])) {
+        if (!empty($data['items']) && is_numeric(reset($data['items']))) {
             $tracking_info['items'] = array_map('intval', $data['items']);
         }
         return $this->shipment_factory->create_shipment($wc_order_id, $tracking_info['capture_id'], $tracking_info['tracking_number'], $tracking_info['status'], $tracking_info['carrier'], $tracking_info['carrier_name_other'], $tracking_info['items'] ?? array());

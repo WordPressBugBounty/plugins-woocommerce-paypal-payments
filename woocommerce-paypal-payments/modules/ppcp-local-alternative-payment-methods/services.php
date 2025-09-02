@@ -11,12 +11,7 @@ namespace WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Container\ContainerInterface;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\LocalApmProductStatus;
 return array('ppcp-local-apms.url' => static function (ContainerInterface $container): string {
-    /**
-     * The path cannot be false.
-     *
-     * @psalm-suppress PossiblyFalseArgument
-     */
-    return plugins_url('/modules/ppcp-local-alternative-payment-methods/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+    return plugins_url('/modules/ppcp-local-alternative-payment-methods/', $container->get('ppcp.path-to-plugin-main-file'));
 }, 'ppcp-local-apms.payment-methods' => static function (ContainerInterface $container): array {
     return array('bancontact' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\BancontactGateway::ID, 'countries' => array('BE'), 'currencies' => array('EUR')), 'blik' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\BlikGateway::ID, 'countries' => array('PL'), 'currencies' => array('PLN')), 'eps' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\EPSGateway::ID, 'countries' => array('AT'), 'currencies' => array('EUR')), 'ideal' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\IDealGateway::ID, 'countries' => array('NL'), 'currencies' => array('EUR')), 'mybank' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MyBankGateway::ID, 'countries' => array('IT'), 'currencies' => array('EUR')), 'p24' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\P24Gateway::ID, 'countries' => array('PL'), 'currencies' => array('EUR', 'PLN')), 'trustly' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\TrustlyGateway::ID, 'countries' => array('AT', 'DE', 'DK', 'EE', 'ES', 'FI', 'GB', 'LT', 'LV', 'NL', 'NO', 'SE'), 'currencies' => array('EUR', 'DKK', 'SEK', 'GBP', 'NOK')), 'multibanco' => array('id' => \WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MultibancoGateway::ID, 'countries' => array('PT'), 'currencies' => array('EUR')));
 }, 'ppcp-local-apms.product-status' => static function (ContainerInterface $container): LocalApmProductStatus {

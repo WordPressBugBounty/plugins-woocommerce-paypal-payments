@@ -118,20 +118,11 @@ class PayLaterWCBlocksModule implements ServiceModule, ExtendingModule, Executab
             if (!function_exists('register_block_type')) {
                 return;
             }
-            /**
-             * Cannot return false for this path.
-             *
-             * @psalm-suppress PossiblyFalseArgument
-             */
-            register_block_type(dirname(realpath(__FILE__), 2) . '/resources/js/CartPayLaterMessagesBlock', array('render_callback' => function (array $attributes) use ($c) {
+            $path_to_module_js_folder = $c->get('ppcp.path-to-plugin-folder') . 'modules/ppcp-paylater-wc-blocks/resources/js/';
+            register_block_type($path_to_module_js_folder . 'CartPayLaterMessagesBlock', array('render_callback' => function (array $attributes) use ($c) {
                 return \WooCommerce\PayPalCommerce\PayLaterWCBlocks\PayLaterWCBlocksUtils::render_paylater_block($attributes['blockId'] ?? 'woocommerce-paypal-payments/cart-paylater-messages', $attributes['ppcpId'] ?? 'ppcp-cart-paylater-messages', 'cart', $c);
             }));
-            /**
-             * Cannot return false for this path.
-             *
-             * @psalm-suppress PossiblyFalseArgument
-             */
-            register_block_type(dirname(realpath(__FILE__), 2) . '/resources/js/CheckoutPayLaterMessagesBlock', array('render_callback' => function (array $attributes) use ($c) {
+            register_block_type($path_to_module_js_folder . 'CheckoutPayLaterMessagesBlock', array('render_callback' => function (array $attributes) use ($c) {
                 return \WooCommerce\PayPalCommerce\PayLaterWCBlocks\PayLaterWCBlocksUtils::render_paylater_block($attributes['blockId'] ?? 'woocommerce-paypal-payments/checkout-paylater-messages', $attributes['ppcpId'] ?? 'ppcp-checkout-paylater-messages', 'checkout', $c);
             }));
         });

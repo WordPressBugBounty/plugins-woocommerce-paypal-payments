@@ -74,12 +74,7 @@ class PayLaterBlockModule implements ServiceModule, ExtendingModule, ExecutableM
             $script_handle = 'ppcp-paylater-block';
             wp_register_script($script_handle, $c->get('paylater-block.url') . '/assets/js/paylater-block.js', array(), $c->get('ppcp.asset-version'), \true);
             wp_localize_script($script_handle, 'PcpPayLaterBlock', array('ajax' => array('cart_script_params' => array('endpoint' => \WC_AJAX::get_endpoint(CartScriptParamsEndpoint::ENDPOINT))), 'settingsUrl' => admin_url('admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway'), 'vaultingEnabled' => $settings->has('vault_enabled') && $settings->get('vault_enabled'), 'placementEnabled' => self::is_block_enabled($c->get('wcgateway.settings.status')), 'payLaterSettingsUrl' => admin_url('admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway&ppcp-tab=ppcp-pay-later')));
-            /**
-             * Cannot return false for this path.
-             *
-             * @psalm-suppress PossiblyFalseArgument
-             */
-            register_block_type(dirname(realpath(__FILE__), 2), array('render_callback' => function (array $attributes) use ($c) {
+            register_block_type($c->get('ppcp.path-to-plugin-folder') . 'modules/ppcp-paylater-block/', array('render_callback' => function (array $attributes) use ($c) {
                 $renderer = $c->get('paylater-block.renderer');
                 ob_start();
                 // phpcs:ignore -- No need to escape it, the PayLaterBlockRenderer class is responsible for escaping.

@@ -104,7 +104,7 @@ return array(
         return new OnboardingAssets($container->get('onboarding.url'), $container->get('ppcp.asset-version'), $state, $container->get('settings.environment'), $login_seller_endpoint, $container->get('wcgateway.current-ppcp-settings-page-id'));
     },
     'onboarding.url' => static function (ContainerInterface $container): string {
-        return plugins_url('/modules/ppcp-onboarding/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-onboarding/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'onboarding.endpoint.login-seller' => static function (ContainerInterface $container): LoginSellerEndpoint {
         $request_data = $container->get('button.request-data');

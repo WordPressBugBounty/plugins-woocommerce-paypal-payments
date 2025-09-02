@@ -16,20 +16,15 @@ interface Properties
     public const PROP_REQUIRES_WP = 'requiresWp';
     public const PROP_REQUIRES_PHP = 'requiresPhp';
     public const PROP_TAGS = 'tags';
-    /**
-     * @var array
-     */
     public const DEFAULT_PROPERTIES = [self::PROP_AUTHOR => '', self::PROP_AUTHOR_URI => '', self::PROP_DESCRIPTION => '', self::PROP_DOMAIN_PATH => '', self::PROP_NAME => '', self::PROP_TEXTDOMAIN => '', self::PROP_URI => '', self::PROP_VERSION => '', self::PROP_REQUIRES_WP => null, self::PROP_REQUIRES_PHP => null, self::PROP_TAGS => []];
     /**
      * @param string $key
-     * @param null $default
-     *
+     * @param mixed $default
      * @return mixed
      */
     public function get(string $key, $default = null);
     /**
      * @param string $key
-     *
      * @return bool
      */
     public function has(string $key): bool;
@@ -77,6 +72,7 @@ interface Properties
     public function name(): string;
     /**
      * The home page of the plugin, theme or library.
+     *
      * @return string
      */
     public function uri(): string;
@@ -93,17 +89,17 @@ interface Properties
     /**
      * Optional. Specify the minimum required PHP version.
      *
-     * @return string
+     * @return string|null
      */
     public function requiresPhp(): ?string;
     /**
      * Optional. Currently, only available for Theme and Library.
      * Plugins do not have support for "tags"/"keywords" in header.
      *
-     * @link https://developer.wordpress.org/reference/classes/wp_theme/#properties
-     * @link https://getcomposer.org/doc/04-schema.md#keywords
+     * @return string[]
      *
-     * @return array
+     * @see https://developer.wordpress.org/reference/classes/wp_theme/#properties
+     * @see https://getcomposer.org/doc/04-schema.md#keywords
      */
     public function tags(): array;
 }

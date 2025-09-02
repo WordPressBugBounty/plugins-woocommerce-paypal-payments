@@ -10,7 +10,8 @@ namespace WooCommerce\PayPalCommerce\Axo\Assets;
 
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\CurrencyGetter;
-use WooCommerce\PayPalCommerce\Axo\FrontendLoggerEndpoint;
+use WooCommerce\PayPalCommerce\Axo\Endpoint\AxoScriptAttributes;
+use WooCommerce\PayPalCommerce\Axo\Endpoint\FrontendLogger;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
@@ -155,7 +156,7 @@ class AxoManager
             'woocommerce' => array('states' => array('US' => WC()->countries->get_states('US'), 'CA' => WC()->countries->get_states('CA'))),
             'icons_directory' => esc_url($this->wcgateway_module_url) . 'assets/images/axo/',
             'module_url' => untrailingslashit($this->module_url),
-            'ajax' => array('frontend_logger' => array('endpoint' => \WC_AJAX::get_endpoint(FrontendLoggerEndpoint::ENDPOINT), 'nonce' => wp_create_nonce(FrontendLoggerEndpoint::nonce()))),
+            'ajax' => array('frontend_logger' => array('endpoint' => \WC_AJAX::get_endpoint(FrontendLogger::ENDPOINT), 'nonce' => wp_create_nonce(FrontendLogger::nonce())), 'axo_script_attributes' => array('endpoint' => \WC_AJAX::get_endpoint(AxoScriptAttributes::ENDPOINT), 'nonce' => wp_create_nonce(AxoScriptAttributes::nonce()))),
             'logging_enabled' => $this->settings->has('logging_enabled') ? $this->settings->get('logging_enabled') : '',
             'wp_debug' => defined('WP_DEBUG') && WP_DEBUG,
             'billing_email_button_text' => __('Continue', 'woocommerce-paypal-payments'),

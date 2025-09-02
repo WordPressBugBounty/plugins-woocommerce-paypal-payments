@@ -14,6 +14,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Entity\PurchaseUnit;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\PurchaseUnitSanitizer;
 use WooCommerce\PayPalCommerce\Webhooks\CustomIds;
+use WooCommerce\PayPalCommerce\ApiClient\Entity\Address;
 /**
  * Class PurchaseUnitFactory
  */
@@ -96,7 +97,8 @@ class PurchaseUnitFactory
             return $item->unit_amount()->value() >= 0;
         });
         $shipping = $this->shipping_factory->from_wc_order($order);
-        if (!$this->shipping_needed(...array_values($items)) || empty($shipping->address()->country_code()) || !$shipping->address()->postal_code() && !$this->country_without_postal_code($shipping->address()->country_code())) {
+        $shipping_address = $shipping->address();
+        if ($this->should_disable_shipping($items, $shipping_address)) {
             $shipping = null;
         }
         $reference_id = 'default';
@@ -130,9 +132,11 @@ class PurchaseUnitFactory
         });
         $shipping = null;
         $customer = \WC()->customer;
+        /** @psalm-suppress RedundantConditionGivenDocblockType False positive. Ignored because $customer can be null as well. */
         if ($this->shipping_needed(...array_values($items)) && is_a($customer, \WC_Customer::class)) {
             $shipping = $this->shipping_factory->from_wc_customer(\WC()->customer, $with_shipping_options);
-            if (2 !== strlen($shipping->address()->country_code()) || !$shipping->address()->postal_code() && !$this->country_without_postal_code($shipping->address()->country_code())) {
+            $shipping_address = $shipping->address();
+            if (!$shipping_address || 2 !== strlen($shipping_address->country_code()) || !$shipping_address->postal_code() && !$this->country_without_postal_code($shipping_address->country_code())) {
                 $shipping = null;
             }
         }
@@ -182,10 +186,11 @@ class PurchaseUnitFactory
         }
         $shipping = null;
         try {
-            if (isset($data->shipping)) {
+            if (isset($data->shipping) && !empty((array) $data->shipping)) {
                 $shipping = $this->shipping_factory->from_paypal_response($data->shipping);
             }
         } catch (RuntimeException $error) {
+            $shipping = null;
         }
         $payments = null;
         try {
@@ -193,6 +198,7 @@ class PurchaseUnitFactory
                 $payments = $this->payments_factory->from_paypal_response($data->payments);
             }
         } catch (RuntimeException $error) {
+            $payments = null;
         }
         $purchase_unit = new PurchaseUnit($amount, $items, $shipping, $data->reference_id, $description, $custom_id, $invoice_id, $soft_descriptor, $payments);
         $this->init_purchase_unit($purchase_unit);
@@ -253,5 +259,17 @@ class PurchaseUnitFactory
         $decoded = html_entity_decode($soft_descriptor, \ENT_QUOTES, 'UTF-8');
         $sanitized = preg_replace('/[^a-zA-Z0-9 *\-.]/', '', $decoded) ?: '';
         return substr($sanitized, 0, 22) ?: '';
+    }
+    /**
+     * Determines whether shipping should be disabled for a purchase unit.
+     *
+     * @param array        $items Purchase unit items.
+     * @param Address|null $shipping_address The shipping address to validate.
+     *
+     * @return bool
+     */
+    private function should_disable_shipping(array $items, ?Address $shipping_address): bool
+    {
+        return !$this->shipping_needed(...array_values($items)) || !$shipping_address || empty($shipping_address->country_code()) || !$shipping_address->postal_code() && !$this->country_without_postal_code($shipping_address->country_code());
     }
 }

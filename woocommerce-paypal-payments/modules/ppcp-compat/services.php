@@ -69,12 +69,7 @@ return array(
         return class_exists('WC_Bookings');
     },
     'compat.module.url' => static function (ContainerInterface $container): string {
-        /**
-         * The path cannot be false.
-         *
-         * @psalm-suppress PossiblyFalseArgument
-         */
-        return plugins_url('/modules/ppcp-compat/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-compat/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'compat.assets' => function (ContainerInterface $container): CompatAssets {
         return new CompatAssets($container->get('compat.module.url'), $container->get('ppcp.asset-version'), $container->get('compat.gzd.is_supported_plugin_version_active'), $container->get('compat.wc_shipment_tracking.is_supported_plugin_version_active'), $container->get('compat.wc_shipping_tax.is_supported_plugin_version_active'), $container->get('api.bearer'));

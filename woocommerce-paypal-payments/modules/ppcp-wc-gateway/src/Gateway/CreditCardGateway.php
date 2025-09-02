@@ -40,7 +40,11 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
  */
 class CreditCardGateway extends \WC_Payment_Gateway_CC
 {
-    use \WooCommerce\PayPalCommerce\WcGateway\Gateway\ProcessPaymentTrait, \WooCommerce\PayPalCommerce\WcGateway\Gateway\GatewaySettingsRendererTrait, TransactionIdHandlingTrait, PaymentsStatusHandlingTrait, FreeTrialHandlerTrait;
+    use \WooCommerce\PayPalCommerce\WcGateway\Gateway\ProcessPaymentTrait;
+    use \WooCommerce\PayPalCommerce\WcGateway\Gateway\GatewaySettingsRendererTrait;
+    use TransactionIdHandlingTrait;
+    use PaymentsStatusHandlingTrait;
+    use FreeTrialHandlerTrait;
     const ID = 'ppcp-credit-card-gateway';
     /**
      * The Settings Renderer.
@@ -162,6 +166,54 @@ class CreditCardGateway extends \WC_Payment_Gateway_CC
      * @var LoggerInterface
      */
     protected $logger;
+    /**
+     * ID of the class extending the settings API. Used in option names.
+     *
+     * @var string
+     */
+    public $id;
+    /**
+     * Supported features such as 'default_credit_card_form', 'refunds'.
+     *
+     * @var array
+     */
+    public $supports = array('products');
+    /**
+     * Gateway title.
+     *
+     * @var string
+     */
+    public $method_title = '';
+    /**
+     * Gateway description.
+     *
+     * @var string
+     */
+    public $method_description = '';
+    /**
+     * Payment method title for the frontend.
+     *
+     * @var string
+     */
+    public $title;
+    /**
+     * Payment method description for the frontend.
+     *
+     * @var string
+     */
+    public $description;
+    /**
+     * Form option fields.
+     *
+     * @var array
+     */
+    public $form_fields = array();
+    /**
+     * Yes or no based on whether the method is enabled.
+     *
+     * @var string
+     */
+    public $enabled = 'yes';
     /**
      * CreditCardGateway constructor.
      *

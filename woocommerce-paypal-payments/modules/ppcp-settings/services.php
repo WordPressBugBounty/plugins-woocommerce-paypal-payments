@@ -78,12 +78,7 @@ use WooCommerce\PayPalCommerce\Settings\Service\InternalRestService;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\MerchantDetails;
 $services = array(
     'settings.url' => static function (ContainerInterface $container): string {
-        /**
-         * The path cannot be false.
-         *
-         * @psalm-suppress PossiblyFalseArgument
-         */
-        return plugins_url('/modules/ppcp-settings/', dirname(realpath(__FILE__), 3) . '/woocommerce-paypal-payments.php');
+        return plugins_url('/modules/ppcp-settings/', $container->get('ppcp.path-to-plugin-main-file'));
     },
     'settings.data.onboarding' => static function (ContainerInterface $container): OnboardingProfile {
         $can_use_casual_selling = $container->get('settings.casual-selling.eligible');
@@ -223,7 +218,8 @@ $services = array(
         $merchant_id = $container->get('api.partner_merchant_id');
         $button_language_choices = $container->get('wcgateway.wp-paypal-locales-map');
         $partner_attribution = $container->get('api.helper.partner-attribution');
-        return new ScriptDataHandler($settings, $settings_url, $paylater_is_available, $store_country, $merchant_id, $button_language_choices, $partner_attribution);
+        $path_to_module_assets_folder = $container->get('ppcp.path-to-plugin-folder') . 'modules/ppcp-settings/assets';
+        return new ScriptDataHandler($settings, $settings_url, $paylater_is_available, $store_country, $merchant_id, $button_language_choices, $partner_attribution, $path_to_module_assets_folder);
     },
     'settings.service.data-migration' => static fn(ContainerInterface $c): MigrationManager => new MigrationManager($c->get('settings.service.data-migration.general-settings'), $c->get('settings.service.data-migration.settings-tab'), $c->get('settings.service.data-migration.styling'), $c->get('settings.service.data-migration.payment-settings')),
     'settings.service.data-migration.settings-tab' => static fn(ContainerInterface $c): SettingsTabMigration => new SettingsTabMigration($c->get('wcgateway.settings'), $c->get('settings.data.settings'), $c->get('compat.settings.settings_tab_map_helper')),
@@ -238,7 +234,7 @@ $services = array(
         return new TodosModel();
     },
     'settings.data.definition.todos' => static function (ContainerInterface $container): TodosDefinition {
-        return new TodosDefinition($container->get('settings.service.todos_eligibilities'), $container->get('settings.data.general'));
+        return new TodosDefinition($container->get('settings.service.todos_eligibilities'), $container->get('settings.data.general'), $container->get('settings.data.todos'));
     },
     'settings.data.definition.methods' => static function (ContainerInterface $container): PaymentMethodsDefinition {
         $axo_checkout_config_notice = $container->get('axo.checkout-config-notice.raw');
@@ -289,6 +285,23 @@ $services = array(
         $gateways = $container->get('settings.service.gateways_status');
         // TODO: This "merchant_capabilities" service is only used here. Could it be merged to make the code cleaner and less segmented?
         $capabilities = $container->get('settings.service.merchant_capabilities');
+        $settings = $container->get('wcgateway.settings');
+        assert($settings instanceof Settings);
+        $settings_model = $container->get('settings.data.settings');
+        assert($settings_model instanceof SettingsModel);
+        $messages_apply = $container->get('button.helper.messages-apply');
+        assert($messages_apply instanceof MessagesApply);
+        $is_working_capital_feature_flag_enabled = apply_filters(
+            // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
+            'woocommerce.feature-flags.woocommerce_paypal_payments.working_capital_enabled',
+            getenv('PCP_WORKING_CAPITAL_ENABLED') === '1'
+        );
+        $is_working_capital_eligible = $container->get('settings.data.general')->get_merchant_country() === 'US' && $settings_model->get_stay_updated();
+        $is_paylater_messaging_force_enabled_feature_flag_enabled = apply_filters(
+            // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
+            'woocommerce.feature-flags.woocommerce_paypal_payments.paylater_messaging_force_enabled',
+            \true
+        );
         /**
          * Initializes TodosEligibilityService with eligibility conditions for various PayPal features.
          * Each parameter determines whether a specific feature should be shown in the Things To Do list.
@@ -313,6 +326,9 @@ $services = array(
          * @param bool $is_google_pay_eligible              - Show if merchant is eligible (ACDC) but doesn't have Google Pay on PayPal.
          * @param bool $is_enable_apple_pay_eligible        - Show if merchant has Apple Pay capability but hasn't enabled the gateway.
          * @param bool $is_enable_google_pay_eligible       - Show if merchant has Google Pay capability but hasn't enabled the gateway.
+         * @param bool $is_enable_installments_eligible     - Show if merchant has installments capability and merchant country is MX.
+         * @param bool $is_working_capital_eligible         - Show if feature flag is enabled, merchant country is US and "Stay Updated" is turned On.
+         * @param bool $is_pay_later_messaging_auto_enabled - Show if feature flag is enabled, Pay later messaging is enabled for the merchant country and "Stay Updated" is turned On.
          */
         return new TodosEligibilityService(
             $container->get('axo.eligible') && $capabilities['acdc'] && !$gateways['axo'],
@@ -344,7 +360,11 @@ $services = array(
             $container->get('applepay.eligible') && $capabilities['apple_pay'] && !$gateways['apple_pay'],
             // Enable Apple Pay.
             $container->get('googlepay.eligible') && $capabilities['google_pay'] && !$gateways['google_pay'],
-            !$capabilities['installments'] && 'MX' === $container->get('settings.data.general')->get_merchant_country()
+            !$capabilities['installments'] && 'MX' === $container->get('settings.data.general')->get_merchant_country(),
+            // Enable Installments for Mexico.
+            $is_working_capital_feature_flag_enabled && $is_working_capital_eligible,
+            // Enable Working Capital.
+            $is_paylater_messaging_force_enabled_feature_flag_enabled && $messages_apply->for_country() && $settings_model->get_stay_updated()
         );
     },
     'settings.rest.features' => static function (ContainerInterface $container): FeaturesRestEndpoint {

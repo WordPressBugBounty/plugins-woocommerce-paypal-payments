@@ -79,7 +79,7 @@ class CheckoutFormValidator extends WC_Checkout
             }
         }
         // Some plugins call wc_add_notice directly.
-        // We should retrieve such notices, and also clear them to avoid duplicates	later.
+        // We should retrieve such notices, and also clear them to avoid duplicates later.
         // TODO: Normally WC converts the messages from validate_checkout into notices,
         // maybe we should do the same for consistency, but it requires lots of changes in the way we handle/output errors.
         $messages = array_merge($errors->get_error_messages(), array_map(function (array $notice): string {

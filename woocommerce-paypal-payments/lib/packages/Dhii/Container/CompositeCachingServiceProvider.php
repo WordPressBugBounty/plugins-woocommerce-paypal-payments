@@ -32,7 +32,8 @@ class CompositeCachingServiceProvider implements ServiceProviderInterface
         $this->extensions = null;
     }
     /**
-     * {@inheritDoc}
+     * @inheritDoc
+     *
      * @psalm-suppress InvalidNullableReturnType
      * It isn't actually going to return null ever, because $factories will be filled during indexing.
      */
@@ -48,7 +49,8 @@ class CompositeCachingServiceProvider implements ServiceProviderInterface
         return $this->factories;
     }
     /**
-     * {@inheritDoc}
+     * @inheritDoc
+     *
      * @psalm-suppress InvalidNullableReturnType
      * It isn't actually going to return null ever, because $factories will be filled during indexing.
      */
@@ -68,7 +70,7 @@ class CompositeCachingServiceProvider implements ServiceProviderInterface
      *
      * Caches them internally.
      *
-     * @param iterable|ServiceProviderInterface[] $providers The providers to index.
+     * @param iterable<ServiceProviderInterface> $providers The providers to index.
      */
     protected function indexProviderDefinitions(iterable $providers): void
     {

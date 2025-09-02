@@ -78,6 +78,12 @@ class SettingsRenderer
      */
     protected $page_id;
     /**
+     * A callable property used to check the eligibility for Fastlane.
+     *
+     * @var callable
+     */
+    private $axo_eligibility_check;
+    /**
      * SettingsRenderer constructor.
      *
      * @param ContainerInterface $settings The Settings.
@@ -90,7 +96,7 @@ class SettingsRenderer
      * @param string             $page_id ID of the current PPCP gateway settings page, or empty if it is not such page.
      * @param string             $api_shop_country The api shop country.
      */
-    public function __construct(ContainerInterface $settings, State $state, array $fields, DccApplies $dcc_applies, MessagesApply $messages_apply, DCCProductStatus $dcc_product_status, SettingsStatus $settings_status, string $page_id, string $api_shop_country)
+    public function __construct(ContainerInterface $settings, State $state, array $fields, DccApplies $dcc_applies, MessagesApply $messages_apply, DCCProductStatus $dcc_product_status, SettingsStatus $settings_status, string $page_id, string $api_shop_country, callable $axo_eligibility_check)
     {
         // This is a legacy settings class, it's correctly relying on the `Status` class.
         $this->settings = $settings;
@@ -102,6 +108,7 @@ class SettingsRenderer
         $this->settings_status = $settings_status;
         $this->page_id = $page_id;
         $this->api_shop_country = $api_shop_country;
+        $this->axo_eligibility_check = $axo_eligibility_check;
     }
     /**
      * Returns notices list.
@@ -304,7 +311,7 @@ class SettingsRenderer
             if (in_array('pui_ready', $config['requirements'], \true) && $this->api_shop_country !== 'DE') {
                 continue;
             }
-            if (in_array('axo', $config['requirements'], \true) && $this->api_shop_country !== 'US') {
+            if (in_array('axo', $config['requirements'], \true) && !($this->axo_eligibility_check)()) {
                 continue;
             }
             $value = $this->settings->has($field) ? $this->settings->get($field) : (isset($config['value']) ? $config['value']() : null);

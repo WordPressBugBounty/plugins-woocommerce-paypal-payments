@@ -15,6 +15,7 @@ use WooCommerce\PayPalCommerce\Button\Assets\ButtonInterface;
 use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
 use WooCommerce\PayPalCommerce\Googlepay\Endpoint\UpdatePaymentDataEndpoint;
 use WooCommerce\PayPalCommerce\Googlepay\GooglePayGateway;
+use WooCommerce\PayPalCommerce\Settings\Data\SettingsModel;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
@@ -82,6 +83,10 @@ class Button implements ButtonInterface
      */
     private $subscription_helper;
     /**
+     * @var SettingsModel|null New settings UI model.
+     */
+    private ?SettingsModel $new_settings;
+    /**
      * SmartButton constructor.
      *
      * @param string             $module_url The URL to the module.
@@ -89,12 +94,13 @@ class Button implements ButtonInterface
      * @param string             $version The assets version.
      * @param SessionHandler     $session_handler The Session handler.
      * @param SubscriptionHelper $subscription_helper The subscription helper.
-     * @param Settings           $settings The Settings.
+     * @param Settings           $settings The legacy settings.
      * @param Environment        $environment The environment object.
      * @param SettingsStatus     $settings_status The Settings status helper.
      * @param LoggerInterface    $logger The logger.
+     * @param SettingsModel|null $new_settings The new settings model.
      */
-    public function __construct(string $module_url, string $sdk_url, string $version, SessionHandler $session_handler, SubscriptionHelper $subscription_helper, Settings $settings, Environment $environment, SettingsStatus $settings_status, LoggerInterface $logger)
+    public function __construct(string $module_url, string $sdk_url, string $version, SessionHandler $session_handler, SubscriptionHelper $subscription_helper, Settings $settings, Environment $environment, SettingsStatus $settings_status, LoggerInterface $logger, SettingsModel $new_settings = null)
     {
         $this->module_url = $module_url;
         $this->sdk_url = $sdk_url;
@@ -105,6 +111,7 @@ class Button implements ButtonInterface
         $this->environment = $environment;
         $this->settings_status = $settings_status;
         $this->logger = $logger;
+        $this->new_settings = $new_settings;
     }
     /**
      * Initializes the button.
@@ -348,10 +355,11 @@ class Button implements ButtonInterface
      * The configuration for the smart buttons.
      *
      * @return array
+     * @throws NotFoundException If the settings are not found.
      */
     public function script_data(): array
     {
-        $use_shipping_form = $this->settings->has('googlepay_button_shipping_enabled') && $this->settings->get('googlepay_button_shipping_enabled');
+        $use_shipping_form = $this->should_use_shipping();
         // On the product page, only show the shipping form for physical products.
         $context = $this->context();
         if ($use_shipping_form && 'product' === $context) {
@@ -404,5 +412,19 @@ class Button implements ButtonInterface
     private function wc_countries(): WC_Countries
     {
         return new WC_Countries();
+    }
+    /**
+     * Check if new settings model exist and if so check enable pay now setting,
+     * if none of the above is true, check legacy settings for shipping enabled.
+     *
+     * @return bool Whether shipping should be used or not.
+     * @throws NotFoundException If the settings are not found.
+     */
+    private function should_use_shipping(): bool
+    {
+        if (!is_null($this->new_settings) && $this->new_settings->get_enable_pay_now() === \true) {
+            return \true;
+        }
+        return $this->settings->has('googlepay_button_shipping_enabled') && $this->settings->get('googlepay_button_shipping_enabled');
     }
 }

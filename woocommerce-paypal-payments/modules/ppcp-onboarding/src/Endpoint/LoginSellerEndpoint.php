@@ -147,7 +147,7 @@ class LoginSellerEndpoint implements EndpointInterface
             }
             if ($accept_cards) {
                 $funding_sources = array_diff($funding_sources, array('card'));
-            } else if (!in_array('card', $funding_sources, \true)) {
+            } elseif (!in_array('card', $funding_sources, \true)) {
                 $funding_sources[] = 'card';
             }
             $this->settings->set('disable_funding', $funding_sources);

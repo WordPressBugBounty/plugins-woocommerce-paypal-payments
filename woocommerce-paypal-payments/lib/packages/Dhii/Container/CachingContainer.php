@@ -56,7 +56,7 @@ class CachingContainer implements ContainerInterface
         } catch (NotFoundExceptionInterface $e) {
             throw new NotFoundException($this->__('Key "%1$s" not found in inner container', [$key]), 0, $e);
         } catch (Exception $e) {
-            throw new ContainerException($this->__('Could not retrieve value for key "%1$s from inner container', [$key]), 0, $e);
+            throw new ContainerException($this->__('Could not retrieve value for key "%1$s" from inner container', [$key]), 0, $e);
         }
         return $value;
     }

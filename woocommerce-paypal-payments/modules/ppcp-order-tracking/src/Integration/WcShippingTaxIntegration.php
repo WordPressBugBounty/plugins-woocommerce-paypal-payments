@@ -25,7 +25,8 @@ use function WooCommerce\PayPalCommerce\Api\ppcp_get_paypal_order;
  */
 class WcShippingTaxIntegration implements Integration
 {
-    use TrackingAvailabilityTrait, TransactionIdHandlingTrait;
+    use TrackingAvailabilityTrait;
+    use TransactionIdHandlingTrait;
     /**
      * The shipment factory.
      *
