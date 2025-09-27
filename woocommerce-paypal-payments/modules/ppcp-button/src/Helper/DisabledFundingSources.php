@@ -49,7 +49,7 @@ class DisabledFundingSources
      * @param Settings                  $settings            The settings.
      * @param array                     $all_funding_sources All existing funding sources.
      * @param CardPaymentsConfiguration $dcc_configuration   DCC gateway configuration.
-     * @param string                    $merchant_country     Merchant country.
+     * @param string                    $merchant_country    Merchant country.
      */
     public function __construct(Settings $settings, array $all_funding_sources, CardPaymentsConfiguration $dcc_configuration, string $merchant_country)
     {
@@ -133,7 +133,7 @@ class DisabledFundingSources
         if ('MX' === $this->merchant_country && $this->dcc_configuration->is_bcdc_enabled() && CartCheckoutDetector::has_classic_checkout() && is_checkout()) {
             return $disable_funding;
         }
-        if (!is_checkout() || $this->dcc_configuration->use_acdc() || !$this->dcc_configuration->is_bcdc_enabled()) {
+        if (!is_checkout() || $this->dcc_configuration->use_acdc()) {
             // Non-checkout pages, or ACDC capability: Don't load card button.
             $disable_funding[] = 'card';
         }

@@ -4,7 +4,7 @@ Tags: woocommerce, paypal, payments, ecommerce, credit card
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.1.1
 License: GPLv2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -155,6 +155,11 @@ If you encounter issues with the PayPal buttons not appearing after an update, p
 6. Main settings screen.
 
 == Changelog ==
+
+= 3.1.1 - 2025-09-27 =
+* Fix - Fix BCDC in branded-only mode #3699
+* Fix - Restore BCDC button for ACDC merchants in legacy UI #3703
+* Change - Remove all migration UX/notifications #3705
 
 = 3.1.0 - 2025-09-02 =
 * Enhancement - Fastlane now available for British & Australian merchants #3589

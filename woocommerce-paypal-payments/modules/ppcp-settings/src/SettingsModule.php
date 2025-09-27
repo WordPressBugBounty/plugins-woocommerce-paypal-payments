@@ -39,6 +39,7 @@ use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\PathRepository
 use WooCommerce\PayPalCommerce\Settings\Service\GatewayRedirectService;
 use WooCommerce\PayPalCommerce\Settings\Service\LoadingScreenService;
 use WooCommerce\PayPalCommerce\Settings\Service\Migration\MigrationManager;
+use WooCommerce\PayPalCommerce\Settings\Service\Migration\PaymentSettingsMigration;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
@@ -56,6 +57,7 @@ use WooCommerce\PayPalCommerce\Settings\Data\GeneralSettings;
 use WooCommerce\PayPalCommerce\Settings\Data\PaymentSettings;
 use WooCommerce\PayPalCommerce\Axo\Helper\CompatibilityChecker;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 /**
  * Class SettingsModule
  */
@@ -101,7 +103,18 @@ class SettingsModule implements ServiceModule, ExecutableModule
     public function run(ContainerInterface $container): bool
     {
         if (self::should_use_the_old_ui()) {
-            add_filter('woocommerce_paypal_payments_inside_settings_page_header', static fn(): string => sprintf('<button type="button" class="button button-settings-switch-ui" aria-describedby="switch-ui-desc">%s</button><span id="switch-ui-desc" class="screen-reader-text">%s</span>', esc_html__('Switch to New Settings', 'woocommerce-paypal-payments'), esc_html__('This action will permanently switch to the new settings interface and cannot be undone', 'woocommerce-paypal-payments')));
+            // phpcs:ignore -- yes, this code is intentionally and temporarily commented out.
+            /*
+            # PCP-5357 - This button is temporarily disabled
+            add_filter(
+            	'woocommerce_paypal_payments_inside_settings_page_header',
+            	static fn(): string => sprintf(
+            		'<button type="button" class="button button-settings-switch-ui" aria-describedby="switch-ui-desc">%s</button><span id="switch-ui-desc" class="screen-reader-text">%s</span>',
+            		esc_html__( 'Switch to New Settings', 'woocommerce-paypal-payments' ),
+            		esc_html__( 'This action will permanently switch to the new settings interface and cannot be undone', 'woocommerce-paypal-payments' )
+            	)
+            );
+            */
             /**
              * Adds notes to old UI settings screens.
              *
@@ -112,12 +125,20 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 if (!$container->get('wcgateway.is-ppcp-settings-page')) {
                     return $notices;
                 }
+                // phpcs:ignore -- yes, this code is intentionally and temporarily commented out.
+                /*
+                # PCP-5357 - This notification is temporarily disabled
                 $message = sprintf(
-                    // translators: %1$s is the URL for the startup guide.
-                    __('<strong>📢 Important: New PayPal Payments settings UI becoming default in October!</strong><br>We\'ve redesigned the settings for better performance and usability. Starting late October, this improved design will be the default for all WooCommerce installations to enjoy faster navigation, cleaner organization, and improved performance. Check out the <a href="%1$s" target="_blank">Startup Guide</a>, then click <a href="#" class="settings-switch-ui" role="button" aria-describedby="switch-ui-desc"><strong>Switch to New Settings</strong></a> to activate it.', 'woocommerce-paypal-payments'),
-                    'https://woocommerce.com/document/woocommerce-paypal-payments/paypal-payments-startup-guide/'
+                // translators: %1$s is the URL for the startup guide.
+                	__(
+                		'<strong>📢 Important: New PayPal Payments settings UI becoming default in October!</strong><br>We\'ve redesigned the settings for better performance and usability. Starting late October, this improved design will be the default for all WooCommerce installations to enjoy faster navigation, cleaner organization, and improved performance. Check out the <a href="%1$s" target="_blank">Startup Guide</a>, then click <a href="#" class="settings-switch-ui" role="button" aria-describedby="switch-ui-desc"><strong>Switch to New Settings</strong></a> to activate it.',
+                		'woocommerce-paypal-payments'
+                	),
+                	'https://woocommerce.com/document/woocommerce-paypal-payments/paypal-payments-startup-guide/'
                 );
-                $notices[] = new Message($message, 'info', \false, 'ppcp-notice-wrapper');
+                
+                $notices[] = new Message( $message, 'info', false, 'ppcp-notice-wrapper' );
+                */
                 $is_paylater_messaging_force_enabled_feature_flag_enabled = apply_filters(
                     // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
                     'woocommerce.feature-flags.woocommerce_paypal_payments.paylater_messaging_force_enabled',
@@ -287,6 +308,20 @@ class SettingsModule implements ServiceModule, ExecutableModule
             }
             return $payment_methods;
         });
+        // Filter out the Standard Card button settings for ACDC merchants.
+        add_filter('woocommerce_paypal_payments_gateway_group_paypal', static function (array $group) use ($container): array {
+            $dcc_product_status = $container->get('wcgateway.helper.dcc-product-status');
+            assert($dcc_product_status instanceof DCCProductStatus);
+            $general_settings = $container->get('settings.data.general');
+            assert($general_settings instanceof GeneralSettings);
+            $merchant_data = $general_settings->get_merchant_data();
+            $merchant_country = $merchant_data->merchant_country;
+            // If the merchant has ACDC eligibility, remove the Card-Button gateway.
+            if ('MX' !== $merchant_country && $dcc_product_status->is_active()) {
+                $group = array_filter($group, static fn($item) => $item['id'] !== CardButtonGateway::ID);
+            }
+            return $group;
+        });
         add_filter(
             'woocommerce_payment_gateways',
             /**
@@ -320,7 +355,7 @@ class SettingsModule implements ServiceModule, ExecutableModule
          *
          * Ensures that only enabled PayPal payment gateways are displayed.
          *
-         * @hook woocommerce_admin_field_payment_gateways
+         * @hook     woocommerce_admin_field_payment_gateways
          * @priority 5 Allows modifying the registered gateways before they are displayed.
          */
         add_action('woocommerce_admin_field_payment_gateways', function () use ($container): void {
@@ -467,6 +502,24 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 $partner_attribution->initialize_bn_code(InstallationPathEnum::DIRECT, \true);
             }
         });
+        /**
+         * Implement the mutually exclusive BCDC or ACDC rule:
+         * If the current merchant is _not BCDC eligible_, we disable the "card" funding source.
+         * This effectively hides the black Standard Card button from the express payment block
+         * and the PayPal smart button stack in classic checkout.
+         */
+        add_filter('woocommerce_paypal_payments_sdk_disabled_funding_hook', static function (array $disable_funding) use ($container) {
+            // Already disabled, no correction needed.
+            if (in_array('card', $disable_funding, \true)) {
+                return $disable_funding;
+            }
+            $dcc_configuration = $container->get('wcgateway.configuration.card-configuration');
+            assert($dcc_configuration instanceof CardPaymentsConfiguration);
+            if (!$dcc_configuration->is_bcdc_enabled()) {
+                $disable_funding[] = 'card';
+            }
+            return $disable_funding;
+        });
         return \true;
     }
     /**
@@ -490,6 +543,7 @@ class SettingsModule implements ServiceModule, ExecutableModule
         add_filter('woocommerce_paypal_payments_is_eligible_for_axo', '__return_false');
         add_filter('woocommerce_paypal_payments_is_eligible_for_save_payment_methods', '__return_false');
         add_filter('woocommerce_paypal_payments_is_eligible_for_card_fields', '__return_false');
+        add_filter('woocommerce_paypal_payments_is_acdc_active', '__return_false');
     }
     /**
      * Initializes the branded-only flags if they are not set.

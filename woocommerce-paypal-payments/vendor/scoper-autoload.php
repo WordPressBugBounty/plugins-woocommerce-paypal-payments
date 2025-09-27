@@ -30,11 +30,11 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
     }
 }
 humbug_phpscoper_expose_class('ComposerAutoloaderInitfd277e5a82374078694b99b0e6aef07c', 'WooCommerce\PayPalCommerce\Vendor\ComposerAutoloaderInitfd277e5a82374078694b99b0e6aef07c');
-humbug_phpscoper_expose_class('Stringable', 'WooCommerce\PayPalCommerce\Vendor\Stringable');
 humbug_phpscoper_expose_class('Attribute', 'WooCommerce\PayPalCommerce\Vendor\Attribute');
-humbug_phpscoper_expose_class('ValueError', 'WooCommerce\PayPalCommerce\Vendor\ValueError');
-humbug_phpscoper_expose_class('PhpToken', 'WooCommerce\PayPalCommerce\Vendor\PhpToken');
 humbug_phpscoper_expose_class('UnhandledMatchError', 'WooCommerce\PayPalCommerce\Vendor\UnhandledMatchError');
+humbug_phpscoper_expose_class('PhpToken', 'WooCommerce\PayPalCommerce\Vendor\PhpToken');
+humbug_phpscoper_expose_class('Stringable', 'WooCommerce\PayPalCommerce\Vendor\Stringable');
+humbug_phpscoper_expose_class('ValueError', 'WooCommerce\PayPalCommerce\Vendor\ValueError');
 humbug_phpscoper_expose_class('FlattedString', 'WooCommerce\PayPalCommerce\Vendor\FlattedString');
 humbug_phpscoper_expose_class('Flatted', 'WooCommerce\PayPalCommerce\Vendor\Flatted');
 

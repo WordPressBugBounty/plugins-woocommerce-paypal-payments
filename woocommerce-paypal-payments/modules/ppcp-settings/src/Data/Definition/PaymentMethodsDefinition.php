@@ -117,20 +117,19 @@ class PaymentMethodsDefinition
     }
     // Payment method groups.
     /**
-     * Define PayPal related payment methods.
+     * Defines PayPal's branded payment methods; not affected by the "own_brand_only" setting.
      *
      * @return array
      */
     public function group_paypal_methods(): array
     {
         $group = array(array('id' => PayPalGateway::ID, 'title' => __('PayPal', 'woocommerce-paypal-payments'), 'description' => __('Our all-in-one checkout solution lets you offer PayPal, Venmo, Pay Later options, and more to help maximize conversion.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => array('paypalShowLogo' => array('type' => 'toggle', 'default' => $this->settings->get_paypal_show_logo(), 'label' => __('Show logo', 'woocommerce-paypal-payments')))), array('id' => 'venmo', 'title' => __('Venmo', 'woocommerce-paypal-payments'), 'description' => __('Offer Venmo at checkout to millions of active users.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-venmo', 'fields' => \false), array('id' => 'pay-later', 'title' => __('Pay Later', 'woocommerce-paypal-payments'), 'description' => __('Get paid in full at checkout while giving your customers the flexibility to pay in installments over time with no late fees.', 'woocommerce-paypal-payments'), 'icon' => 'payment-method-paypal', 'fields' => \false));
-        if (!$this->general_settings->own_brand_only()) {
-            $group[] = array('id' => CardButtonGateway::ID, 'title' => __('Credit and debit card payments', 'woocommerce-paypal-payments'), 'description' => __("Accept all major credit and debit cards - even if your customer doesn't have a PayPal account . ", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-cards');
-        }
+        // This CardButtonGateway is a branded gateway!
+        $group[] = array('id' => CardButtonGateway::ID, 'title' => __('Credit and debit card payments', 'woocommerce-paypal-payments'), 'description' => __("Accept all major credit and debit cards - even if your customer doesn't have a PayPal account . ", 'woocommerce-paypal-payments'), 'icon' => 'payment-method-cards');
         return apply_filters('woocommerce_paypal_payments_gateway_group_paypal', $group);
     }
     /**
-     * Define card related payment methods.
+     * Define embedded payment methods, which are only available in whitelabel mode.
      *
      * @return array
      */
