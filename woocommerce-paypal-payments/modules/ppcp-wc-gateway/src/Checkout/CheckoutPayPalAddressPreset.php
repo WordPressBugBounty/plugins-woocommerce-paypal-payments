@@ -76,7 +76,7 @@ class CheckoutPayPalAddressPreset
         $payer_name_map = array('billing_last_name' => 'surname', 'billing_first_name' => 'given_name');
         $payer_map = array('billing_email' => 'email_address');
         $payer_phone_map = array('billing_phone' => 'national_number');
-        if (array_key_exists($field_id, $address_map) && $shipping) {
+        if (array_key_exists($field_id, $address_map) && $shipping && !is_null($shipping->address())) {
             return $shipping->address()->{$address_map[$field_id]}() ? $shipping->address()->{$address_map[$field_id]}() : null;
         }
         if (array_key_exists($field_id, $payer_name_map) && $payer) {

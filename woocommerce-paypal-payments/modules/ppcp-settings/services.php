@@ -450,6 +450,9 @@ $services = array(
         $eligibility_checks = $container->get('wcgateway.feature-eligibility.list');
         return new MerchantDetails($merchant_country, $woo_data['country'], $eligibility_checks);
     },
+    'settings.migration.bcdc-override-check' => static function (): callable {
+        return static fn(): bool => (bool) get_option(PaymentSettingsMigration::OPTION_NAME_BCDC_MIGRATION_OVERRIDE);
+    },
 );
 if (!\WooCommerce\PayPalCommerce\Settings\SettingsModule::should_use_the_old_ui()) {
     /**
