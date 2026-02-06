@@ -57,9 +57,13 @@ class PayPalGateway extends \WC_Payment_Gateway
     public const REFUNDS_META_KEY = '_ppcp_refunds';
     public const THREE_D_AUTH_RESULT_META_KEY = '_ppcp_paypal_3DS_auth_result';
     public const FRAUD_RESULT_META_KEY = '_ppcp_paypal_fraud_result';
+    // Used by the Contact Module integration.
+    public const CONTACT_EMAIL_META_KEY = '_ppcp_paypal_contact_email';
+    public const CONTACT_PHONE_META_KEY = '_ppcp_paypal_contact_phone';
     // Used by the Contact Module integration to store the original details.
     public const ORIGINAL_EMAIL_META_KEY = '_ppcp_paypal_billing_email';
     public const ORIGINAL_PHONE_META_KEY = '_ppcp_paypal_billing_phone';
+    public const CROSS_BROWSER_APPSWITCH_META_KEY = '_ppcp_cross_browser_appswitch';
     /**
      * List of payment sources for which we are expected to store the payer email in the WC Order metadata.
      */
@@ -345,10 +349,15 @@ class PayPalGateway extends \WC_Payment_Gateway
     public function get_description()
     {
         $gateway_settings = get_option($this->get_option_key(), array());
-        if (array_key_exists('description', $gateway_settings)) {
-            return $gateway_settings['description'];
-        }
-        return $this->description;
+        $description = array_key_exists('description', $gateway_settings) ? $gateway_settings['description'] : $this->description;
+        /**
+         * Filters the gateway description.
+         *
+         * @param string $description Gateway description (already sanitized with wp_kses_post).
+         * @param PayPalGateway $gateway Gateway instance.
+         * @return string Filtered gateway description.
+         */
+        return apply_filters('woocommerce_paypal_payments_gateway_description', wp_kses_post($description), $this);
     }
     /**
      * Whether the Gateway needs to be setup.

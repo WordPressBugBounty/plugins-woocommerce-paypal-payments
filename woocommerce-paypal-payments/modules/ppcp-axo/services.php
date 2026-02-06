@@ -74,12 +74,13 @@ return array(
      * The matrix which countries and currency combinations can be used for AXO.
      */
     'axo.supported-country-currency-matrix' => static function (ContainerInterface $container): array {
-        $matrix = array('US' => array('AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD'));
+        $dcc_allowed_country_currency_matrix = $container->get('api.dcc-supported-country-currency-matrix');
+        $matrix = array('US' => $dcc_allowed_country_currency_matrix['US']);
         if ($container->get('axo.uk.enabled')) {
-            $matrix['GB'] = array('GBP');
+            $matrix['GB'] = $dcc_allowed_country_currency_matrix['GB'];
         }
         if ($container->get('axo.au.enabled')) {
-            $matrix['AU'] = array('AUD');
+            $matrix['AU'] = $dcc_allowed_country_currency_matrix['AU'];
         }
         /**
          * Returns which countries and currency combinations can be used for AXO.
@@ -146,7 +147,7 @@ return array(
         return new FrontendLogger($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'));
     },
     'axo.endpoint.script-attributes' => static function (ContainerInterface $container): AxoScriptAttributes {
-        return new AxoScriptAttributes($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'), $container->get('api.sdk-client-token'), $container->get('axo.eligible'));
+        return new AxoScriptAttributes($container->get('button.request-data'), $container->get('woocommerce.logger.woocommerce'), $container->get('api.sdk-client-token'), $container->get('axo.eligible'), $container->get('button.helper.context'));
     },
     /**
      * The list of Fastlane incompatible plugins.

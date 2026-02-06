@@ -65,6 +65,6 @@ class CaptureFactory
         if (null === $amount) {
             throw new RuntimeException('Invalid capture amount data.');
         }
-        return new Capture((string) $data->id, new CaptureStatus((string) $data->status, $reason ? new CaptureStatusDetails($reason) : null), $amount, (bool) $data->final_capture, (string) $data->seller_protection->status, (string) $data->invoice_id, (string) $data->custom_id, $seller_receivable_breakdown, $fraud_processor_response);
+        return new Capture((string) $data->id, new CaptureStatus((string) $data->status, $reason ? new CaptureStatusDetails($reason) : null), $amount, (bool) $data->final_capture, (string) ($data->seller_protection->status ?? ''), (string) ($data->invoice_id ?? ''), (string) ($data->custom_id ?? ''), $seller_receivable_breakdown, $fraud_processor_response);
     }
 }

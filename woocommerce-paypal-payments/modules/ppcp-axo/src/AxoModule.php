@@ -14,7 +14,7 @@ use WooCommerce\PayPalCommerce\Axo\Endpoint\FrontendLogger;
 use WooCommerce\PayPalCommerce\Axo\Gateway\AxoGateway;
 use WooCommerce\PayPalCommerce\Axo\Service\AxoApplies;
 use WooCommerce\PayPalCommerce\Button\Assets\SmartButtonInterface;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\Onboarding\Render\OnboardingOptionsRenderer;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
@@ -36,7 +36,6 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
 {
     use ModuleClassNameIdTrait;
-    use ContextTrait;
     /**
      * The session handler for ContextTrait.
      *
@@ -80,7 +79,11 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
                 }
                 // Add the gateway in admin area.
                 if (is_admin()) {
-                    if (!$this->is_wc_settings_payments_tab()) {
+                    /**
+                     * @var Context $context
+                     */
+                    $context = $c->get('button.helper.context');
+                    if (!$context->is_wc_settings_payments_tab()) {
                         $methods[] = $gateway;
                     }
                     return $methods;
@@ -151,8 +154,12 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
             $is_paypal_enabled = $settings->has('enabled') && $settings->get('enabled') ?? \false;
             $subscription_helper = $c->get('wc-subscriptions.helper');
             assert($subscription_helper instanceof SubscriptionHelper);
+            /**
+             * @var Context $context
+             */
+            $context = $c->get('button.helper.context');
             // Check if the module is applicable, correct country, currency, ... etc.
-            if (!$is_paypal_enabled || !$c->get('axo.eligible') || $this->is_paypal_continuation() || $subscription_helper->cart_contains_subscription()) {
+            if (!$is_paypal_enabled || !$c->get('axo.eligible') || $context->is_paypal_continuation() || $subscription_helper->cart_contains_subscription()) {
                 return;
             }
             $manager = $c->get('axo.manager');
@@ -246,6 +253,22 @@ class AxoModule implements ServiceModule, ExtendingModule, ExecutableModule
         add_action('wp_enqueue_scripts', function () use ($c) {
             $this->enqueue_paypal_insights_script_on_order_received($c);
         });
+        add_filter(
+            'ppcp_return_url_error_args',
+            /**
+             * Param types removed to avoid third-party issues.
+             *
+             * @psalm-suppress MissingClosureParamType
+             */
+            function ($args) use ($c): array {
+                $axo_applies = $c->get('axo.service.axo-applies');
+                assert($axo_applies instanceof AxoApplies);
+                if ($axo_applies->should_render_fastlane()) {
+                    $args['ppcp_fastlane_error'] = '1';
+                }
+                return $args;
+            }
+        );
         // Remove Fastlane on the Pay for Order page.
         add_filter(
             'woocommerce_available_payment_gateways',

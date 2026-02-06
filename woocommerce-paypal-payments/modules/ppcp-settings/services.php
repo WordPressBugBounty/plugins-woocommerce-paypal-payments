@@ -20,6 +20,7 @@ use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\IDealGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MultibancoGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MyBankGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\P24Gateway;
+use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\PWCGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\TrustlyGateway;
 use WooCommerce\PayPalCommerce\Settings\Ajax\SwitchSettingsUiEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Data\Definition\FeaturesDefinition;
@@ -70,6 +71,7 @@ use WooCommerce\PayPalCommerce\WcGateway\Gateway\CreditCardGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\OXXO\OXXO;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayUponInvoice\PayUponInvoiceGateway;
+use WooCommerce\PayPalCommerce\WcGateway\Helper\PWCProductStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\PayLaterConfigurator\Endpoint\SaveConfig;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\Environment;
@@ -261,7 +263,7 @@ $services = array(
     'settings.service.gateways_status' => static function (ContainerInterface $container): array {
         $payment_endpoint = $container->get('settings.rest.payment');
         $settings = $payment_endpoint->get_details()->get_data();
-        return array('apple_pay' => $settings['data']['ppcp-applepay']['enabled'] ?? \false, 'google_pay' => $settings['data']['ppcp-googlepay']['enabled'] ?? \false, 'axo' => $settings['data']['ppcp-axo-gateway']['enabled'] ?? \false, 'card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false);
+        return array('apple_pay' => $settings['data']['ppcp-applepay']['enabled'] ?? \false, 'google_pay' => $settings['data']['ppcp-googlepay']['enabled'] ?? \false, 'axo' => $settings['data']['ppcp-axo-gateway']['enabled'] ?? \false, 'card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false, 'pwc' => $settings['data']['ppcp-pwc']['enabled'] ?? \false);
     },
     'settings.service.merchant_capabilities' => static function (ContainerInterface $container): array {
         /**
@@ -275,7 +277,7 @@ $services = array(
         // TODO: This condition included in the `*.eligibility.check` services; it can be removed when we switch to those services.
         $general_settings = $container->get('settings.data.general');
         assert($general_settings instanceof GeneralSettings);
-        return array('apple_pay' => ($features['apple_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'google_pay' => ($features['google_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'acdc' => ($features['advanced_credit_and_debit_cards']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false);
+        return array('apple_pay' => ($features['apple_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'google_pay' => ($features['google_pay']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'acdc' => ($features['advanced_credit_and_debit_cards']['enabled'] ?? \false) && !$general_settings->own_brand_only(), 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'apm' => $features['alternative_payment_methods']['enabled'] ?? \false, 'paylater' => $features['pay_later_messaging']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false, 'pwc' => $features['pwc']['enabled'] ?? \false);
     },
     'settings.service.todos_eligibilities' => static function (ContainerInterface $container): TodosEligibilityService {
         $pay_later_service = $container->get('settings.service.pay_later_status');
@@ -297,11 +299,8 @@ $services = array(
             getenv('PCP_WORKING_CAPITAL_ENABLED') === '1'
         );
         $is_working_capital_eligible = $container->get('settings.data.general')->get_merchant_country() === 'US' && $settings_model->get_stay_updated();
-        $is_paylater_messaging_force_enabled_feature_flag_enabled = apply_filters(
-            // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
-            'woocommerce.feature-flags.woocommerce_paypal_payments.paylater_messaging_force_enabled',
-            \true
-        );
+        $recaptcha_settings = get_option('woocommerce_ppcp-recaptcha_settings', array());
+        $is_recaptcha_enabled = isset($recaptcha_settings['enabled']) && 'yes' === $recaptcha_settings['enabled'];
         /**
          * Initializes TodosEligibilityService with eligibility conditions for various PayPal features.
          * Each parameter determines whether a specific feature should be shown in the Things To Do list.
@@ -328,7 +327,8 @@ $services = array(
          * @param bool $is_enable_google_pay_eligible       - Show if merchant has Google Pay capability but hasn't enabled the gateway.
          * @param bool $is_enable_installments_eligible     - Show if merchant has installments capability and merchant country is MX.
          * @param bool $is_working_capital_eligible         - Show if feature flag is enabled, merchant country is US and "Stay Updated" is turned On.
-         * @param bool $is_pay_later_messaging_auto_enabled - Show if feature flag is enabled, Pay later messaging is enabled for the merchant country and "Stay Updated" is turned On.
+         * @param bool $is_pwc_eligible                  - Show if merchant has Pay with Crypto capability.
+         * @param bool $is_recaptcha_protection_eligible    - Show if reCAPTCHA is not already enabled.
          */
         return new TodosEligibilityService(
             $container->get('axo.eligible') && $capabilities['acdc'] && !$gateways['axo'],
@@ -364,7 +364,11 @@ $services = array(
             // Enable Installments for Mexico.
             $is_working_capital_feature_flag_enabled && $is_working_capital_eligible,
             // Enable Working Capital.
-            $is_paylater_messaging_force_enabled_feature_flag_enabled && $messages_apply->for_country() && $settings_model->get_stay_updated()
+            $capabilities['pwc'] && !$gateways['pwc'],
+            // Enable Pay with Crypto.
+            $capabilities['acdc'] && !$capabilities['pwc'],
+            // Apply for Pay with Crypto.
+            !$is_recaptcha_enabled
         );
     },
     'settings.rest.features' => static function (ContainerInterface $container): FeaturesRestEndpoint {
@@ -376,8 +380,8 @@ $services = array(
         $settings = $payment_endpoint->get_details()->get_data();
         // Settings status.
         $gateways = array('card-button' => $settings['data']['ppcp-card-button-gateway']['enabled'] ?? \false);
-        // Merchant capabilities, serve to show active or inactive badge and buttons.
-        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'alternative_payment_methods' => $features['alternative_payment_methods']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false);
+        // Merchant capabilities serve to show active or inactive badge and buttons.
+        $capabilities = array('apple_pay' => $features['apple_pay']['enabled'] ?? \false, 'google_pay' => $features['google_pay']['enabled'] ?? \false, 'acdc' => $features['advanced_credit_and_debit_cards']['enabled'] ?? \false, 'save_paypal' => $features['save_paypal_and_venmo']['enabled'] ?? \false, 'alternative_payment_methods' => $features['alternative_payment_methods']['enabled'] ?? \false, 'installments' => $features['installments']['enabled'] ?? \false, 'pwc' => $features['pwc']['enabled'] ?? \false, 'pay_later_messaging' => $features['pay_later_messaging']['enabled'] ?? \false);
         $merchant_capabilities = array(
             'save_paypal' => $capabilities['save_paypal'],
             // Save PayPal and Venmo eligibility.
@@ -389,9 +393,11 @@ $services = array(
             // Google Pay eligibility.
             'apple_pay' => $capabilities['acdc'] && $capabilities['apple_pay'],
             // Apple Pay eligibility.
-            'pay_later' => $capabilities['acdc'] && !$gateways['card-button'],
+            'pay_later' => $capabilities['pay_later_messaging'] && $capabilities['acdc'] && !$gateways['card-button'],
             // Pay Later eligibility.
             'installments' => $capabilities['installments'],
+            // Installments eligibility.
+            'pwc' => $capabilities['pwc'],
         );
         return new FeaturesDefinition($container->get('settings.service.features_eligibilities'), $container->get('settings.data.general'), $merchant_capabilities, $container->get('settings.data.settings'));
     },
@@ -416,7 +422,9 @@ $services = array(
             // Apple Pay eligibility.
             $pay_later_eligible,
             // Pay Later eligibility.
-            'MX' === $container->get('settings.data.general')->get_merchant_country()
+            'MX' === $container->get('settings.data.general')->get_merchant_country(),
+            // Installments eligibility.
+            $apm_eligible
         );
     },
     'settings.service.todos_sorting' => static function (ContainerInterface $container): TodosSortingAndFilteringService {
@@ -434,7 +442,7 @@ $services = array(
      * @returns string[] The list of all gateway IDs.
      */
     'settings.config.all-gateway-ids' => static function (): array {
-        return array(PayPalGateway::ID, CardButtonGateway::ID, CreditCardGateway::ID, AxoGateway::ID, ApplePayGateway::ID, GooglePayGateway::ID, BancontactGateway::ID, BlikGateway::ID, EPSGateway::ID, IDealGateway::ID, MyBankGateway::ID, P24Gateway::ID, TrustlyGateway::ID, MultibancoGateway::ID, PayUponInvoiceGateway::ID, OXXO::ID);
+        return array(PayPalGateway::ID, CardButtonGateway::ID, CreditCardGateway::ID, AxoGateway::ID, ApplePayGateway::ID, GooglePayGateway::ID, PWCGateway::ID, BancontactGateway::ID, BlikGateway::ID, EPSGateway::ID, IDealGateway::ID, MyBankGateway::ID, P24Gateway::ID, TrustlyGateway::ID, MultibancoGateway::ID, PayUponInvoiceGateway::ID, OXXO::ID);
     },
     'settings.service.branded-experience.activation-detector' => static function (): ActivationDetector {
         return new ActivationDetector();

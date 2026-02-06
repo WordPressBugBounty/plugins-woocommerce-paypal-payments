@@ -18,7 +18,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\DccApplies;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\OrderHelper;
 use WooCommerce\PayPalCommerce\Button\Exception\RuntimeException;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\Button\Helper\ThreeDSecure;
 use WooCommerce\PayPalCommerce\Button\Helper\WooCommerceOrderCreator;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
@@ -29,8 +29,13 @@ use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
  */
 class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoint\EndpointInterface
 {
-    use ContextTrait;
     const ENDPOINT = 'ppc-approve-order';
+    /**
+     * A helper providing information on the current page, is this a continuation mode, etc.
+     *
+     * @var Context $context
+     */
+    protected Context $context;
     /**
      * The request data helper.
      *
@@ -112,7 +117,7 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
      * @param WooCommerceOrderCreator $wc_order_creator     The WooCommerce order creator.
      * @param LoggerInterface         $logger               The logger.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\Button\Endpoint\RequestData $request_data, OrderEndpoint $order_endpoint, SessionHandler $session_handler, ThreeDSecure $three_d_secure, Settings $settings, DccApplies $dcc_applies, OrderHelper $order_helper, bool $final_review_enabled, PayPalGateway $gateway, WooCommerceOrderCreator $wc_order_creator, LoggerInterface $logger)
+    public function __construct(\WooCommerce\PayPalCommerce\Button\Endpoint\RequestData $request_data, OrderEndpoint $order_endpoint, SessionHandler $session_handler, ThreeDSecure $three_d_secure, Settings $settings, DccApplies $dcc_applies, OrderHelper $order_helper, bool $final_review_enabled, PayPalGateway $gateway, WooCommerceOrderCreator $wc_order_creator, LoggerInterface $logger, Context $context)
     {
         $this->request_data = $request_data;
         $this->api_endpoint = $order_endpoint;
@@ -125,6 +130,7 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
         $this->gateway = $gateway;
         $this->wc_order_creator = $wc_order_creator;
         $this->logger = $logger;
+        $this->context = $context;
     }
     /**
      * The nonce.
@@ -148,6 +154,7 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
             if (!isset($data['order_id'])) {
                 throw new RuntimeException('No order id given');
             }
+            do_action('woocommerce_paypal_payments_approve_order_request_started', $data);
             $order = $this->api_endpoint->order($data['order_id']);
             $payment_source = $order->payment_source();
             if ($payment_source && $payment_source->name() === 'card') {
@@ -186,7 +193,7 @@ class ApproveOrderEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoin
                 $this->toggle_final_review_enabled_setting();
             }
             $should_create_wc_order = $data['should_create_wc_order'] ?? \false;
-            if (!$this->final_review_enabled && !$this->is_checkout() && $should_create_wc_order) {
+            if (!$this->final_review_enabled && !$this->context->is_checkout() && $should_create_wc_order) {
                 $wc_order = $this->wc_order_creator->create_from_paypal_order($order, WC()->cart);
                 $this->gateway->process_payment($wc_order->get_id());
                 $order_received_url = $wc_order->get_checkout_order_received_url();

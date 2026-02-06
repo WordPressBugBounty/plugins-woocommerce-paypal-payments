@@ -17,7 +17,6 @@ use WooCommerce\PayPalCommerce\ApiClient\Helper\PartnerAttribution;
 use WooCommerce\PayPalCommerce\Applepay\ApplePayGateway;
 use WooCommerce\PayPalCommerce\Applepay\Assets\AppleProductStatus;
 use WooCommerce\PayPalCommerce\Axo\Gateway\AxoGateway;
-use WooCommerce\PayPalCommerce\Button\Helper\MessagesApply;
 use WooCommerce\PayPalCommerce\Googlepay\GooglePayGateway;
 use WooCommerce\PayPalCommerce\Googlepay\Helper\ApmProductStatus;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\BancontactGateway;
@@ -27,6 +26,7 @@ use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\IDealGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MultibancoGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\MyBankGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\P24Gateway;
+use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\PWCGateway;
 use WooCommerce\PayPalCommerce\LocalAlternativePaymentMethods\TrustlyGateway;
 use WooCommerce\PayPalCommerce\Settings\Ajax\SwitchSettingsUiEndpoint;
 use WooCommerce\PayPalCommerce\Settings\Data\OnboardingProfile;
@@ -39,6 +39,7 @@ use WooCommerce\PayPalCommerce\Settings\Service\BrandedExperience\PathRepository
 use WooCommerce\PayPalCommerce\Settings\Service\GatewayRedirectService;
 use WooCommerce\PayPalCommerce\Settings\Service\LoadingScreenService;
 use WooCommerce\PayPalCommerce\Settings\Service\Migration\PaymentSettingsMigration;
+use WooCommerce\PayPalCommerce\Settings\Service\ScriptDataHandler;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ExecutableModule;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ModuleClassNameIdTrait;
 use WooCommerce\PayPalCommerce\Vendor\Inpsyde\Modularity\Module\ServiceModule;
@@ -55,7 +56,6 @@ use WooCommerce\PayPalCommerce\Settings\Enum\ProductChoicesEnum;
 use WooCommerce\PayPalCommerce\Settings\Data\GeneralSettings;
 use WooCommerce\PayPalCommerce\Settings\Data\PaymentSettings;
 use WooCommerce\PayPalCommerce\Axo\Helper\CompatibilityChecker;
-use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\WcGateway\Helper\CardPaymentsConfiguration;
 use Throwable;
 /**
@@ -116,29 +116,10 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 }
                 $message = sprintf(
                     // translators: %1$s is the URL for the startup guide.
-                    __('<strong>📢 Important: New PayPal Payments settings UI becoming default in October!</strong><br>We\'ve redesigned the settings for better performance and usability. Starting late October, this improved design will be the default for all WooCommerce installations to enjoy faster navigation, cleaner organization, and improved performance. Check out the <a href="%1$s" target="_blank">Startup Guide</a>, then click <a href="#" class="settings-switch-ui" role="button" aria-describedby="switch-ui-desc"><strong>Switch to New Settings</strong></a> to activate it.', 'woocommerce-paypal-payments'),
+                    __('<strong>📢 Important: New PayPal Payments settings UI becoming default in January!</strong><br>We\'ve redesigned the settings for better performance and usability. Starting late January, this improved design will be the default for all WooCommerce installations to enjoy faster navigation, cleaner organization, and improved performance. Check out the <a href="%1$s" target="_blank">Startup Guide</a>, then click <a href="#" class="settings-switch-ui" role="button" aria-describedby="switch-ui-desc"><strong>Switch to New Settings</strong></a> to activate it.', 'woocommerce-paypal-payments'),
                     'https://woocommerce.com/document/woocommerce-paypal-payments/paypal-payments-startup-guide/'
                 );
                 $notices[] = new Message($message, 'info', \false, 'ppcp-notice-wrapper');
-                $is_paylater_messaging_force_enabled_feature_flag_enabled = apply_filters(
-                    // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- feature flags use this convention
-                    'woocommerce.feature-flags.woocommerce_paypal_payments.paylater_messaging_force_enabled',
-                    \true
-                );
-                $messages_apply = $container->get('button.helper.messages-apply');
-                assert($messages_apply instanceof MessagesApply);
-                $settings = $container->get('wcgateway.settings');
-                assert($settings instanceof Settings);
-                $stay_updated = $settings->has('stay_updated') && $settings->get('stay_updated');
-                if ($is_paylater_messaging_force_enabled_feature_flag_enabled && $messages_apply->for_country() && $stay_updated) {
-                    $paylater_enablement_message = sprintf(
-                        // translators: %1$s is the URL for Stay Updated setting, %2$s is the URL for Pay Later settings.
-                        __('<strong>PayPal Pay Later messaging successfully enabled</strong>, now displaying this flexible payment option earlier in the shopping experience. This update was made based on your <a href="%1$s">Stay Updated</a> preference and can be customized or disabled through the <a href="%2$s">Pay Later settings</a>.', 'woocommerce-paypal-payments'),
-                        admin_url('admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway&ppcp-tab=ppcp-connection#ppcp-stay_updated_field'),
-                        admin_url('admin.php?page=wc-settings&tab=checkout&section=ppcp-gateway&ppcp-tab=ppcp-pay-later')
-                    );
-                    $notices[] = new Message($paylater_enablement_message, 'info', \false, 'ppcp-notice-wrapper');
-                }
                 return $notices;
             });
             add_action('admin_enqueue_scripts', static function () use ($container) {
@@ -218,10 +199,34 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 }
             }
         );
-        add_action('admin_enqueue_scripts', function (string $hook_suffix) use ($container): void {
-            $script_data_handler = $container->get('settings.service.script-data-handler');
-            $script_data_handler->localize_scripts($hook_suffix);
+        /**
+         * Clean up migration-related options on settings reset.
+         *
+         * Removes migration state flags when merchant disconnects via "Start Over"
+         * to ensure a clean state for subsequent merchant connections.
+         *
+         * Removed options:
+         * - BCDC migration override flag (OPTION_NAME_BCDC_MIGRATION_OVERRIDE)
+         */
+        add_action('woocommerce_paypal_payments_reset_settings', static function (): void {
+            delete_option(PaymentSettingsMigration::OPTION_NAME_BCDC_MIGRATION_OVERRIDE);
         });
+        add_action(
+            'admin_enqueue_scripts',
+            /**
+             * Param types removed to avoid third-party issues.
+             *
+             * @psalm-suppress MissingClosureParamType
+             */
+            function ($hook_suffix) use ($container): void {
+                if (!is_string($hook_suffix)) {
+                    return;
+                }
+                $script_data_handler = $container->get('settings.service.script-data-handler');
+                assert($script_data_handler instanceof ScriptDataHandler);
+                $script_data_handler->localize_scripts($hook_suffix);
+            }
+        );
         add_action('woocommerce_paypal_payments_gateway_admin_options_wrapper', function () use ($container): void {
             global $hide_save_button;
             $hide_save_button = \true;
@@ -282,6 +287,7 @@ class SettingsModule implements ServiceModule, ExecutableModule
         });
         add_filter('woocommerce_paypal_payments_payment_methods', function (array $payment_methods) use ($container): array {
             $all_payment_methods = $payment_methods;
+            $merchant_capabilities = $container->get('settings.service.merchant_capabilities');
             $dcc_product_status = $container->get('wcgateway.helper.dcc-product-status');
             assert($dcc_product_status instanceof DCCProductStatus);
             $googlepay_product_status = $container->get('googlepay.helpers.apm-product-status');
@@ -338,6 +344,10 @@ class SettingsModule implements ServiceModule, ExecutableModule
                 unset($payment_methods[P24Gateway::ID]);
                 unset($payment_methods[TrustlyGateway::ID]);
                 unset($payment_methods[MultibancoGateway::ID]);
+            }
+            // Unset PWC if the merchant does not have capability.
+            if (!$merchant_capabilities['pwc']) {
+                unset($payment_methods[PWCGateway::ID]);
             }
             return $payment_methods;
         });

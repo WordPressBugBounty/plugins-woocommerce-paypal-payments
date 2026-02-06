@@ -10,7 +10,7 @@ namespace WooCommerce\PayPalCommerce\Button\Endpoint;
 
 use WooCommerce\PayPalCommerce\ApiClient\Endpoint\OrderEndpoint;
 use WooCommerce\PayPalCommerce\Button\Exception\RuntimeException;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\Button\Helper\WooCommerceOrderCreator;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
@@ -19,8 +19,13 @@ use WooCommerce\PayPalCommerce\WcGateway\Gateway\PayPalGateway;
  */
 class ApproveSubscriptionEndpoint implements \WooCommerce\PayPalCommerce\Button\Endpoint\EndpointInterface
 {
-    use ContextTrait;
     const ENDPOINT = 'ppc-approve-subscription';
+    /**
+     * Helper providing context: is current page is checkout, what type of checkout it is, etc.
+     *
+     * @var Context $context
+     */
+    private Context $context;
     /**
      * The request data helper.
      *
@@ -67,7 +72,7 @@ class ApproveSubscriptionEndpoint implements \WooCommerce\PayPalCommerce\Button\
      * @param WooCommerceOrderCreator $wc_order_creator The WooCommerce order creator.
      * @param PayPalGateway           $gateway The WC gateway.
      */
-    public function __construct(\WooCommerce\PayPalCommerce\Button\Endpoint\RequestData $request_data, OrderEndpoint $order_endpoint, SessionHandler $session_handler, bool $final_review_enabled, WooCommerceOrderCreator $wc_order_creator, PayPalGateway $gateway)
+    public function __construct(\WooCommerce\PayPalCommerce\Button\Endpoint\RequestData $request_data, OrderEndpoint $order_endpoint, SessionHandler $session_handler, bool $final_review_enabled, WooCommerceOrderCreator $wc_order_creator, PayPalGateway $gateway, Context $context)
     {
         $this->request_data = $request_data;
         $this->order_endpoint = $order_endpoint;
@@ -75,6 +80,7 @@ class ApproveSubscriptionEndpoint implements \WooCommerce\PayPalCommerce\Button\
         $this->final_review_enabled = $final_review_enabled;
         $this->wc_order_creator = $wc_order_creator;
         $this->gateway = $gateway;
+        $this->context = $context;
     }
     /**
      * The nonce.
@@ -103,7 +109,7 @@ class ApproveSubscriptionEndpoint implements \WooCommerce\PayPalCommerce\Button\
             WC()->session->set('ppcp_subscription_id', $data['subscription_id']);
         }
         $should_create_wc_order = $data['should_create_wc_order'] ?? \false;
-        if (!$this->final_review_enabled && !$this->is_checkout() && $should_create_wc_order) {
+        if (!$this->final_review_enabled && !$this->context->is_checkout() && $should_create_wc_order) {
             $wc_order = $this->wc_order_creator->create_from_paypal_order($order, WC()->cart);
             $this->gateway->process_payment($wc_order->get_id());
             $order_received_url = $wc_order->get_checkout_order_received_url();

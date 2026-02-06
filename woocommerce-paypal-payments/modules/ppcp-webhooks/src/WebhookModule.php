@@ -115,7 +115,15 @@ class WebhookModule implements ServiceModule, FactoryModule, ExtendingModule, Ex
                 $container->get('woocommerce.logger.woocommerce')->error('Failed to load webhooks list: ' . $exception->getMessage());
             }
         });
-        add_action('woocommerce_paypal_payments_gateway_migrate', static function () use ($container) {
+        add_action('woocommerce_paypal_payments_gateway_migrate', static function (string $installed_plugin_version) use ($container) {
+            // Skip on fresh installation.
+            if (empty($installed_plugin_version)) {
+                return;
+            }
+            // Disabled when upgrading from 3.0.0+.
+            if (version_compare($installed_plugin_version, '3.0.0', '>=')) {
+                return;
+            }
             $registrar = $container->get('webhook.registrar');
             assert($registrar instanceof \WooCommerce\PayPalCommerce\Webhooks\WebhookRegistrar);
             add_action('init', function () use ($registrar) {

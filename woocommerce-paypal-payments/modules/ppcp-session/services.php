@@ -16,5 +16,5 @@ return array('session.handler' => function (ContainerInterface $container): \Woo
 }, 'session.cancellation.view' => function (ContainerInterface $container): CancelView {
     return new CancelView($container->get('wcgateway.settings'), $container->get('wcgateway.funding-source.renderer'));
 }, 'session.cancellation.controller' => function (ContainerInterface $container): CancelController {
-    return new CancelController($container->get('session.handler'), $container->get('session.cancellation.view'));
+    return new CancelController($container->get('session.handler'), $container->get('session.cancellation.view'), $container->get('button.helper.context'));
 });

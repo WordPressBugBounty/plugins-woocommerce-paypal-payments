@@ -71,7 +71,7 @@ class ReturnUrlEndpoint
         // phpcs:disable WordPress.Security.NonceVerification.Recommended
         if (!isset($_GET['token'])) {
             wc_add_notice(__('Payment session expired. Please try placing your order again.', 'woocommerce-paypal-payments'), 'error');
-            wp_safe_redirect(wc_get_checkout_url());
+            wp_safe_redirect($this->get_checkout_url_with_error());
             exit;
         }
         $token = sanitize_text_field(wp_unslash($_GET['token']));
@@ -81,7 +81,7 @@ class ReturnUrlEndpoint
         } catch (Exception $exception) {
             $this->logger->warning("Return URL endpoint failed to fetch order {$token}: " . $exception->getMessage());
             wc_add_notice(__('Could not retrieve payment information. Please try again.', 'woocommerce-paypal-payments'), 'error');
-            wp_safe_redirect(wc_get_checkout_url());
+            wp_safe_redirect($this->get_checkout_url_with_error());
             exit;
         }
         // Handle 3DS completion if needed.
@@ -91,7 +91,7 @@ class ReturnUrlEndpoint
             } catch (Exception $e) {
                 $this->logger->warning("3DS completion failed for order {$token}: " . $e->getMessage());
                 wc_add_notice($this->get_3ds_error_message($e), 'error');
-                wp_safe_redirect(wc_get_checkout_url());
+                wp_safe_redirect($this->get_checkout_url_with_error());
                 exit;
             }
         }
@@ -108,14 +108,14 @@ class ReturnUrlEndpoint
             }
             $this->logger->warning("Return URL endpoint {$token}: no WC order ID.");
             wc_add_notice(__('Order information is missing. Please try placing your order again.', 'woocommerce-paypal-payments'), 'error');
-            wp_safe_redirect(wc_get_checkout_url());
+            wp_safe_redirect($this->get_checkout_url_with_error());
             exit;
         }
         $wc_order = wc_get_order($wc_order_id);
         if (!is_a($wc_order, \WC_Order::class)) {
             $this->logger->warning("Return URL endpoint {$token}: WC order {$wc_order_id} not found.");
             wc_add_notice(__('Order not found. Please try placing your order again.', 'woocommerce-paypal-payments'), 'error');
-            wp_safe_redirect(wc_get_checkout_url());
+            wp_safe_redirect($this->get_checkout_url_with_error());
             exit;
         }
         if ($wc_order->get_payment_method() === OXXOGateway::ID) {
@@ -126,7 +126,7 @@ class ReturnUrlEndpoint
         $payment_gateway = $this->get_payment_gateway($wc_order->get_payment_method());
         if (!$payment_gateway) {
             wc_add_notice(__('Payment gateway is unavailable. Please try again or contact support.', 'woocommerce-paypal-payments'), 'error');
-            wp_safe_redirect(wc_get_checkout_url());
+            wp_safe_redirect($this->get_checkout_url_with_error());
             exit;
         }
         $success = $payment_gateway->process_payment($wc_order_id);
@@ -140,8 +140,24 @@ class ReturnUrlEndpoint
             exit;
         }
         wc_add_notice(__('Payment processing failed. Please try again or contact support.', 'woocommerce-paypal-payments'), 'error');
-        wp_safe_redirect(wc_get_checkout_url());
+        wp_safe_redirect($this->get_checkout_url_with_error());
         exit;
+    }
+    /**
+     * Get checkout URL with additional error parameters.
+     *
+     * Applies the 'ppcp_return_url_error_args' filter to allow external modules to add error parameters.
+     *
+     * @return string Checkout URL with error query arguments, if any.
+     */
+    private function get_checkout_url_with_error(): string
+    {
+        $url = wc_get_checkout_url();
+        $args = apply_filters('ppcp_return_url_error_args', array(), $this);
+        if (!empty($args)) {
+            $url = add_query_arg($args, $url);
+        }
+        return $url;
     }
     /**
      * Check if order needs 3DS completion.

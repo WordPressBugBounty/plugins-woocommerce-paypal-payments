@@ -11,7 +11,6 @@ namespace WooCommerce\PayPalCommerce\Applepay\Assets;
 use Exception;
 use WooCommerce\PayPalCommerce\Vendor\Psr\Log\LoggerInterface;
 use WC_Cart;
-use WC_Order;
 use WooCommerce\PayPalCommerce\Button\Assets\ButtonInterface;
 use WooCommerce\PayPalCommerce\Button\Helper\CartProductsHelper;
 use WooCommerce\PayPalCommerce\WcGateway\Exception\NotFoundException;
@@ -19,14 +18,12 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
 use WooCommerce\PayPalCommerce\WcGateway\Processor\OrderProcessor;
 use WooCommerce\PayPalCommerce\WcGateway\Settings\Settings;
 use WooCommerce\PayPalCommerce\Webhooks\Handler\RequestHandlerTrait;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
 /**
  * Class ApplePayButton
  */
 class ApplePayButton implements ButtonInterface
 {
     use RequestHandlerTrait;
-    use ContextTrait;
     /**
      * The settings.
      *

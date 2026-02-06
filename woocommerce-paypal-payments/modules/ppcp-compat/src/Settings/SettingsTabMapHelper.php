@@ -10,7 +10,6 @@ namespace WooCommerce\PayPalCommerce\Compat\Settings;
 
 use WooCommerce\PayPalCommerce\ApiClient\Entity\ExperienceContext;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\PurchaseUnitSanitizer;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
 /**
  * A map of old to new styling settings.
  *
@@ -19,7 +18,6 @@ use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
  */
 class SettingsTabMapHelper
 {
-    use ContextTrait;
     /**
      * A map of new to old 3d secure values.
      *

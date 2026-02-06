@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Payment tokens version 3 endpoint.
+ * Payment tokens for vault version 3 endpoint.
  *
  * @package WooCommerce\PayPalCommerce\ApiClient\Endpoint
  */

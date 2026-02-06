@@ -29,7 +29,7 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInitfd277e5a82374078694b99b0e6aef07c', 'WooCommerce\PayPalCommerce\Vendor\ComposerAutoloaderInitfd277e5a82374078694b99b0e6aef07c');
+humbug_phpscoper_expose_class('ComposerAutoloaderInitf1ad62ff0a56f3dbf9600eef6de90a8a', 'WooCommerce\PayPalCommerce\Vendor\ComposerAutoloaderInitf1ad62ff0a56f3dbf9600eef6de90a8a');
 humbug_phpscoper_expose_class('Attribute', 'WooCommerce\PayPalCommerce\Vendor\Attribute');
 humbug_phpscoper_expose_class('UnhandledMatchError', 'WooCommerce\PayPalCommerce\Vendor\UnhandledMatchError');
 humbug_phpscoper_expose_class('PhpToken', 'WooCommerce\PayPalCommerce\Vendor\PhpToken');

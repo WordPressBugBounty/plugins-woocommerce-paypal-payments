@@ -17,7 +17,7 @@ use WooCommerce\PayPalCommerce\ApiClient\Entity\PaymentSource;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\PayPalApiException;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\ApiClient\Helper\ReferenceTransactionStatus;
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentToken;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreatePaymentTokenForGuest;
 use WooCommerce\PayPalCommerce\SavePaymentMethods\Endpoint\CreateSetupToken;
@@ -39,7 +39,6 @@ use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, ExecutableModule
 {
     use ModuleClassNameIdTrait;
-    use ContextTrait;
     /**
      * {@inheritDoc}
      */
@@ -181,7 +180,9 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
             add_filter('woocommerce_paypal_payments_disable_add_payment_method', '__return_false');
             add_filter('woocommerce_paypal_payments_should_render_card_custom_fields', '__return_false');
             add_action('wp_enqueue_scripts', function () use ($c) {
-                if (!is_user_logged_in() || !($this->is_add_payment_method_page() || $this->is_subscription_change_payment_method_page())) {
+                $context = $c->get('button.helper.context');
+                assert($context instanceof Context);
+                if (!is_user_logged_in() || !($context->is_add_payment_method_page() || $context->is_subscription_change_payment_method_page())) {
                     return;
                 }
                 $module_url = $c->get('save-payment-methods.module.url');
@@ -202,7 +203,8 @@ class SavePaymentMethodsModule implements ServiceModule, ExtendingModule, Execut
                     $verification_method = $settings->has('3d_secure_contingency') ? apply_filters('woocommerce_paypal_payments_three_d_secure_contingency', $settings->get('3d_secure_contingency')) : '';
                     // phpcs:ignore WordPress.Security.NonceVerification
                     $change_payment_method = wc_clean(wp_unslash($_GET['change_payment_method'] ?? ''));
-                    wp_localize_script('ppcp-add-payment-method', 'ppcp_add_payment_method', array('client_id' => $c->get('button.client_id'), 'merchant_id' => $c->get('api.merchant_id'), 'id_token' => $id_token, 'payment_methods_page' => wc_get_account_endpoint_url('payment-methods'), 'view_subscriptions_page' => wc_get_account_endpoint_url('view-subscription'), 'is_subscription_change_payment_page' => $this->is_subscription_change_payment_method_page(), 'subscription_id_to_change_payment' => $this->is_subscription_change_payment_method_page() ? (int) $change_payment_method : 0, 'error_message' => __('Could not save payment method.', 'woocommerce-paypal-payments'), 'verification_method' => $verification_method, 'ajax' => array('create_setup_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreateSetupToken::ENDPOINT), 'nonce' => wp_create_nonce(CreateSetupToken::nonce())), 'create_payment_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentToken::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentToken::nonce())), 'subscription_change_payment_method' => array('endpoint' => \WC_AJAX::get_endpoint(SubscriptionChangePaymentMethod::ENDPOINT), 'nonce' => wp_create_nonce(SubscriptionChangePaymentMethod::nonce()))), 'labels' => array('error' => array('generic' => __('Something went wrong. Please try again or choose another payment source.', 'woocommerce-paypal-payments')))));
+                    $is_subscription_change_payment_method_page = $context->is_subscription_change_payment_method_page();
+                    wp_localize_script('ppcp-add-payment-method', 'ppcp_add_payment_method', array('client_id' => $c->get('button.client_id'), 'merchant_id' => $c->get('api.merchant_id'), 'id_token' => $id_token, 'payment_methods_page' => wc_get_account_endpoint_url('payment-methods'), 'view_subscriptions_page' => wc_get_account_endpoint_url('view-subscription'), 'is_subscription_change_payment_page' => $is_subscription_change_payment_method_page, 'subscription_id_to_change_payment' => $is_subscription_change_payment_method_page ? (int) $change_payment_method : 0, 'error_message' => __('Could not save payment method.', 'woocommerce-paypal-payments'), 'verification_method' => $verification_method, 'user' => array('is_logged' => is_user_logged_in()), 'ajax' => array('create_setup_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreateSetupToken::ENDPOINT), 'nonce' => wp_create_nonce(CreateSetupToken::nonce())), 'create_payment_token' => array('endpoint' => \WC_AJAX::get_endpoint(CreatePaymentToken::ENDPOINT), 'nonce' => wp_create_nonce(CreatePaymentToken::nonce())), 'subscription_change_payment_method' => array('endpoint' => \WC_AJAX::get_endpoint(SubscriptionChangePaymentMethod::ENDPOINT), 'nonce' => wp_create_nonce(SubscriptionChangePaymentMethod::nonce()))), 'labels' => array('error' => array('generic' => __('Something went wrong. Please try again or choose another payment source.', 'woocommerce-paypal-payments')))));
                 } catch (RuntimeException $exception) {
                     $logger = $c->get('woocommerce.logger.woocommerce');
                     assert($logger instanceof LoggerInterface);

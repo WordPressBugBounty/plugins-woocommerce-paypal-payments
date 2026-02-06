@@ -39,7 +39,9 @@ return array('webhook.registrar' => function (ContainerInterface $container): \W
     $rest_endpoint = $container->get('webhook.endpoint.controller');
     $last_webhook_storage = $container->get('webhook.last-webhook-storage');
     $logger = $container->get('woocommerce.logger.woocommerce');
-    return new \WooCommerce\PayPalCommerce\Webhooks\WebhookRegistrar($factory, $endpoint, $rest_endpoint, $last_webhook_storage, $logger);
+    return new \WooCommerce\PayPalCommerce\Webhooks\WebhookRegistrar($factory, $endpoint, $rest_endpoint, $last_webhook_storage, $container->get('webhook.status.simulation'), $container->get('webhook.orchestration'), $logger);
+}, 'webhook.orchestration' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Webhooks\WebhookOrchestrator {
+    return new \WooCommerce\PayPalCommerce\Webhooks\WebhookOrchestrator($container->get('woocommerce.logger.woocommerce'));
 }, 'webhook.endpoint.controller' => function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Webhooks\IncomingWebhookEndpoint {
     $webhook_endpoint = $container->get('api.endpoint.webhook');
     $webhook = $container->get('webhook.current');

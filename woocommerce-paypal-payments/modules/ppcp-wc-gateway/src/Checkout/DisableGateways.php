@@ -8,7 +8,7 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\WcGateway\Checkout;
 
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 use WooCommerce\PayPalCommerce\WcSubscriptions\Helper\SubscriptionHelper;
 use WooCommerce\PayPalCommerce\WcGateway\Gateway\CardButtonGateway;
@@ -21,13 +21,10 @@ use WooCommerce\PayPalCommerce\WcGateway\Helper\SettingsStatus;
  */
 class DisableGateways
 {
-    use ContextTrait;
     /**
-     * The Session Handler.
-     *
-     * @var SessionHandler
+     * @var Context Context data provider.
      */
-    private $session_handler;
+    private Context $context;
     /**
      * The Settings.
      *
@@ -49,17 +46,16 @@ class DisableGateways
     /**
      * DisableGateways constructor.
      *
-     * @param SessionHandler     $session_handler The Session Handler.
      * @param ContainerInterface $settings The Settings.
      * @param SettingsStatus     $settings_status The Settings status helper.
      * @param SubscriptionHelper $subscription_helper The subscription helper.
      */
-    public function __construct(SessionHandler $session_handler, ContainerInterface $settings, SettingsStatus $settings_status, SubscriptionHelper $subscription_helper)
+    public function __construct(ContainerInterface $settings, SettingsStatus $settings_status, SubscriptionHelper $subscription_helper, Context $context)
     {
-        $this->session_handler = $session_handler;
         $this->settings = $settings;
         $this->settings_status = $settings_status;
         $this->subscription_helper = $subscription_helper;
+        $this->context = $context;
     }
     /**
      * Controls the logic for enabling/disabling gateways.
@@ -127,6 +123,6 @@ class DisableGateways
      */
     private function needs_to_disable_gateways(): bool
     {
-        return $this->is_paypal_continuation();
+        return $this->context->is_paypal_continuation();
     }
 }

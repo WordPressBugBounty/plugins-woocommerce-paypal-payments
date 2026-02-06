@@ -8,15 +8,18 @@
 declare (strict_types=1);
 namespace WooCommerce\PayPalCommerce\Session\Cancellation;
 
-use WooCommerce\PayPalCommerce\Button\Helper\ContextTrait;
+use WooCommerce\PayPalCommerce\Button\Helper\Context;
 use WooCommerce\PayPalCommerce\Session\SessionHandler;
 /**
  * Class CancelController
  */
 class CancelController
 {
-    use ContextTrait;
     public const NONCE = 'ppcp-cancel';
+    /**
+     * @var Context Context data provider.
+     */
+    private Context $context;
     /**
      * The Session handler.
      *
@@ -34,11 +37,13 @@ class CancelController
      *
      * @param SessionHandler $session_handler The session handler.
      * @param CancelView     $view The view object.
+     * @param Context        $context Context data provider.
      */
-    public function __construct(SessionHandler $session_handler, \WooCommerce\PayPalCommerce\Session\Cancellation\CancelView $view)
+    public function __construct(SessionHandler $session_handler, \WooCommerce\PayPalCommerce\Session\Cancellation\CancelView $view, Context $context)
     {
         $this->view = $view;
         $this->session_handler = $session_handler;
+        $this->context = $context;
     }
     /**
      * Runs the controller.
@@ -54,7 +59,7 @@ class CancelController
             // Input var ok.
             $this->session_handler->destroy_session_data();
         }
-        if (!$this->is_paypal_continuation()) {
+        if (!$this->context->is_paypal_continuation()) {
             return;
         }
         $url = add_query_arg(array($param_name => wp_create_nonce(self::NONCE)), wc_get_checkout_url());

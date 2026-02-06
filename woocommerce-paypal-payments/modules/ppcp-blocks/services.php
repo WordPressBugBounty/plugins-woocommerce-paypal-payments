@@ -22,7 +22,7 @@ return array('blocks.url' => static function (ContainerInterface $container): st
 }, 'blocks.advanced-card-method' => static function (ContainerInterface $container): \WooCommerce\PayPalCommerce\Blocks\AdvancedCardPaymentMethod {
     return new \WooCommerce\PayPalCommerce\Blocks\AdvancedCardPaymentMethod($container->get('blocks.url'), $container->get('ppcp.asset-version'), $container->get('wcgateway.credit-card-gateway'), function () use ($container): SmartButtonInterface {
         return $container->get('button.smart-button');
-    }, $container->get('wcgateway.settings'));
+    }, $container->get('wcgateway.settings'), $container->get('wcgateway.configuration.card-configuration'));
 }, 'blocks.settings.final_review_enabled' => static function (ContainerInterface $container): bool {
     $settings = $container->get('wcgateway.settings');
     assert($settings instanceof ContainerInterface);

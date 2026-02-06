@@ -125,8 +125,12 @@ return array(
     'compat.settings.settings_map_helper' => static function (ContainerInterface $container): SettingsMapHelper {
         return new SettingsMapHelper($container->get('compat.setting.new-to-old-map'), $container->get('compat.settings.styling_map_helper'), $container->get('compat.settings.settings_tab_map_helper'), $container->get('compat.settings.subscription_map_helper'), $container->get('compat.settings.general_map_helper'), $container->get('compat.settings.payment_methods_map_helper'), $container->get('wcgateway.settings.admin-settings-enabled'));
     },
-    'compat.settings.styling_map_helper' => static function (): StylingSettingsMapHelper {
-        return new StylingSettingsMapHelper();
+    'compat.settings.styling_map_helper' => static function (ContainerInterface $container): StylingSettingsMapHelper {
+        $context_provider = static function () use ($container): string {
+            $context = $container->get('button.helper.context');
+            return $context->context();
+        };
+        return new StylingSettingsMapHelper($context_provider);
     },
     'compat.settings.settings_tab_map_helper' => static function (): SettingsTabMapHelper {
         return new SettingsTabMapHelper();
