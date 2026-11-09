@@ -137,7 +137,9 @@ return array(
             $container->get('sdk-v6.apple-pay-config'),
             $container->get('sdk-v6.fastlane-config'),
             $container->get('sdk-v6.card-field-styles'),
-            $container->get('button.helper.disabled-funding-sources')
+            $container->get('button.helper.disabled-funding-sources'),
+            $container->get('order-endpoints.pay-now-contexts'),
+            $container->get('api.helper.partner-attribution')
         );
     },
     'sdk-v6.add-payment-method-manager' => static function (ContainerInterface $container): AddPaymentMethodManager {
@@ -153,7 +155,9 @@ return array(
             // independently of the v6 flag (see ppcp-settings/services.php).
             $container->has('save-payment-methods.eligible') && $container->get('save-payment-methods.eligible') && $settings_provider->save_card_details(),
             $settings_provider,
-            $container->get('sdk-v6.card-field-styles')
+            $container->get('sdk-v6.card-field-styles'),
+            $container->get('api.helper.partner-attribution'),
+            $container->get('wc-subscriptions.helper')
         );
     },
     'sdk-v6.endpoint.client-token' => static function (ContainerInterface $container): ClientTokenEndpoint {
